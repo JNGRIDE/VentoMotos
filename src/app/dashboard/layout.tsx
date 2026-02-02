@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   FileText,
   LayoutDashboard,
@@ -10,6 +10,7 @@ import {
   PanelLeft,
   Users,
   Settings,
+  LoaderCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { UserNav } from "@/components/user-nav";
-import { salespeople } from "@/lib/data";
+import { useUser } from "@/firebase/auth/use-user";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -40,8 +41,23 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  // Using a mock user for demonstration. In a real app, this would come from an auth context.
-  const currentUser = salespeople[0];
+  const router = useRouter();
+  const { user, isLoading } = useUser();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace("/");
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40">
+        <LoaderCircle className="h-10 w-10 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Loading your dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -114,7 +130,7 @@ export default function DashboardLayout({
           <div className="relative ml-auto flex-1 md:grow-0">
             {/* Could be a global search bar */}
           </div>
-          <UserNav user={currentUser} />
+          <UserNav user={user} />
         </header>
         <main className="flex-1 p-4 sm:px-6 sm:py-0">{children}</main>
       </div>

@@ -9,10 +9,10 @@
 // 5. Copy the config object snippet.
 
 export const firebaseConfig = {
-  apiKey: "REPLACE_WITH_YOUR_API_KEY",
-  authDomain: "REPLACE_WITH_YOUR_AUTH_DOMAIN",
-  projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket: "REPLACE_WITH_YOUR_STORAGE_BUCKET",
-  messagingSenderId: "REPLACE_WITH_YOUR_MESSAGING_SENDER_ID",
-  appId: "REPLACE_WITH_YOUR_APP_ID",
+  "projectId": "studio-9515986273-e951e",
+  "appId": "1:842081455757:web:01d27aa289d96480229cc4",
+  "apiKey": "AIzaSyAKaa57gxas1oy4XvFXyZWcMUWuAz6Yl7g",
+  "authDomain": "studio-9515986273-e951e.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "842081455757"
 };

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CreditCard, LogOut, Settings, User as UserIcon } from "lucide-react";
 import type { User } from "firebase/auth";
 import { getAuth, signOut } from "firebase/auth";
+import { useFirebaseApp } from "@/firebase";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,12 +23,14 @@ interface UserNavProps {
 }
 
 export function UserNav({ user }: UserNavProps) {
+  const app = useFirebaseApp();
   if (!user) {
     return null;
   }
   
   const handleLogout = () => {
-    signOut(getAuth());
+    const auth = getAuth(app);
+    signOut(auth);
   };
 
   const getInitials = (name: string | null) => {

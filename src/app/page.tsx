@@ -1,8 +1,9 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Bike, Chrome } from "lucide-react";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, type Auth } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,9 +20,14 @@ export default function LoginPage() {
   const app = useFirebaseApp();
   const router = useRouter();
   const { toast } = useToast();
+  const [auth, setAuth] = useState<Auth | null>(null);
+
+  useEffect(() => {
+    setAuth(getAuth(app));
+  }, [app]);
 
   const handleGoogleSignIn = async () => {
-    const auth = getAuth(app);
+    if (!auth) return;
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -52,7 +58,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
-            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={!auth}>
               <Chrome className="mr-2 h-4 w-4" />
               Sign in with Google
             </Button>

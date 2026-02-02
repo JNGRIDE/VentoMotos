@@ -10,17 +10,20 @@ import { RecordSaleDialog } from '@/components/sales/record-sale-dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
-import { salespeople, sales, getSalesBySalesperson } from '@/lib/data';
+import { salespeople, sales as initialSales, getSalesBySalesperson } from '@/lib/data';
+import type { Sale } from '@/lib/data';
 
 export default function DashboardPage() {
   const [view, setView] = useState<'manager' | 'salesperson'>('manager');
   const [selectedSalespersonId, setSelectedSalespersonId] = useState(1);
+  const [sales, setSales] = useState<Sale[]>(initialSales);
+  
   const currentUser = salespeople.find(sp => sp.id === selectedSalespersonId);
   
   const salesData = useMemo(() => {
     if (view === 'manager') return sales;
-    return getSalesBySalesperson(selectedSalespersonId);
-  }, [view, selectedSalespersonId]);
+    return getSalesBySalesperson(selectedSalespersonId, sales);
+  }, [view, selectedSalespersonId, sales]);
 
   const totalSales = useMemo(() => salesData.reduce((sum, sale) => sum + sale.amount, 0), [salesData]);
   const totalCredits = useMemo(() => salesData.filter(s => s.paymentMethod === 'Financing').length, [salesData]);
@@ -39,13 +42,13 @@ export default function DashboardPage() {
   const creditBonus = ventoCredits >= 5 ? (ventoCredits - 4) * 200 : 0;
 
   const teamChartData = useMemo(() => salespeople.map(sp => {
-    const spSales = getSalesBySalesperson(sp.id);
+    const spSales = getSalesBySalesperson(sp.id, sales);
     return {
       ...sp,
       currentSales: spSales.reduce((sum, sale) => sum + sale.amount, 0),
       currentCredits: spSales.filter(s => s.paymentMethod === 'Financing').length,
     }
-  }), []);
+  }), [sales]);
 
   const salespersonChartData = currentUser ? [{
     ...currentUser,
@@ -53,6 +56,14 @@ export default function DashboardPage() {
     currentCredits: totalCredits,
   }] : [];
 
+  const handleAddSale = (newSaleData: Omit<Sale, 'id' | 'date'>) => {
+    const newSale: Sale = {
+        ...newSaleData,
+        id: sales.length + 1,
+        date: new Date().toISOString().split('T')[0],
+    };
+    setSales(prevSales => [newSale, ...prevSales]);
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -64,7 +75,7 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">Here's a summary of your sales performance.</p>
         </div>
         <div className="flex items-center space-x-2">
-          <RecordSaleDialog />
+          <RecordSaleDialog onAddSale={handleAddSale} />
         </div>
       </div>
       

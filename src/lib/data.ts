@@ -59,5 +59,5 @@ export const prospects: Prospect[] = [
   { id: 8, name: "Monica Vega", stage: "Credit", source: "Organic", salespersonId: 2, lastContact: "2024-07-21" },
 ];
 
-export const getSalesBySalesperson = (id: number) => sales.filter(s => s.salespersonId === id);
+export const getSalesBySalesperson = (id: number, salesList: Sale[] = sales) => salesList.filter(s => s.salespersonId === id);
 export const getProspectsBySalesperson = (id: number) => prospects.filter(p => p.salespersonId === id);

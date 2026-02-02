@@ -23,6 +23,8 @@ export default function LoginPage() {
   const [auth, setAuth] = useState<Auth | null>(null);
 
   useEffect(() => {
+    // Log the origin to help debug domain authorization issues
+    console.log("Current app origin:", window.location.origin);
     setAuth(getAuth(app));
   }, [app]);
 

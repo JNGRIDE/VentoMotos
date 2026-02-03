@@ -106,7 +106,7 @@ export function EditMotorcycleDialog({ motorcycle, onMotorcycleUpdated }: EditMo
                 SKUs
               </Label>
               <div className="col-span-3">
-                <Textarea id="skus" name="skus" defaultValue={motorcycle.skus.join('\n')} rows={5} />
+                <Textarea id="skus" name="skus" defaultValue={(motorcycle.skus || []).join('\n')} rows={5} />
                 <p className="text-xs text-muted-foreground mt-1">Enter one SKU per line.</p>
               </div>
             </div>

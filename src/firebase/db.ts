@@ -139,6 +139,11 @@ export async function addMotorcycle(db: Firestore, motorcycle: NewMotorcycle): P
   return docRef.id;
 }
 
+export async function updateMotorcycle(db: Firestore, motorcycleId: string, data: Partial<NewMotorcycle>): Promise<void> {
+  const motorcycleRef = doc(db, "inventory", motorcycleId);
+  await setDoc(motorcycleRef, data, { merge: true });
+}
+
 export async function deleteMotorcycle(db: Firestore, motorcycleId: string): Promise<void> {
   const motorcycleRef = doc(db, "inventory", motorcycleId);
   await deleteDoc(motorcycleRef);

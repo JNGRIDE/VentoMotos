@@ -9,6 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import type { Motorcycle } from "@/lib/data"
 import { DeleteMotorcycleDialog } from "./delete-motorcycle-dialog";
+import { EditMotorcycleDialog } from "./edit-motorcycle-dialog";
 
 interface InventoryTableProps {
   inventory: Motorcycle[];
@@ -31,7 +32,7 @@ export function InventoryTable({ inventory, onInventoryUpdated }: InventoryTable
               <TableHead>Model</TableHead>
               <TableHead>SKU</TableHead>
               <TableHead className="text-right">Stock</TableHead>
-              <TableHead className="w-[80px]">Actions</TableHead>
+              <TableHead className="w-[100px] text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -47,12 +48,18 @@ export function InventoryTable({ inventory, onInventoryUpdated }: InventoryTable
                   <TableCell className="font-medium">{item.model}</TableCell>
                   <TableCell>{item.sku}</TableCell>
                   <TableCell className="text-right font-medium">{item.stock}</TableCell>
-                  <TableCell className="text-center">
-                    <DeleteMotorcycleDialog 
-                      motorcycleId={item.id}
-                      motorcycleModel={item.model}
-                      onMotorcycleDeleted={onInventoryUpdated}
-                    />
+                  <TableCell>
+                    <div className="flex items-center justify-center">
+                      <EditMotorcycleDialog 
+                        motorcycle={item}
+                        onMotorcycleUpdated={onInventoryUpdated}
+                      />
+                      <DeleteMotorcycleDialog 
+                        motorcycleId={item.id}
+                        motorcycleModel={item.model}
+                        onMotorcycleDeleted={onInventoryUpdated}
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

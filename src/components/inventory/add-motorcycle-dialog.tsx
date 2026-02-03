@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { addMotorcycle } from "@/firebase/db";
@@ -34,21 +35,27 @@ export function AddMotorcycleDialog({ onMotorcycleAdded }: AddMotorcycleDialogPr
     setIsSaving(true);
 
     const formData = new FormData(event.currentTarget);
-    const newMotorcycle: NewMotorcycle = {
-      model: String(formData.get("model")),
-      sku: String(formData.get("sku")),
-      stock: Number(formData.get("stock")),
-    };
+    const model = String(formData.get("model"));
+    const skus = String(formData.get("skus"))
+      .split('\n')
+      .map(s => s.trim())
+      .filter(s => s);
 
-    if (!newMotorcycle.model || !newMotorcycle.sku || newMotorcycle.stock < 0) {
+    if (!model || skus.length === 0) {
         toast({
             variant: "destructive",
             title: "Invalid data",
-            description: "Please fill out all fields correctly.",
+            description: "Please provide a model name and at least one SKU.",
         });
         setIsSaving(false);
         return;
     }
+    
+    const newMotorcycle: NewMotorcycle = {
+      model,
+      skus,
+      stock: skus.length,
+    };
 
     try {
       await addMotorcycle(db, newMotorcycle);
@@ -81,12 +88,12 @@ export function AddMotorcycleDialog({ onMotorcycleAdded }: AddMotorcycleDialogPr
           </span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="font-headline">Add New Motorcycle</DialogTitle>
             <DialogDescription>
-              Add a new model to the inventory.
+              Add a new model to the inventory. The stock will be calculated based on the number of SKUs entered.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -96,17 +103,14 @@ export function AddMotorcycleDialog({ onMotorcycleAdded }: AddMotorcycleDialogPr
               </Label>
               <Input id="model" name="model" placeholder="Vento Xplor 250" className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="sku" className="text-right">
-                SKU
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="skus" className="text-right pt-2">
+                SKUs
               </Label>
-              <Input id="sku" name="sku" placeholder="VN-XPLR-250-BLK" className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="stock" className="text-right">
-                Initial Stock
-              </Label>
-              <Input id="stock" name="stock" type="number" placeholder="10" className="col-span-3" />
+              <div className="col-span-3">
+                <Textarea id="skus" name="skus" placeholder="VN-XPLR-250-BLK-001&#10;VN-XPLR-250-BLK-002&#10;VN-XPLR-250-BLK-003" rows={5} />
+                <p className="text-xs text-muted-foreground mt-1">Enter one SKU per line.</p>
+              </div>
             </div>
           </div>
           <DialogFooter>

@@ -39,6 +39,7 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDi
   // Form states
   const [paymentMethod, setPaymentMethod] = useState("");
   const [selectedMotorcycle, setSelectedMotorcycle] = useState<Motorcycle | null>(null);
+  const [soldSku, setSoldSku] = useState<string>("");
 
   // Combobox states
   const [comboOpen, setComboOpen] = useState(false);
@@ -63,6 +64,7 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDi
 
   const handleMotorcycleSelect = (motorcycle: Motorcycle) => {
     setSelectedMotorcycle(motorcycle);
+    setSoldSku(""); // Reset SKU when motorcycle changes
     setComboOpen(false);
     if (motorcycle.stock === 0) {
       setShowZeroStockAlert(true);
@@ -98,6 +100,12 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDi
       return;
     }
 
+    if (!soldSku && selectedMotorcycle.stock > 0) {
+      toast({ variant: "destructive", title: "SKU not selected", description: "Please select the specific SKU being sold." });
+      setIsSaving(false);
+      return;
+    }
+
     const newSale: NewSale = {
       salespersonId: String(formData.get("salesperson-id")),
       prospectName: String(formData.get("prospect-name")),
@@ -106,6 +114,7 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDi
       creditProvider: formData.get("credit-provider") as "Vento" | "Other" | undefined,
       motorcycleId: selectedMotorcycle.id,
       motorcycleModel: selectedMotorcycle.model,
+      soldSku: soldSku, // Pass the selected SKU
       notes: specialOrderNotes, // Add special order notes
     };
 
@@ -123,6 +132,7 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDi
       event.currentTarget.reset();
       setPaymentMethod("");
       setSelectedMotorcycle(null);
+      setSoldSku("");
       setSpecialOrderNotes("");
     } catch (error) {
       // Error is handled by the caller, which shows its own toast.
@@ -201,6 +211,25 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDi
                     </PopoverContent>
                   </Popover>
               </div>
+
+              {/* SKU Selector */}
+              {selectedMotorcycle && selectedMotorcycle.stock > 0 && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="sold-sku" className="text-right">SKU</Label>
+                  <Select name="sold-sku" onValueChange={setSoldSku} value={soldSku}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select SKU to sell..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedMotorcycle.skus.map(sku => (
+                        <SelectItem key={sku} value={sku}>
+                          ...{sku.slice(-6)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Amount, Payment, Credit Provider */}
               <div className="grid grid-cols-4 items-center gap-4">

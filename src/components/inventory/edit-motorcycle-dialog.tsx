@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { updateMotorcycle } from "@/firebase/db";
@@ -35,10 +36,26 @@ export function EditMotorcycleDialog({ motorcycle, onMotorcycleUpdated }: EditMo
     setIsSaving(true);
 
     const formData = new FormData(event.currentTarget);
+    const model = String(formData.get("model"));
+    const skus = String(formData.get("skus"))
+      .split('\n')
+      .map(s => s.trim())
+      .filter(s => s);
+
+    if (!model || skus.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "Invalid data",
+            description: "Please provide a model name and at least one SKU.",
+        });
+        setIsSaving(false);
+        return;
+    }
+
     const updatedData: Partial<NewMotorcycle> = {
-      model: String(formData.get("model")),
-      sku: String(formData.get("sku")),
-      stock: Number(formData.get("stock")),
+      model,
+      skus,
+      stock: skus.length,
     };
 
     try {
@@ -69,12 +86,12 @@ export function EditMotorcycleDialog({ motorcycle, onMotorcycleUpdated }: EditMo
             <span className="sr-only">Edit Motorcycle</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="font-headline">Edit Motorcycle</DialogTitle>
             <DialogDescription>
-              Make changes to this motorcycle. Click save when you're done.
+              Make changes to this motorcycle. The stock will be recalculated based on the number of SKUs.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -84,17 +101,14 @@ export function EditMotorcycleDialog({ motorcycle, onMotorcycleUpdated }: EditMo
               </Label>
               <Input id="model" name="model" defaultValue={motorcycle.model} className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="sku" className="text-right">
-                SKU
+             <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="skus" className="text-right pt-2">
+                SKUs
               </Label>
-              <Input id="sku" name="sku" defaultValue={motorcycle.sku} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="stock" className="text-right">
-                Stock
-              </Label>
-              <Input id="stock" name="stock" type="number" defaultValue={motorcycle.stock} className="col-span-3" />
+              <div className="col-span-3">
+                <Textarea id="skus" name="skus" defaultValue={motorcycle.skus.join('\n')} rows={5} />
+                <p className="text-xs text-muted-foreground mt-1">Enter one SKU per line.</p>
+              </div>
             </div>
           </div>
           <DialogFooter>

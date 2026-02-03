@@ -30,7 +30,6 @@ export function InventoryTable({ inventory, onInventoryUpdated }: InventoryTable
           <TableHeader>
             <TableRow>
               <TableHead>Model</TableHead>
-              <TableHead>SKU</TableHead>
               <TableHead className="text-right">Stock</TableHead>
               <TableHead className="w-[100px] text-center">Actions</TableHead>
             </TableRow>
@@ -38,7 +37,7 @@ export function InventoryTable({ inventory, onInventoryUpdated }: InventoryTable
           <TableBody>
             {inventory.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={3} className="h-24 text-center">
                   No motorcycles in inventory. Add one to get started.
                 </TableCell>
               </TableRow>
@@ -46,7 +45,6 @@ export function InventoryTable({ inventory, onInventoryUpdated }: InventoryTable
               inventory.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.model}</TableCell>
-                  <TableCell>{item.sku}</TableCell>
                   <TableCell className="text-right font-medium">{item.stock}</TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center">

@@ -15,7 +15,7 @@ export type Motorcycle = {
   id: string; // Firestore document ID
   model: string;
   stock: number;
-  sku: string;
+  skus: string[];
 };
 
 export type NewMotorcycle = Omit<Motorcycle, "id">;
@@ -27,6 +27,7 @@ export type Sale = {
   amount: number;
   motorcycleId: string; // Link to the inventory item
   motorcycleModel: string; // Denormalized for easy display
+  soldSku: string; // The specific SKU that was sold
   date: string;
   paymentMethod: "Cash" | "Financing";
   creditProvider?: "Vento" | "Other";

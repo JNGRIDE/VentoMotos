@@ -92,15 +92,26 @@ export async function addSale(db: Firestore, sale: NewSale): Promise<void> {
       throw new Error("Motorcycle does not exist in inventory!");
     }
     
-    // If it's not a special order, deduct stock
+    // If it's not a special order, deduct stock and remove the specific SKU
     if (!sale.notes || sale.notes === "") {
-        const currentStock = motorcycleDoc.data().stock;
+        const data = motorcycleDoc.data();
+        const currentStock = data.stock;
+        const currentSkus = data.skus || [];
+
         if (currentStock < 1) {
             // This is a server-side safeguard. The UI should prevent this.
             throw new Error(`No stock available for ${sale.motorcycleModel}. Sale cannot be completed.`);
         }
+        
         const newStock = currentStock - 1;
-        transaction.update(motorcycleRef, { stock: newStock });
+        const newSkus = currentSkus.filter((s: string) => s !== sale.soldSku);
+
+        if (currentSkus.length === newSkus.length) {
+          // This can happen if the SKU was already sold by someone else in a concurrent transaction
+          throw new Error(`SKU ${sale.soldSku} for model ${sale.motorcycleModel} was not found or already sold.`);
+        }
+
+        transaction.update(motorcycleRef, { stock: newStock, skus: newSkus });
     }
 
     // Create the new sale document (we need to generate a ref inside the transaction)
@@ -153,10 +164,31 @@ export async function addMotorcyclesBatch(db: Firestore, motorcycles: NewMotorcy
   const batch = writeBatch(db);
   const inventoryCol = collection(db, "inventory");
 
-  motorcycles.forEach(motorcycle => {
-    const docRef = doc(inventoryCol); // Automatically generate a new document ID
-    batch.set(docRef, motorcycle);
-  });
+  // Since we are aggregating, we first need to check if a model already exists.
+  // This operation is more complex than a simple batch write, as it requires reading first.
+  // For simplicity and performance, this function will now query for existing models.
+  // This is a trade-off: it's more reads but ensures data integrity.
+
+  for (const motorcycle of motorcycles) {
+    const q = query(inventoryCol, where("model", "==", motorcycle.model));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      // Model doesn't exist, create a new document
+      const docRef = doc(inventoryCol);
+      batch.set(docRef, motorcycle);
+    } else {
+      // Model exists, update it
+      const existingDoc = querySnapshot.docs[0];
+      const existingData = existingDoc.data() as Motorcycle;
+      const docRef = existingDoc.ref;
+
+      const updatedStock = (existingData.stock || 0) + motorcycle.stock;
+      const updatedSkus = [...(existingData.skus || []), ...motorcycle.skus];
+      
+      batch.update(docRef, { stock: updatedStock, skus: updatedSkus });
+    }
+  }
 
   await batch.commit();
 }

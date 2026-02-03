@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
-import { processInventory } from "@/ai/flows/process-inventory-flow";
+import { processInventory, ProcessInventoryOutput } from "@/ai/flows/process-inventory-flow";
 import { addMotorcyclesBatch } from "@/firebase/db";
 import type { NewMotorcycle } from "@/lib/data";
 
@@ -58,17 +58,35 @@ export function UploadInventoryDialog({ onInventoryUpdated }: UploadInventoryDia
 
     try {
       const pdfDataUri = await fileToDataUri(selectedFile);
-      const extractedMotorcycles: NewMotorcycle[] = await processInventory({ pdfDataUri });
+      const extractedItems: ProcessInventoryOutput = await processInventory({ pdfDataUri });
 
-      if (!extractedMotorcycles || extractedMotorcycles.length === 0) {
+      if (!extractedItems || extractedItems.length === 0) {
         throw new Error("The AI could not extract any motorcycle data from the document.");
       }
 
-      await addMotorcyclesBatch(db, extractedMotorcycles);
+      // Aggregate the extracted items
+      const aggregated = new Map<string, { model: string; stock: number; skus: string[] }>();
+      for (const item of extractedItems) {
+        const existing = aggregated.get(item.model);
+        if (existing) {
+          existing.stock += item.stock;
+          existing.skus.push(item.sku);
+        } else {
+          aggregated.set(item.model, {
+            model: item.model,
+            stock: item.stock,
+            skus: [item.sku],
+          });
+        }
+      }
+
+      const motorcyclesToUpload: NewMotorcycle[] = Array.from(aggregated.values());
+
+      await addMotorcyclesBatch(db, motorcyclesToUpload);
 
       toast({
         title: "Inventory Uploaded!",
-        description: `${extractedMotorcycles.length} motorcycles have been added to the inventory.`,
+        description: `${motorcyclesToUpload.length} models have been added or updated in the inventory.`,
       });
 
       onInventoryUpdated();

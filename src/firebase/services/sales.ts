@@ -6,16 +6,21 @@ import {
   where,
   runTransaction,
   doc,
+  writeBatch,
   type Firestore,
 } from "firebase/firestore";
 import type { NewSale, Sale, UserProfile } from "@/lib/data";
 import { fromFirestore } from "./utils";
 
-export async function getSales(db: Firestore, user: UserProfile): Promise<Sale[]> {
+export async function getSales(db: Firestore, user: UserProfile, sprint: string): Promise<Sale[]> {
   const salesCol = collection(db, "sales");
-  const q = user.role === 'Manager'
-    ? query(salesCol, orderBy("date", "desc"))
-    : query(salesCol, where("salespersonId", "==", user.uid), orderBy("date", "desc"));
+  
+  const constraints = [where("sprint", "==", sprint)];
+  if (user.role !== 'Manager') {
+    constraints.push(where("salespersonId", "==", user.uid));
+  }
+  
+  const q = query(salesCol, ...constraints, orderBy("date", "desc"));
     
   const salesSnapshot = await getDocs(q);
   const salesList = salesSnapshot.docs.map(doc => fromFirestore<Sale>(doc));
@@ -33,14 +38,12 @@ export async function addSale(db: Firestore, sale: NewSale): Promise<void> {
       throw new Error("Motorcycle does not exist in inventory!");
     }
     
-    // If it's not a special order, deduct stock and remove the specific SKU
     if (!sale.notes || sale.notes === "") {
         const data = motorcycleDoc.data();
         const currentStock = data.stock;
         const currentSkus = data.skus || [];
 
         if (currentStock < 1) {
-            // This is a server-side safeguard. The UI should prevent this.
             throw new Error(`No stock available for ${sale.motorcycleModel}. Sale cannot be completed.`);
         }
         
@@ -48,19 +51,44 @@ export async function addSale(db: Firestore, sale: NewSale): Promise<void> {
         const newSkus = currentSkus.filter((s: string) => s !== sale.soldSku);
 
         if (currentSkus.length === newSkus.length && sale.soldSku) {
-          // This can happen if the SKU was already sold by someone else in a concurrent transaction
-          // Only throw if an SKU was expected to be sold.
           throw new Error(`SKU ${sale.soldSku} for model ${sale.motorcycleModel} was not found or already sold.`);
         }
 
         transaction.update(motorcycleRef, { stock: newStock, skus: newSkus });
     }
 
-    // Create the new sale document (we need to generate a ref inside the transaction)
     const newSaleRef = doc(salesColRef);
     transaction.set(newSaleRef, {
       ...sale,
       date: new Date().toISOString(),
     });
   });
+}
+
+
+export async function resetSprintData(db: Firestore, sprint: string): Promise<void> {
+  const batch = writeBatch(db);
+
+  // 1. Delete Sales for the sprint
+  const salesQuery = query(collection(db, "sales"), where("sprint", "==", sprint));
+  const salesSnapshot = await getDocs(salesQuery);
+  salesSnapshot.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+
+  // 2. Delete Prospects for the sprint
+  const prospectsQuery = query(collection(db, "prospects"), where("sprint", "==", sprint));
+  const prospectsSnapshot = await getDocs(prospectsQuery);
+  prospectsSnapshot.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+  
+  // 3. Reset goals for all salespeople
+  const usersQuery = query(collection(db, "users"), where("role", "==", "Salesperson"));
+  const usersSnapshot = await getDocs(usersQuery);
+  usersSnapshot.forEach(userDoc => {
+    batch.update(userDoc.ref, { salesGoal: 0, creditsGoal: 0 });
+  });
+
+  await batch.commit();
 }

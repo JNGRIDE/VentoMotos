@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { LoaderCircle, ShieldAlert, Users } from 'lucide-react';
+import { LoaderCircle, ShieldAlert, Users, Trash } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { format } from 'date-fns';
 
 import { useFirestore } from '@/firebase';
 import { useUser } from "@/firebase/auth/use-user";
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { ResetSprintDialog } from '@/components/settings/reset-sprint-dialog';
 
 const totalGoalSchema = z.object({
   totalSalesGoal: z.coerce.number().min(0, "Total sales goal must be positive"),
@@ -32,6 +34,11 @@ export default function SprintSettingsPage() {
   const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  
+  const [currentSprint, setCurrentSprint] = useState('');
+  useEffect(() => {
+    setCurrentSprint(format(new Date(), 'yyyy-MM'));
+  }, []);
 
   const salespeople = useMemo(() => userProfiles.filter(p => p.role === 'Salesperson'), [userProfiles]);
   const numSalespeople = salespeople.length;
@@ -46,7 +53,7 @@ export default function SprintSettingsPage() {
 
   const form = useForm<TotalGoalFormValues>({
     resolver: zodResolver(totalGoalSchema),
-    values: { // Use `values` to update the form when data loads
+    values: {
         totalSalesGoal: currentTotalSalesGoal,
         totalCreditsGoal: currentTotalCreditsGoal,
     }
@@ -90,8 +97,6 @@ export default function SprintSettingsPage() {
     
     setIsSaving(true);
     try {
-      // If there's only one salesperson, their goal is 50% of the total branch goal.
-      // If there are 2 or more, the goal is divided equally among them.
       const divisor = numSalespeople === 1 ? 2 : numSalespeople;
       const individualSalesGoal = data.totalSalesGoal / divisor;
       const individualCreditsGoal = Math.floor(data.totalCreditsGoal / divisor);
@@ -108,9 +113,9 @@ export default function SprintSettingsPage() {
       
       toast({
         title: "Team Goals Updated!",
-        description: `New goals have been assigned to ${numSalespeople} salespeople.`,
+        description: `New goals have been assigned to ${numSalespeople} salespeople for the current sprint.`,
       });
-      fetchData(); // Refetch to confirm changes
+      fetchData();
     } catch (error: any) {
         toast({
             variant: "destructive",
@@ -147,7 +152,7 @@ export default function SprintSettingsPage() {
           Sprint Settings
         </h1>
         <p className="text-muted-foreground">
-          Set the total monthly goals for the branch. They will be divided equally among all salespeople.
+          Set the total monthly goals for the branch. They will be divided equally among all salespeople for the current sprint.
         </p>
       </div>
       
@@ -203,6 +208,24 @@ export default function SprintSettingsPage() {
           </Card>
         </form>
       </Form>
+
+      <Card className="border-destructive">
+        <CardHeader>
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <CardDescription>
+                Estas acciones son irreversibles y deben usarse con extrema precaución.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm">
+                Reiniciar el sprint actual ({currentSprint}) borrará todas las ventas y prospectos asociados a este mes. 
+                Las metas de los vendedores también se restablecerán a cero. Esto es útil para empezar un mes desde cero o corregir errores masivos.
+            </p>
+        </CardContent>
+        <CardFooter>
+            <ResetSprintDialog sprint={currentSprint} onSprintReset={fetchData} />
+        </CardFooter>
+      </Card>
     </div>
   );
 }

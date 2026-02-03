@@ -18,9 +18,10 @@ import type { NewSale, UserProfile, Motorcycle } from "@/lib/data";
 interface RecordSaleDialogProps {
   onAddSale: (sale: NewSale) => Promise<void>;
   currentUserProfile: UserProfile;
+  sprint: string;
 }
 
-export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDialogProps) {
+export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: RecordSaleDialogProps) {
   const db = useFirestore();
   const { toast } = useToast();
 
@@ -129,6 +130,7 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDi
     
     setIsSaving(true);
     const newSale: NewSale = {
+      sprint,
       salespersonId,
       prospectName,
       amount: Number(amount),

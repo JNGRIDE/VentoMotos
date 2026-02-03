@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { getSales, addSale, getUserProfiles, setUserProfile, getUserProfile } from "@/firebase/services";
 import { getSalesByUser } from '@/lib/data';
 import type { Sale, NewSale, UserProfile } from '@/lib/data';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { generateSprints, getCurrentSprintValue, type Sprint } from '@/lib/sprints';
 
 const ADMIN_UID = "wVN7TmLeOyQDTRevAUWQYDqvou42";
 
@@ -27,27 +29,27 @@ export default function DashboardPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentDate, setCurrentDate] = useState("");
+  
+  const [sprints, setSprints] = useState<Sprint[]>([]);
+  const [selectedSprint, setSelectedSprint] = useState<string>(getCurrentSprintValue());
 
   useEffect(() => {
-    setCurrentDate(format(new Date(), "EEEE, MMMM d, yyyy"));
+    setSprints(generateSprints());
   }, []);
 
   const fetchData = useCallback(async () => {
-    if (!user) return;
+    if (!user || !selectedSprint) return;
     setIsLoading(true);
     try {
       const profile = await getUserProfile(db, user.uid);
       if (!profile) {
-        // This case might happen for a brand new user before their profile is created.
-        // We can either wait or handle it gracefully.
         setIsLoading(false);
         return;
       }
       setCurrentUserProfile(profile);
 
       const [salesData, profilesData] = await Promise.all([
-        getSales(db, profile),
+        getSales(db, profile, selectedSprint),
         getUserProfiles(db),
       ]);
       setSales(salesData);
@@ -68,11 +70,13 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [db, toast, user]);
+  }, [db, toast, user, selectedSprint]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (selectedSprint) {
+      fetchData();
+    }
+  }, [fetchData, selectedSprint]);
   
   const isManager = currentUserProfile?.role === 'Manager';
   
@@ -197,11 +201,22 @@ export default function DashboardPage() {
             {isManager ? 'Manager Dashboard' : 'My Dashboard'}
           </h1>
           <p className="text-muted-foreground">
-            {currentDate && <>{currentDate} &middot; </>}
             {isManager ? "Here's a summary of your team's sales performance." : "Here's a summary of your sales performance."}
           </p>
         </div>
         <div className="flex items-center space-x-2">
+          <Select value={selectedSprint} onValueChange={setSelectedSprint}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select a sprint" />
+            </SelectTrigger>
+            <SelectContent>
+              {sprints.map((sprint) => (
+                <SelectItem key={sprint.value} value={sprint.value}>
+                  {sprint.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {user && user.uid === ADMIN_UID && !adminProfileExists && (
             <Button onClick={handleCreateAdminProfile} variant="outline" size="sm" className="h-8 gap-1">
               <UserPlus className="h-3.5 w-3.5" />
@@ -210,7 +225,7 @@ export default function DashboardPage() {
               </span>
             </Button>
           )}
-          <RecordSaleDialog onAddSale={handleAddSale} currentUserProfile={currentUserProfile} />
+          <RecordSaleDialog onAddSale={handleAddSale} currentUserProfile={currentUserProfile} sprint={selectedSprint} />
         </div>
       </div>
       

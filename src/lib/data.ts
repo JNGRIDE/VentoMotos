@@ -22,6 +22,7 @@ export type NewMotorcycle = Omit<Motorcycle, "id">;
 
 export type Sale = {
   id: string; // Firestore document ID
+  sprint: string; // e.g., "2024-07"
   salespersonId: string; // This is now the salesperson's UID
   prospectName:string;
   amount: number;
@@ -39,12 +40,15 @@ export type NewSale = Omit<Sale, "id" | "date">;
 
 export type Prospect = {
   id: string; // Firestore document ID
+  sprint: string; // e.g., "2024-07"
   name: string;
   stage: "Potential" | "Appointment" | "Credit" | "Closed";
   source: "Organic" | "Advertising";
   salespersonId: string; // This is now the salesperson's UID
   lastContact: string;
 };
+
+export type NewProspect = Omit<Prospect, "id">;
 
 // This function will be used by components to filter data already fetched from Firestore.
 export const getSalesByUser = (uid: string, salesList: Sale[]) => salesList.filter(s => s.salespersonId === uid);

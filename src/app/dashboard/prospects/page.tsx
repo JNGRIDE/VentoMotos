@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { PlusCircle, LoaderCircle, ShieldAlert } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LoaderCircle, ShieldAlert } from "lucide-react";
 import { KanbanBoard } from "@/components/prospects/kanban-board";
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
 import { getProspects, getUserProfiles, getUserProfile } from "@/firebase/services";
 import type { Prospect, UserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { generateSprints, getCurrentSprintValue, type Sprint } from '@/lib/sprints';
+import { AddProspectDialog } from "@/components/prospects/add-prospect-dialog";
 
 export default function ProspectsPage() {
   const db = useFirestore();
@@ -20,8 +21,15 @@ export default function ProspectsPage() {
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [sprints, setSprints] = useState<Sprint[]>([]);
+  const [selectedSprint, setSelectedSprint] = useState<string>(getCurrentSprintValue());
+
+  useEffect(() => {
+    setSprints(generateSprints());
+  }, []);
+
   const fetchData = useCallback(async () => {
-    if (!user) return;
+    if (!user || !selectedSprint) return;
     setIsLoading(true);
     try {
       const profile = await getUserProfile(db, user.uid);
@@ -32,7 +40,7 @@ export default function ProspectsPage() {
       setCurrentUserProfile(profile);
 
       const [prospectsData, profilesData] = await Promise.all([
-        getProspects(db, profile),
+        getProspects(db, profile, selectedSprint),
         getUserProfiles(db),
       ]);
       setProspects(prospectsData);
@@ -47,11 +55,13 @@ export default function ProspectsPage() {
     } finally {
         setIsLoading(false);
     }
-  }, [db, user, toast]);
+  }, [db, user, toast, selectedSprint]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if(selectedSprint) {
+      fetchData();
+    }
+  }, [fetchData, selectedSprint]);
 
   if (isLoading) {
     return (
@@ -84,12 +94,25 @@ export default function ProspectsPage() {
             {isManager ? "Manage all leads from potential to closed." : "Manage your leads from potential to closed."}
           </p>
         </div>
-        <Button size="sm" className="h-8 gap-1">
-          <PlusCircle className="h-3.5 w-3.5" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Add Prospect
-          </span>
-        </Button>
+        <div className="flex items-center space-x-2">
+            <Select value={selectedSprint} onValueChange={setSelectedSprint}>
+                <SelectTrigger className="w-[180px] h-8">
+                    <SelectValue placeholder="Select a sprint" />
+                </SelectTrigger>
+                <SelectContent>
+                    {sprints.map((sprint) => (
+                        <SelectItem key={sprint.value} value={sprint.value}>
+                            {sprint.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <AddProspectDialog
+              sprint={selectedSprint}
+              currentUserProfile={currentUserProfile}
+              onProspectAdded={fetchData}
+            />
+        </div>
       </div>
       <div className="flex-1">
         <KanbanBoard prospects={prospects} userProfiles={userProfiles} />

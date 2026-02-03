@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Printer, LoaderCircle, ShieldAlert } from 'lucide-react';
 import { format } from "date-fns";
+import { es } from 'date-fns/locale';
 
 import { Button } from "@/components/ui/button";
 import { useFirestore } from "@/firebase";
@@ -10,6 +11,8 @@ import { useUser } from "@/firebase/auth/use-user";
 import { useToast } from "@/hooks/use-toast";
 import { getSales, getUserProfiles, getUserProfile } from "@/firebase/services";
 import type { Sale, UserProfile } from '@/lib/data';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { generateSprints, getCurrentSprintValue, type Sprint } from '@/lib/sprints';
 
 import { ReportSummary } from '@/components/reports/report-summary';
 import { SalesBySalespersonChart } from '@/components/reports/sales-by-salesperson-chart';
@@ -25,10 +28,22 @@ export default function ReportsPage() {
   const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const reportDate = format(new Date(), "MMMM yyyy");
+  const [sprints, setSprints] = useState<Sprint[]>([]);
+  const [selectedSprint, setSelectedSprint] = useState<string>(getCurrentSprintValue());
+
+  const reportDate = useMemo(() => {
+    if (!selectedSprint) return "";
+    const date = new Date(`${selectedSprint}-02`);
+    return format(date, "MMMM yyyy", { locale: es });
+  }, [selectedSprint]);
+
+
+  useEffect(() => {
+    setSprints(generateSprints());
+  }, []);
 
   const fetchData = useCallback(async () => {
-    if (!user) return;
+    if (!user || !selectedSprint) return;
     setIsLoading(true);
     try {
       const profile = await getUserProfile(db, user.uid);
@@ -38,9 +53,8 @@ export default function ReportsPage() {
       }
       setCurrentUserProfile(profile);
 
-      // Managers get all sales, salespeople get only their own
       const [salesData, profilesData] = await Promise.all([
-        getSales(db, profile), 
+        getSales(db, profile, selectedSprint), 
         getUserProfiles(db),
       ]);
 
@@ -56,11 +70,13 @@ export default function ReportsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [db, toast, user]);
+  }, [db, toast, user, selectedSprint]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if(selectedSprint){
+      fetchData();
+    }
+  }, [fetchData, selectedSprint]);
 
   const handlePrint = () => {
     window.print();
@@ -105,15 +121,28 @@ export default function ReportsPage() {
             Sales performance summary for {reportDate}.
           </p>
         </div>
-        <Button onClick={handlePrint} size="sm" className="h-8 gap-1">
-          <Printer className="h-3.5 w-3.5" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Print Report
-          </span>
-        </Button>
+        <div className="flex items-center space-x-2">
+            <Select value={selectedSprint} onValueChange={setSelectedSprint}>
+                <SelectTrigger className="w-[180px] h-8">
+                    <SelectValue placeholder="Select a sprint" />
+                </SelectTrigger>
+                <SelectContent>
+                    {sprints.map((sprint) => (
+                        <SelectItem key={sprint.value} value={sprint.value}>
+                            {sprint.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Button onClick={handlePrint} size="sm" className="h-8 gap-1">
+              <Printer className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Print Report
+              </span>
+            </Button>
+        </div>
       </div>
       
-      {/* Hidden title for printed version */}
       <div className="hidden print:block text-center mb-4">
           <h1 className="text-2xl font-bold font-headline">
             {isManager ? "Branch Sales Report" : "My Sales Report"}

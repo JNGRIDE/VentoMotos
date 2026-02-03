@@ -203,14 +203,19 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDi
                               <CommandItem
                                 key={moto.id}
                                 value={moto.model}
-                                onSelect={() => {
-                                  handleMotorcycleSelect(moto);
+                                onSelect={(currentValue) => {
+                                  const motorcycle = inventory.find(m => m.model.toLowerCase() === currentValue.toLowerCase());
+                                  if (motorcycle) {
+                                    handleMotorcycleSelect(motorcycle);
+                                  } else {
+                                    setComboOpen(false);
+                                  }
                                 }}
                               >
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    selectedMotorcycle?.id === moto.id
+                                    selectedMotorcycle?.model.toLowerCase() === moto.model.toLowerCase()
                                       ? "opacity-100"
                                       : "opacity-0"
                                   )}
@@ -234,7 +239,7 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDi
                       <SelectValue placeholder="Select SKU to sell..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {selectedMotorcycle.skus.map(sku => (
+                      {(selectedMotorcycle.skus || []).map(sku => (
                         <SelectItem key={sku} value={sku}>
                           ...{sku.slice(-6)}
                         </SelectItem>

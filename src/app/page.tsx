@@ -196,6 +196,7 @@ export default function LoginPage() {
               <p>NEXT_PUBLIC_STORAGE_BUCKET="..."</p>
               <p>NEXT_PUBLIC_MESSAGING_SENDER_ID="..."</p>
               <p>NEXT_PUBLIC_APP_ID="..."</p>
+              <p>NEXT_PUBLIC_MEASUREMENT_ID="..."</p>
             </div>
              <p>Navigate to your Vercel project's <strong>Settings &gt; Environment Variables</strong> and add the keys above with their corresponding values from your Firebase project console.</p>
           </CardContent>

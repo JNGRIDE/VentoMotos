@@ -94,7 +94,7 @@ export default function DashboardPage() {
 
 
   const salesProgress = salesGoal > 0 ? (totalSales / salesGoal) * 100 : 0;
-  const commissionEarned = salesProgress >= 80 ? totalSales * 0.019 : 0;
+  const commissionEarned = salesProgress >= 80 ? (totalSales * (1 - 0.16)) * 0.019 : 0;
   const creditBonus = ventoCredits >= 5 ? (ventoCredits - 4) * 200 : 0;
 
   const teamChartData = useMemo(() => {
@@ -218,7 +218,7 @@ export default function DashboardPage() {
         <KpiCard
           title="Commission"
           value={`$${commissionEarned.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
-          description={salesProgress < 80 ? `${(80 - salesProgress).toFixed(1)}% to unlock` : "1.9% rate unlocked"}
+          description={salesProgress < 80 ? `${(80 - salesProgress).toFixed(1)}% to unlock` : "1.9% rate on sales (net of 16% VAT)"}
           icon={TrendingUp}
           iconColor={salesProgress >= 80 ? 'text-green-500' : ''}
         />

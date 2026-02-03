@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { LoaderCircle, ShieldAlert } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { LoaderCircle, ShieldAlert, Users } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,105 +15,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
-const goalSchema = z.object({
-  salesGoal: z.coerce.number().min(0, "Sales goal must be positive"),
-  creditsGoal: z.coerce.number().min(0, "Credits goal must be positive"),
+const totalGoalSchema = z.object({
+  totalSalesGoal: z.coerce.number().min(0, "Total sales goal must be positive"),
+  totalCreditsGoal: z.coerce.number().min(0, "Total credits goal must be positive"),
 });
 
-type GoalFormValues = z.infer<typeof goalSchema>;
-
-interface UserProfileCardProps {
-  userProfile: UserProfile;
-  onUpdate: (uid: string, data: GoalFormValues) => Promise<void>;
-}
-
-function UserProfileGoalCard({ userProfile, onUpdate }: UserProfileCardProps) {
-  const [isSaving, setIsSaving] = useState(false);
-  const { toast } = useToast();
-
-  const form = useForm<GoalFormValues>({
-    resolver: zodResolver(goalSchema),
-    defaultValues: {
-      salesGoal: userProfile.salesGoal || 0,
-      creditsGoal: userProfile.creditsGoal || 0,
-    },
-  });
-
-  const onSubmit = async (data: GoalFormValues) => {
-    setIsSaving(true);
-    try {
-      await onUpdate(userProfile.uid, data);
-      toast({
-        title: "Goals Updated",
-        description: `Successfully updated goals for ${userProfile.name}.`,
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Update Failed",
-        description: "Could not save the new goals.",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <Card>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardHeader className="flex flex-row items-center gap-4">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={userProfile.avatarUrl} alt={userProfile.name} />
-              <AvatarFallback>{userProfile.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div>
-              <CardTitle>{userProfile.name}</CardTitle>
-              <CardDescription>{userProfile.email} ({userProfile.role})</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-6 md:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="salesGoal"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sales Goal ($)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="150000" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="creditsGoal"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Credits Goal</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="10" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-          <CardFooter className="border-t px-6 py-4">
-            <Button type="submit" disabled={isSaving}>
-              {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-              Save Goals
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
-    </Card>
-  );
-}
+type TotalGoalFormValues = z.infer<typeof totalGoalSchema>;
 
 export default function SprintSettingsPage() {
   const db = useFirestore();
@@ -122,6 +31,26 @@ export default function SprintSettingsPage() {
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
   const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const salespeople = useMemo(() => userProfiles.filter(p => p.role === 'Salesperson'), [userProfiles]);
+  const numSalespeople = salespeople.length;
+
+  const currentTotalSalesGoal = useMemo(() => {
+    return userProfiles.filter(p => p.role === 'Salesperson').reduce((sum, sp) => sum + sp.salesGoal, 0);
+  }, [userProfiles]);
+
+  const currentTotalCreditsGoal = useMemo(() => {
+    return userProfiles.filter(p => p.role === 'Salesperson').reduce((sum, sp) => sum + sp.creditsGoal, 0);
+  }, [userProfiles]);
+
+  const form = useForm<TotalGoalFormValues>({
+    resolver: zodResolver(totalGoalSchema),
+    values: { // Use `values` to update the form when data loads
+        totalSalesGoal: currentTotalSalesGoal,
+        totalCreditsGoal: currentTotalCreditsGoal,
+    }
+  });
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -149,8 +78,45 @@ export default function SprintSettingsPage() {
     fetchData();
   }, [fetchData]);
 
-  const handleUpdateGoals = async (uid: string, data: GoalFormValues) => {
-    await setUserProfile(db, { uid, ...data });
+  const onSubmit = async (data: TotalGoalFormValues) => {
+    if (numSalespeople === 0) {
+      toast({
+        variant: "destructive",
+        title: "No Salespeople Found",
+        description: "Cannot set goals as there are no users with the 'Salesperson' role.",
+      });
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      const individualSalesGoal = data.totalSalesGoal / numSalespeople;
+      const individualCreditsGoal = Math.floor(data.totalCreditsGoal / numSalespeople); // Credits are whole numbers
+
+      const updatePromises = salespeople.map(sp => 
+        setUserProfile(db, {
+          uid: sp.uid,
+          salesGoal: individualSalesGoal,
+          creditsGoal: individualCreditsGoal,
+        })
+      );
+
+      await Promise.all(updatePromises);
+      
+      toast({
+        title: "Team Goals Updated!",
+        description: `New goals have been assigned to ${numSalespeople} salespeople.`,
+      });
+      fetchData(); // Refetch to confirm changes
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: error.message || "Could not save the new team goals.",
+        });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
@@ -178,14 +144,62 @@ export default function SprintSettingsPage() {
           Sprint Settings
         </h1>
         <p className="text-muted-foreground">
-          Update monthly sales and credit goals for each salesperson.
+          Set the total monthly goals for the branch. They will be divided equally among all salespeople.
         </p>
       </div>
-      <div className="space-y-6">
-        {userProfiles.map((sp) => (
-          <UserProfileGoalCard key={sp.uid} userProfile={sp} onUpdate={handleUpdateGoals} />
-        ))}
-      </div>
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <Card>
+            <CardHeader>
+              <CardTitle>Branch Monthly Goals</CardTitle>
+              <CardDescription>
+                Set the total sales and credit goals for the entire team. These will be distributed automatically.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-6 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="totalSalesGoal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Branch Sales Goal ($)</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="1000000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="totalCreditsGoal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Branch Credits Goal</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="20" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+            <CardFooter className="border-t px-6 py-4 justify-between items-center">
+              <Button type="submit" disabled={isSaving}>
+                {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                Save & Distribute Goals
+              </Button>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Users className="mr-2 h-4 w-4" />
+                <span>
+                  Goals will be split among {numSalespeople} salesperson{numSalespeople !== 1 && 's'}.
+                </span>
+              </div>
+            </CardFooter>
+          </Card>
+        </form>
+      </Form>
     </div>
   );
 }

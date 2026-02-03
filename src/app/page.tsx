@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Bike, Chrome, LoaderCircle, AlertTriangle } from "lucide-react";
+import { Bike, Chrome, LoaderCircle, AlertTriangle, KeyRound, Copy } from "lucide-react";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -177,31 +177,50 @@ export default function LoginPage() {
   if (firebaseConfigIncomplete) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <Card className="mx-auto w-full max-w-lg border-2 border-destructive">
+        <Card className="mx-auto w-full max-w-2xl border-2 border-destructive shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-6 w-6" />
-              Configuration Required
+            <CardTitle className="flex items-center gap-3 text-destructive">
+              <AlertTriangle className="h-7 w-7" />
+              <span className="font-headline text-3xl">Acción Requerida: Configura tus Claves</span>
             </CardTitle>
-            <CardDescription>
-              Your Firebase configuration is missing. The app cannot connect to the backend until you provide the necessary API keys.
+            <CardDescription className="text-base">
+              Tu aplicación no puede conectar con Firebase. Sigue esta guía visual para solucionarlo.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-sm">
-            <p>To fix this, add your Firebase project's configuration as Environment Variables in your deployment platform (e.g., Vercel).</p>
-            <div className="space-y-1 rounded-md bg-muted p-4 font-mono text-xs">
-              <p>NEXT_PUBLIC_API_KEY="AIza..."</p>
-              <p>NEXT_PUBLIC_AUTH_DOMAIN="..."</p>
-              <p>NEXT_PUBLIC_PROJECT_ID="..."</p>
-              <p>NEXT_PUBLIC_STORAGE_BUCKET="..."</p>
-              <p>NEXT_PUBLIC_MESSAGING_SENDER_ID="..."</p>
-              <p>NEXT_PUBLIC_APP_ID="..."</p>
-              <p>NEXT_PUBLIC_MEASUREMENT_ID="..."</p>
+          <CardContent className="flex flex-col gap-6 text-sm">
+            
+            <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
+              <h3 className="font-semibold text-lg">Paso 1: Encuentra tus claves en Firebase</h3>
+              <ul className="space-y-3 pl-4">
+                <li><span className="font-bold">1.</span> Abre la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Consola de Firebase</a> y selecciona tu proyecto.</li>
+                <li><span className="font-bold">2.</span> Haz clic en el icono de engranaje (⚙️) y ve a <span className="font-semibold">Project settings</span>.</li>
+                <li><span className="font-bold">3.</span> En la pestaña "General", baja hasta "Your apps" y haz clic en tu aplicación web (icono: <span className="inline-block font-mono text-primary">&lt;/&gt;</span>).</li>
+                <li><span className="font-bold">4.</span> Selecciona la opción <span className="font-semibold">Config</span> para ver tus claves. Verás un objeto <code className="text-xs">firebaseConfig</code>.</li>
+              </ul>
             </div>
-             <p>Navigate to your Vercel project's <strong>Settings &gt; Environment Variables</strong> and add the keys above with their corresponding values from your Firebase project console.</p>
+            
+            <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
+              <h3 className="font-semibold text-lg">Paso 2: Añade las claves a Vercel</h3>
+               <p>Copia cada valor del objeto <code className="text-xs">firebaseConfig</code> y pégalo en una Variable de Entorno en Vercel. Ve a <span className="font-semibold">Settings &gt; Environment Variables</span> en tu proyecto de Vercel.</p>
+              <div className="space-y-2 rounded-md bg-background p-4 font-mono text-xs shadow-inner">
+                <p><span className="text-muted-foreground"># En Vercel (Name)</span>  = <span className="text-muted-foreground"># En Firebase (Value)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_API_KEY</span> = "AIzaSy..." <span className="text-muted-foreground">(de apiKey)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_AUTH_DOMAIN</span> = "..." <span className="text-muted-foreground">(de authDomain)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_PROJECT_ID</span> = "..." <span className="text-muted-foreground">(de projectId)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_STORAGE_BUCKET</span> = "..." <span className="text-muted-foreground">(de storageBucket)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_MESSAGING_SENDER_ID</span> = "..." <span className="text-muted-foreground">(de messagingSenderId)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_APP_ID</span> = "..." <span className="text-muted-foreground">(de appId)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_MEASUREMENT_ID</span> = "..." <span className="text-muted-foreground">(de measurementId)</span></p>
+              </div>
+               <p>No te olvides de añadir también tu clave de Gemini:</p>
+               <div className="rounded-md bg-background p-4 font-mono text-xs shadow-inner">
+                 <p><span className="text-primary">GEMINI_API_KEY</span> = "AIza..." <span className="text-muted-foreground">(la obtienes de Google AI Studio)</span></p>
+               </div>
+            </div>
+
           </CardContent>
            <CardFooter>
-            <p className="text-xs text-muted-foreground">After adding the variables, you must redeploy the project for the changes to take effect.</p>
+            <p className="text-sm text-muted-foreground">Después de guardar las variables en Vercel, la plataforma iniciará un nuevo despliegue (re-deploy) automáticamente. ¡Con eso, la aplicación funcionará!</p>
           </CardFooter>
         </Card>
       </div>
@@ -322,5 +341,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

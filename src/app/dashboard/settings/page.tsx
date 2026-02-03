@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 import { useFirestore } from '@/firebase';
 import { useUser } from "@/firebase/auth/use-user";
-import { getUserProfiles, setUserProfile, getUserProfile } from '@/firebase/db';
+import { getUserProfiles, setUserProfile, getUserProfile } from '@/firebase/services';
 import type { UserProfile } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 

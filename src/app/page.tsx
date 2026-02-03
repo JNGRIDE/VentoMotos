@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFirebaseApp, useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { createUserProfile } from "@/firebase/db";
+import { createUserProfile } from "@/firebase/services";
 
 export default function LoginPage() {
   const app = useFirebaseApp();

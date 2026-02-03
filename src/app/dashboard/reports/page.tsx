@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
 import { useToast } from "@/hooks/use-toast";
-import { getSales, getUserProfiles, getUserProfile } from "@/firebase/db";
+import { getSales, getUserProfiles, getUserProfile } from "@/firebase/services";
 import type { Sale, UserProfile } from '@/lib/data';
 
 import { ReportSummary } from '@/components/reports/report-summary';

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { KanbanBoard } from "@/components/prospects/kanban-board";
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
-import { getProspects, getUserProfiles, getUserProfile } from "@/firebase/db";
+import { getProspects, getUserProfiles, getUserProfile } from "@/firebase/services";
 import type { Prospect, UserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 

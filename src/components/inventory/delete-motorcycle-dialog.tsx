@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
-import { deleteMotorcycle } from "@/firebase/db";
+import { deleteMotorcycle } from "@/firebase/services";
 
 interface DeleteMotorcycleDialogProps {
   motorcycleId: string;

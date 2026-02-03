@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { processInventory, ProcessInventoryOutput } from "@/ai/flows/process-inventory-flow";
-import { addMotorcyclesBatch } from "@/firebase/db";
+import { addMotorcyclesBatch } from "@/firebase/services";
 import type { NewMotorcycle } from "@/lib/data";
 
 

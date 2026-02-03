@@ -12,7 +12,7 @@ import { RecordSaleDialog } from '@/components/sales/record-sale-dialog';
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
 import { useToast } from "@/hooks/use-toast";
-import { getSales, addSale, getUserProfiles, setUserProfile, getUserProfile } from "@/firebase/db";
+import { getSales, addSale, getUserProfiles, setUserProfile, getUserProfile } from "@/firebase/services";
 import { getSalesByUser } from '@/lib/data';
 import type { Sale, NewSale, UserProfile } from '@/lib/data';
 

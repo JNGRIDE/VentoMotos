@@ -5,7 +5,7 @@ import { LoaderCircle, ShieldAlert } from 'lucide-react';
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
 import { useToast } from "@/hooks/use-toast";
-import { getUserProfile, getInventory } from '@/firebase/db';
+import { getUserProfile, getInventory } from '@/firebase/services';
 import type { UserProfile, Motorcycle } from '@/lib/data';
 import { InventoryTable } from '@/components/inventory/inventory-table';
 import { AddMotorcycleDialog } from '@/components/inventory/add-motorcycle-dialog';

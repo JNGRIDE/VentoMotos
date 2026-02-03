@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
-import { updateMotorcycle } from "@/firebase/db";
+import { updateMotorcycle } from "@/firebase/services";
 import type { Motorcycle, NewMotorcycle } from "@/lib/data";
 
 interface EditMotorcycleDialogProps {

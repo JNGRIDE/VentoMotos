@@ -204,11 +204,11 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDi
                                 key={moto.id}
                                 value={moto.model}
                                 onSelect={(currentValue) => {
-                                  const motorcycle = inventory.find(m => m.model.toLowerCase() === currentValue.toLowerCase());
+                                  const motorcycle = inventory.find(
+                                    (item) => item.model.toLowerCase() === currentValue.toLowerCase()
+                                  );
                                   if (motorcycle) {
                                     handleMotorcycleSelect(motorcycle);
-                                  } else {
-                                    setComboOpen(false);
                                   }
                                 }}
                               >

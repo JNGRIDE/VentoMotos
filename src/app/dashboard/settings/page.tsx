@@ -90,8 +90,11 @@ export default function SprintSettingsPage() {
     
     setIsSaving(true);
     try {
-      const individualSalesGoal = data.totalSalesGoal / numSalespeople;
-      const individualCreditsGoal = Math.floor(data.totalCreditsGoal / numSalespeople); // Credits are whole numbers
+      // If there's only one salesperson, their goal is 50% of the total branch goal.
+      // If there are 2 or more, the goal is divided equally among them.
+      const divisor = numSalespeople === 1 ? 2 : numSalespeople;
+      const individualSalesGoal = data.totalSalesGoal / divisor;
+      const individualCreditsGoal = Math.floor(data.totalCreditsGoal / divisor);
 
       const updatePromises = salespeople.map(sp => 
         setUserProfile(db, {

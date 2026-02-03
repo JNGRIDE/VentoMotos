@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { DollarSign, CreditCard, Award, TrendingUp, LoaderCircle, UserPlus } from 'lucide-react';
+import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { KpiCard } from '@/components/dashboard/kpi-card';
@@ -25,6 +26,11 @@ export default function DashboardPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [salespeople, setSalespeople] = useState<Salesperson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentDate, setCurrentDate] = useState("");
+
+  useEffect(() => {
+    setCurrentDate(format(new Date(), "EEEE, MMMM d, yyyy"));
+  }, []);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -83,7 +89,7 @@ export default function DashboardPage() {
     const adminProfile: Salesperson = {
       uid: ADMIN_UID,
       name: "Admin Manager",
-      email: user.email || "theinhumanride10@gmail.com",
+      email: "theinhumanride10@gmail.com",
       salesGoal: 200000,
       creditsGoal: 15,
       avatarUrl: "https://picsum.photos/seed/admin/100/100"
@@ -151,7 +157,10 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight font-headline">
             Manager Dashboard
           </h1>
-          <p className="text-muted-foreground">Here's a summary of your team's sales performance.</p>
+          <p className="text-muted-foreground">
+            {currentDate && <>{currentDate} &middot; </>}
+            Here's a summary of your team's sales performance.
+          </p>
         </div>
         <div className="flex items-center space-x-2">
           {user && user.uid === ADMIN_UID && !adminProfileExists && (

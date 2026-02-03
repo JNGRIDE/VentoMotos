@@ -32,7 +32,7 @@ const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/dashboard/prospects", icon: Users, label: "Prospects" },
   { href: "#", icon: FileText, label: "Reports" },
-  { href: "#", icon: Settings, label: "Sprint Settings" },
+  { href: "/dashboard/settings", icon: Settings, label: "Sprint Settings" },
 ];
 
 export default function DashboardLayout({

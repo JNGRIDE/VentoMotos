@@ -3,14 +3,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { Prospect, Salesperson } from "@/lib/data";
-import { salespeople } from "@/lib/data";
 
 interface ProspectCardProps {
   prospect: Prospect;
+  salesperson?: Salesperson; // Make it optional in case it's not found
 }
 
-export function ProspectCard({ prospect }: ProspectCardProps) {
-  const salesperson = salespeople.find((sp) => sp.id === prospect.salespersonId);
+export function ProspectCard({ prospect, salesperson }: ProspectCardProps) {
   const sourceColor =
     prospect.source === "Advertising" ? "bg-accent/20 text-accent-foreground" : "bg-primary/20 text-primary-foreground";
 
@@ -29,9 +28,9 @@ export function ProspectCard({ prospect }: ProspectCardProps) {
           <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
               <AvatarImage src={salesperson?.avatarUrl} />
-              <AvatarFallback>{salesperson?.name.charAt(0)}</AvatarFallback>
+              <AvatarFallback>{salesperson?.name?.charAt(0)}</AvatarFallback>
             </Avatar>
-            <span>{salesperson?.name}</span>
+            <span>{salesperson?.name || "Unassigned"}</span>
           </div>
           <span>{new Date(prospect.lastContact).toLocaleDateString()}</span>
         </div>

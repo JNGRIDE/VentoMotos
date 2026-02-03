@@ -8,7 +8,7 @@ import {
   DocumentData,
   Firestore,
 } from "firebase/firestore";
-import type { NewSale, Sale, Prospect } from "@/lib/data";
+import type { NewSale, Sale, Prospect, Salesperson } from "@/lib/data";
 
 // A helper function to convert Firestore documents to our data types
 function fromFirestore<T>(doc: DocumentData): T {
@@ -19,7 +19,19 @@ function fromFirestore<T>(doc: DocumentData): T {
             data[key] = data[key].toDate().toISOString();
         }
     });
+    // The document ID is the salesperson's UID in the 'users' collection
+    if (doc.ref.parent.id === 'users') {
+        return { uid: doc.id, ...data } as T;
+    }
     return { id: doc.id, ...data } as T;
+}
+
+export async function getSalespeople(db: Firestore): Promise<Salesperson[]> {
+  const salespeopleCol = collection(db, "users");
+  const salespeopleSnapshot = await getDocs(salespeopleCol);
+  // Assuming 'users' collection documents have fields matching the Salesperson type
+  const salespeopleList = salespeopleSnapshot.docs.map(doc => fromFirestore<Salesperson>(doc));
+  return salespeopleList;
 }
 
 export async function getSales(db: Firestore): Promise<Sale[]> {

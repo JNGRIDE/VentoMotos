@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { DollarSign, CreditCard, Award, TrendingUp, LoaderCircle } from 'lucide-react';
 
 import { KpiCard } from '@/components/dashboard/kpi-card';
@@ -8,54 +8,55 @@ import { SalesProgressChart } from '@/components/dashboard/sales-progress-chart'
 import { RecentSales } from '@/components/dashboard/recent-sales';
 import { RecordSaleDialog } from '@/components/sales/record-sale-dialog';
 import { useFirestore } from "@/firebase";
-import { getSales, addSale } from "@/firebase/db";
+import { getSales, addSale, getSalespeople } from "@/firebase/db";
 
-import { salespeople, getSalesBySalesperson } from '@/lib/data';
-import type { Sale, NewSale } from '@/lib/data';
+import { getSalesBySalesperson } from '@/lib/data';
+import type { Sale, NewSale, Salesperson } from '@/lib/data';
 
 export default function DashboardPage() {
   const db = useFirestore();
   const [sales, setSales] = useState<Sale[]>([]);
+  const [salespeople, setSalespeople] = useState<Salesperson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchSales = async () => {
-    // No need to set loading to true here, handled in useEffect
-    const salesData = await getSales(db);
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    const [salesData, salespeopleData] = await Promise.all([
+      getSales(db),
+      getSalespeople(db),
+    ]);
     setSales(salesData);
+    setSalespeople(salespeopleData);
     setIsLoading(false);
-  };
+  }, [db]);
 
   useEffect(() => {
-    setIsLoading(true);
-    fetchSales();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db]);
+    fetchData();
+  }, [fetchData]);
   
-  const salesData = sales;
+  const totalSales = useMemo(() => sales.reduce((sum, sale) => sum + sale.amount, 0), [sales]);
+  const totalCredits = useMemo(() => sales.filter(s => s.paymentMethod === 'Financing').length, [sales]);
+  const ventoCredits = useMemo(() => sales.filter(s => s.creditProvider === 'Vento').length, [sales]);
 
-  const totalSales = useMemo(() => salesData.reduce((sum, sale) => sum + sale.amount, 0), [salesData]);
-  const totalCredits = useMemo(() => salesData.filter(s => s.paymentMethod === 'Financing').length, [salesData]);
-  const ventoCredits = useMemo(() => salesData.filter(s => s.creditProvider === 'Vento').length, [salesData]);
-
-  const salesGoal = salespeople.reduce((sum, sp) => sum + sp.salesGoal, 0);
-  const creditsGoal = salespeople.reduce((sum, sp) => sum + sp.creditsGoal, 0);
+  const salesGoal = useMemo(() => salespeople.reduce((sum, sp) => sum + sp.salesGoal, 0), [salespeople]);
+  const creditsGoal = useMemo(() => salespeople.reduce((sum, sp) => sum + sp.creditsGoal, 0), [salespeople]);
 
   const salesProgress = salesGoal > 0 ? (totalSales / salesGoal) * 100 : 0;
   const commissionEarned = salesProgress >= 80 ? totalSales * 0.019 : 0;
   const creditBonus = ventoCredits >= 5 ? (ventoCredits - 4) * 200 : 0;
 
   const teamChartData = useMemo(() => salespeople.map(sp => {
-    const spSales = getSalesBySalesperson(sp.id, sales);
+    const spSales = getSalesBySalesperson(sp.uid, sales);
     return {
       ...sp,
       currentSales: spSales.reduce((sum, sale) => sum + sale.amount, 0),
       currentCredits: spSales.filter(s => s.paymentMethod === 'Financing').length,
     }
-  }), [sales]);
+  }), [sales, salespeople]);
 
   const handleAddSale = async (newSaleData: NewSale) => {
     await addSale(db, newSaleData);
-    fetchSales(); // Refetch sales after adding a new one
+    fetchData(); // Refetch all data after adding a new one
   };
   
   if (isLoading) {
@@ -111,7 +112,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <SalesProgressChart data={teamChartData} />
-        <RecentSales sales={salesData} />
+        <RecentSales sales={sales} salespeople={salespeople} />
       </div>
     </div>
   );

@@ -1,28 +1,33 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { PlusCircle, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KanbanBoard } from "@/components/prospects/kanban-board";
 import { useFirestore } from "@/firebase";
-import { getProspects } from "@/firebase/db";
-import type { Prospect } from "@/lib/data";
+import { getProspects, getSalespeople } from "@/firebase/db";
+import type { Prospect, Salesperson } from "@/lib/data";
 
 export default function ProspectsPage() {
   const db = useFirestore();
   const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [salespeople, setSalespeople] = useState<Salesperson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchProspects = async () => {
-      setIsLoading(true);
-      const prospectsData = await getProspects(db);
-      setProspects(prospectsData);
-      setIsLoading(false);
-    };
-    fetchProspects();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    const [prospectsData, salespeopleData] = await Promise.all([
+      getProspects(db),
+      getSalespeople(db),
+    ]);
+    setProspects(prospectsData);
+    setSalespeople(salespeopleData);
+    setIsLoading(false);
   }, [db]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   if (isLoading) {
     return (
@@ -51,7 +56,7 @@ export default function ProspectsPage() {
         </Button>
       </div>
       <div className="flex-1">
-        <KanbanBoard prospects={prospects} />
+        <KanbanBoard prospects={prospects} salespeople={salespeople} />
       </div>
     </div>
   );

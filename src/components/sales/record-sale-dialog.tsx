@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { PlusCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { PlusCircle, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,30 +22,45 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { salespeople } from "@/lib/data";
-import type { Sale } from "@/lib/data";
+import { useFirestore } from "@/firebase";
+import { getSalespeople } from "@/firebase/db";
+import type { NewSale, Salesperson } from "@/lib/data";
 
 interface RecordSaleDialogProps {
-  onAddSale: (sale: Omit<Sale, "id" | "date">) => void;
+  onAddSale: (sale: NewSale) => void;
 }
 
 export function RecordSaleDialog({ onAddSale }: RecordSaleDialogProps) {
+  const db = useFirestore();
   const [open, setOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [salespeople, setSalespeople] = useState<Salesperson[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) {
+      setIsLoading(true);
+      getSalespeople(db).then(data => {
+        setSalespeople(data);
+        setIsLoading(false);
+      });
+    }
+  }, [db, open]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const newSale = {
-      salespersonId: Number(formData.get("salesperson-id")),
+    const newSale: NewSale = {
+      salespersonId: String(formData.get("salesperson-id")),
       prospectName: String(formData.get("prospect-name")),
+      motorcycleModel: String(formData.get("motorcycle-model")), // New field
       amount: Number(formData.get("amount")),
       paymentMethod: formData.get("payment-method") as "Cash" | "Financing",
       creditProvider: formData.get("credit-provider") as "Vento" | "Other" | undefined,
     };
 
-    if (!newSale.salespersonId || !newSale.prospectName || !newSale.amount || !newSale.paymentMethod) {
+    if (!newSale.salespersonId || !newSale.prospectName || !newSale.amount || !newSale.paymentMethod || !newSale.motorcycleModel) {
         toast({
             variant: "destructive",
             title: "Uh oh! Something went wrong.",
@@ -90,14 +105,20 @@ export function RecordSaleDialog({ onAddSale }: RecordSaleDialogProps) {
               </Label>
               <Select name="salesperson-id">
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select salesperson" />
+                  <SelectValue placeholder={isLoading ? "Loading..." : "Select salesperson"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {salespeople.map((sp) => (
-                    <SelectItem key={sp.id} value={String(sp.id)}>
-                      {sp.name}
-                    </SelectItem>
-                  ))}
+                  {isLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <LoaderCircle className="h-5 w-5 animate-spin" />
+                    </div>
+                  ) : (
+                    salespeople.map((sp) => (
+                      <SelectItem key={sp.uid} value={sp.uid}>
+                        {sp.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -106,6 +127,12 @@ export function RecordSaleDialog({ onAddSale }: RecordSaleDialogProps) {
                 Prospect
               </Label>
               <Input id="prospect-name" name="prospect-name" placeholder="John Doe" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="motorcycle-model" className="text-right">
+                Model
+              </Label>
+              <Input id="motorcycle-model" name="motorcycle-model" placeholder="Vento Xplor 250" className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="amount" className="text-right">

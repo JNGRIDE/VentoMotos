@@ -63,7 +63,6 @@ export default function ReportsPage() {
   }, [fetchData]);
 
   const handlePrint = () => {
-    console.log("Print button clicked. The 'handlePrint' function was executed.");
     window.print();
   };
 

@@ -14,16 +14,15 @@ import { fromFirestore } from "./utils";
 
 export async function getSales(db: Firestore, user: UserProfile, sprint: string): Promise<Sale[]> {
   const salesCol = collection(db, "sales");
-  
-  const constraints = [where("sprint", "==", sprint)];
-  if (user.role !== 'Manager') {
-    constraints.push(where("salespersonId", "==", user.uid));
-  }
-  
-  const q = query(salesCol, ...constraints, orderBy("date", "desc"));
+  const q = query(salesCol, where("sprint", "==", sprint), orderBy("date", "desc"));
     
   const salesSnapshot = await getDocs(q);
-  const salesList = salesSnapshot.docs.map(doc => fromFirestore<Sale>(doc));
+  let salesList = salesSnapshot.docs.map(doc => fromFirestore<Sale>(doc));
+
+  if (user.role !== 'Manager') {
+    salesList = salesList.filter(sale => sale.salespersonId === user.uid);
+  }
+
   return salesList;
 }
 

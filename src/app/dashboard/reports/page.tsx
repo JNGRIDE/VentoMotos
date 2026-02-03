@@ -125,11 +125,8 @@ export default function ReportsPage() {
       
       <ReportSummary sales={salesForReport} userProfiles={userProfiles} isManager={isManager} />
 
-      <div className="print:hidden">
+      <div>
         {isManager && <SalesBySalespersonChart sales={salesForReport} userProfiles={userProfiles} />}
-      </div>
-      <div className="hidden print:block text-center p-4 border-t border-b">
-        <p className="text-sm text-muted-foreground">Chart is not available in printed version.</p>
       </div>
       
       <SalesDetailTable sales={salesForReport} userProfiles={userProfiles} />

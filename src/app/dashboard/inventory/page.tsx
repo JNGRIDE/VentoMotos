@@ -23,12 +23,14 @@ export default function InventoryPage() {
   const fetchData = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
+    console.log("Fetching inventory data...");
     try {
       const profile = await getUserProfile(db, user.uid);
       setCurrentUserProfile(profile);
 
       if (profile?.role === 'Manager') {
         const inventoryData = await getInventory(db);
+        console.log("Fetched inventory data:", inventoryData);
         setInventory(inventoryData);
       }
     } catch (error: any) {

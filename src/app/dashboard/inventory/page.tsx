@@ -9,6 +9,7 @@ import { getUserProfile, getInventory } from '@/firebase/db';
 import type { UserProfile, Motorcycle } from '@/lib/data';
 import { InventoryTable } from '@/components/inventory/inventory-table';
 import { AddMotorcycleDialog } from '@/components/inventory/add-motorcycle-dialog';
+import { UploadInventoryDialog } from '@/components/inventory/upload-inventory-dialog';
 
 export default function InventoryPage() {
   const db = useFirestore();
@@ -75,9 +76,12 @@ export default function InventoryPage() {
             Manage stock levels for all available models.
           </p>
         </div>
-        <AddMotorcycleDialog onMotorcycleAdded={fetchData} />
+        <div className="flex items-center space-x-2">
+            <UploadInventoryDialog onInventoryUpdated={fetchData} />
+            <AddMotorcycleDialog onMotorcycleAdded={fetchData} />
+        </div>
       </div>
-      <InventoryTable inventory={inventory} />
+      <InventoryTable inventory={inventory} onInventoryUpdated={fetchData} />
     </div>
   );
 }

@@ -12,6 +12,8 @@ import {
   setDoc,
   getDoc,
   runTransaction,
+  deleteDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { type User } from "firebase/auth";
 import type { NewSale, Sale, Prospect, UserProfile, NewUserProfile, Motorcycle, NewMotorcycle } from "@/lib/data";
@@ -135,4 +137,21 @@ export async function addMotorcycle(db: Firestore, motorcycle: NewMotorcycle): P
   const inventoryCol = collection(db, "inventory");
   const docRef = await addDoc(inventoryCol, motorcycle);
   return docRef.id;
+}
+
+export async function deleteMotorcycle(db: Firestore, motorcycleId: string): Promise<void> {
+  const motorcycleRef = doc(db, "inventory", motorcycleId);
+  await deleteDoc(motorcycleRef);
+}
+
+export async function addMotorcyclesBatch(db: Firestore, motorcycles: NewMotorcycle[]): Promise<void> {
+  const batch = writeBatch(db);
+  const inventoryCol = collection(db, "inventory");
+
+  motorcycles.forEach(motorcycle => {
+    const docRef = doc(inventoryCol); // Automatically generate a new document ID
+    batch.set(docRef, motorcycle);
+  });
+
+  await batch.commit();
 }

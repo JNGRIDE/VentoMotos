@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -45,14 +45,20 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading } = useUser();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    setIsMounted(true);
+  }, []);
+
+
+  useEffect(() => {
+    if (isMounted && !isLoading && !user) {
       router.replace("/");
     }
-  }, [isLoading, user, router]);
+  }, [isMounted, isLoading, user, router]);
 
-  if (isLoading || !user) {
+  if (!isMounted || isLoading || !user) {
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40">
         <LoaderCircle className="h-10 w-10 animate-spin text-primary" />

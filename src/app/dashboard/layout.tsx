@@ -56,7 +56,7 @@ export default function DashboardLayout({
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40">
         <LoaderCircle className="h-10 w-10 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Loading your dashboard...</p>
+        <p className="mt-4 text-muted-foreground">Cargando su panel de control...</p>
       </div>
     );
   }

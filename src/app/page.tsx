@@ -210,7 +210,7 @@ export default function LoginPage() {
                 <p><span className="text-primary">NEXT_PUBLIC_STORAGE_BUCKET</span> = "..." <span className="text-muted-foreground">(de storageBucket)</span></p>
                 <p><span className="text-primary">NEXT_PUBLIC_MESSAGING_SENDER_ID</span> = "..." <span className="text-muted-foreground">(de messagingSenderId)</span></p>
                 <p><span className="text-primary">NEXT_PUBLIC_APP_ID</span> = "..." <span className="text-muted-foreground">(de appId)</span></p>
-                <p><span className="text-primary">NEXT_PUBLIC_MEASUREMENT_ID</span> = "..." <span className="text-muted-foreground">(de measurementId)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_MEASUREMENT_ID</span> = "..." <span className="text-muted-foreground">(de measurementId, si existe - opcional)</span></p>
               </div>
                <p>No te olvides de añadir también tu clave de Gemini:</p>
                <div className="rounded-md bg-background p-4 font-mono text-xs shadow-inner">

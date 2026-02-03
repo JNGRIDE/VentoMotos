@@ -1,21 +1,36 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { DollarSign, CreditCard, Award, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { DollarSign, CreditCard, Award, TrendingUp, LoaderCircle } from 'lucide-react';
 
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { SalesProgressChart } from '@/components/dashboard/sales-progress-chart';
 import { RecentSales } from '@/components/dashboard/recent-sales';
 import { RecordSaleDialog } from '@/components/sales/record-sale-dialog';
-import { Button } from '@/components/ui/button';
+import { useFirestore } from "@/firebase";
+import { getSales, addSale } from "@/firebase/db";
 
-import { salespeople, sales as initialSales, getSalesBySalesperson } from '@/lib/data';
-import type { Sale } from '@/lib/data';
+import { salespeople, getSalesBySalesperson } from '@/lib/data';
+import type { Sale, NewSale } from '@/lib/data';
 
 export default function DashboardPage() {
-  const [sales, setSales] = useState<Sale[]>(initialSales);
+  const db = useFirestore();
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchSales = async () => {
+    // No need to set loading to true here, handled in useEffect
+    const salesData = await getSales(db);
+    setSales(salesData);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetchSales();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [db]);
   
-  // For now, we'll display the manager view with mock data.
   const salesData = sales;
 
   const totalSales = useMemo(() => salesData.reduce((sum, sale) => sum + sale.amount, 0), [salesData]);
@@ -38,14 +53,18 @@ export default function DashboardPage() {
     }
   }), [sales]);
 
-  const handleAddSale = (newSaleData: Omit<Sale, 'id' | 'date'>) => {
-    const newSale: Sale = {
-        ...newSaleData,
-        id: sales.length + 1,
-        date: new Date().toISOString().split('T')[0],
-    };
-    setSales(prevSales => [newSale, ...prevSales]);
+  const handleAddSale = async (newSaleData: NewSale) => {
+    await addSale(db, newSaleData);
+    fetchSales(); // Refetch sales after adding a new one
   };
+  
+  if (isLoading) {
+    return (
+        <div className="flex items-center justify-center h-[calc(100vh-theme(spacing.32))]">
+            <LoaderCircle className="h-10 w-10 animate-spin text-primary" />
+        </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">

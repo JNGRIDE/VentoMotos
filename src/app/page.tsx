@@ -140,7 +140,6 @@ export default function LoginPage() {
   };
 
   const handleAuthError = (error: any, title: string) => {
-    console.error("Authentication error:", error);
     let description = "An unexpected error occurred.";
     switch (error.code) {
       case "auth/user-not-found":
@@ -160,6 +159,9 @@ export default function LoginPage() {
       case "auth/too-many-requests":
         description =
           "Too many failed login attempts. Please try again later.";
+        break;
+      default:
+        console.error("Authentication error:", error);
         break;
     }
     toast({ variant: "destructive", title, description });

@@ -9,10 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { Salesperson } from "@/lib/data"
+import type { UserProfile } from "@/lib/data"
 
 interface SalesProgressChartProps {
-  data: (Salesperson & { currentSales: number, currentCredits: number })[];
+  data: (UserProfile & { currentSales: number, currentCredits: number })[];
 }
 
 export function SalesProgressChart({ data }: SalesProgressChartProps) {

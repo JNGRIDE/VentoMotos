@@ -19,21 +19,21 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-import type { Sale, Salesperson } from "@/lib/data"
+import type { Sale, UserProfile } from "@/lib/data"
 import { useMemo } from "react"
 
 interface RecentSalesProps {
   sales: Sale[];
-  salespeople: Salesperson[];
+  userProfiles: UserProfile[];
 }
 
-export function RecentSales({ sales, salespeople }: RecentSalesProps) {
-  const salespeopleMap = useMemo(() => {
-    return salespeople.reduce((map, sp) => {
+export function RecentSales({ sales, userProfiles }: RecentSalesProps) {
+  const userProfilesMap = useMemo(() => {
+    return userProfiles.reduce((map, sp) => {
       map[sp.uid] = sp;
       return map;
-    }, {} as Record<string, Salesperson>);
-  }, [salespeople]);
+    }, {} as Record<string, UserProfile>);
+  }, [userProfiles]);
 
   return (
     <Card className="col-span-1 lg:col-span-2">
@@ -55,16 +55,16 @@ export function RecentSales({ sales, salespeople }: RecentSalesProps) {
           </TableHeader>
           <TableBody>
             {sales.slice(0, 5).map((sale) => {
-              const salesperson = salespeopleMap[sale.salespersonId];
+              const userProfile = userProfilesMap[sale.salespersonId];
               return (
               <TableRow key={sale.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={salesperson?.avatarUrl} alt="Avatar" />
-                      <AvatarFallback>{salesperson?.name?.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={userProfile?.avatarUrl} alt="Avatar" />
+                      <AvatarFallback>{userProfile?.name?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div className="font-medium">{salesperson?.name}</div>
+                    <div className="font-medium">{userProfile?.name}</div>
                   </div>
                 </TableCell>
                 <TableCell>

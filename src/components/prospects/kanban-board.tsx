@@ -1,16 +1,16 @@
 import { useMemo } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import type { Prospect, Salesperson } from "@/lib/data";
+import type { Prospect, UserProfile } from "@/lib/data";
 import { ProspectCard } from "./prospect-card";
 
 interface KanbanColumnProps {
   title: string;
   prospects: Prospect[];
-  salespeopleMap: Record<string, Salesperson>;
+  userProfilesMap: Record<string, UserProfile>;
   className?: string;
 }
 
-function KanbanColumn({ title, prospects, salespeopleMap, className }: KanbanColumnProps) {
+function KanbanColumn({ title, prospects, userProfilesMap, className }: KanbanColumnProps) {
   return (
     <div className="flex flex-col w-72 min-w-72 flex-shrink-0">
       <div className="flex items-center justify-between p-2">
@@ -21,7 +21,7 @@ function KanbanColumn({ title, prospects, salespeopleMap, className }: KanbanCol
       </div>
       <div className="flex-1 rounded-lg bg-muted/50 p-2">
         {prospects.map((prospect) => (
-          <ProspectCard key={prospect.id} prospect={prospect} salesperson={salespeopleMap[prospect.salespersonId]} />
+          <ProspectCard key={prospect.id} prospect={prospect} userProfile={userProfilesMap[prospect.salespersonId]} />
         ))}
       </div>
     </div>
@@ -30,18 +30,18 @@ function KanbanColumn({ title, prospects, salespeopleMap, className }: KanbanCol
 
 interface KanbanBoardProps {
   prospects: Prospect[];
-  salespeople: Salesperson[];
+  userProfiles: UserProfile[];
 }
 
-export function KanbanBoard({ prospects, salespeople }: KanbanBoardProps) {
+export function KanbanBoard({ prospects, userProfiles }: KanbanBoardProps) {
   const stages: Prospect["stage"][] = ["Potential", "Appointment", "Credit", "Closed"];
   
-  const salespeopleMap = useMemo(() => {
-    return salespeople.reduce((map, sp) => {
+  const userProfilesMap = useMemo(() => {
+    return userProfiles.reduce((map, sp) => {
       map[sp.uid] = sp;
       return map;
-    }, {} as Record<string, Salesperson>);
-  }, [salespeople]);
+    }, {} as Record<string, UserProfile>);
+  }, [userProfiles]);
 
   return (
     <ScrollArea className="w-full">
@@ -51,7 +51,7 @@ export function KanbanBoard({ prospects, salespeople }: KanbanBoardProps) {
             key={stage}
             title={stage}
             prospects={prospects.filter((p) => p.stage === stage)}
-            salespeopleMap={salespeopleMap}
+            userProfilesMap={userProfilesMap}
           />
         ))}
       </div>

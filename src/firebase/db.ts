@@ -5,12 +5,15 @@ import {
   Timestamp,
   query,
   orderBy,
+  where,
   DocumentData,
   Firestore,
   doc,
   setDoc,
+  getDoc,
 } from "firebase/firestore";
-import type { NewSale, Sale, Prospect, Salesperson } from "@/lib/data";
+import { type User } from "firebase/auth";
+import type { NewSale, Sale, Prospect, UserProfile, NewUserProfile } from "@/lib/data";
 
 // A helper function to convert Firestore documents to our data types
 function fromFirestore<T>(doc: DocumentData): T {
@@ -21,30 +24,55 @@ function fromFirestore<T>(doc: DocumentData): T {
             data[key] = data[key].toDate().toISOString();
         }
     });
-    // The document ID is the salesperson's UID in the 'users' collection
+    // The document ID is the user's UID in the 'users' collection
     if (doc.ref.parent.id === 'users') {
         return { uid: doc.id, ...data } as T;
     }
     return { id: doc.id, ...data } as T;
 }
 
-export async function getSalespeople(db: Firestore): Promise<Salesperson[]> {
-  const salespeopleCol = collection(db, "users");
-  const salespeopleSnapshot = await getDocs(salespeopleCol);
-  // Assuming 'users' collection documents have fields matching the Salesperson type
-  const salespeopleList = salespeopleSnapshot.docs.map(doc => fromFirestore<Salesperson>(doc));
-  return salespeopleList;
+export async function createUserProfile(db: Firestore, user: User, name: string): Promise<void> {
+  const userRef = doc(db, "users", user.uid);
+  const newUserProfile: NewUserProfile = {
+    name: name,
+    email: user.email!,
+    avatarUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`,
+    salesGoal: 0,
+    creditsGoal: 0,
+    role: "Salesperson" // Default role for new users
+  };
+  await setDoc(userRef, newUserProfile);
 }
 
-export async function setSalesperson(db: Firestore, salesperson: Salesperson): Promise<void> {
-  const userRef = doc(db, "users", salesperson.uid);
-  const { uid, ...salespersonData } = salesperson; // Remove uid from the object to be saved
-  await setDoc(userRef, salespersonData, { merge: true });
+export async function getUserProfile(db: Firestore, uid: string): Promise<UserProfile | null> {
+  const docRef = doc(db, "users", uid);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return fromFirestore<UserProfile>(docSnap);
+  }
+  return null;
 }
 
-export async function getSales(db: Firestore): Promise<Sale[]> {
+
+export async function getUserProfiles(db: Firestore): Promise<UserProfile[]> {
+  const usersCol = collection(db, "users");
+  const usersSnapshot = await getDocs(usersCol);
+  const usersList = usersSnapshot.docs.map(doc => fromFirestore<UserProfile>(doc));
+  return usersList;
+}
+
+export async function setUserProfile(db: Firestore, userProfile: Partial<UserProfile> & { uid: string }): Promise<void> {
+  const userRef = doc(db, "users", userProfile.uid);
+  const { uid, ...profileData } = userProfile;
+  await setDoc(userRef, profileData, { merge: true });
+}
+
+export async function getSales(db: Firestore, user: UserProfile): Promise<Sale[]> {
   const salesCol = collection(db, "sales");
-  const q = query(salesCol, orderBy("date", "desc"));
+  const q = user.role === 'Manager'
+    ? query(salesCol, orderBy("date", "desc"))
+    : query(salesCol, where("salespersonId", "==", user.uid), orderBy("date", "desc"));
+    
   const salesSnapshot = await getDocs(q);
   const salesList = salesSnapshot.docs.map(doc => fromFirestore<Sale>(doc));
   return salesList;
@@ -58,9 +86,13 @@ export async function addSale(db: Firestore, sale: NewSale): Promise<void> {
   });
 }
 
-export async function getProspects(db: Firestore): Promise<Prospect[]> {
+export async function getProspects(db: Firestore, user: UserProfile): Promise<Prospect[]> {
     const prospectsCol = collection(db, "prospects");
-    const prospectsSnapshot = await getDocs(prospectsCol);
+    const q = user.role === 'Manager'
+        ? query(prospectsCol)
+        : query(prospectsCol, where("salespersonId", "==", user.uid));
+        
+    const prospectsSnapshot = await getDocs(q);
     const prospectsList = prospectsSnapshot.docs.map(doc => fromFirestore<Prospect>(doc));
     return prospectsList;
 }

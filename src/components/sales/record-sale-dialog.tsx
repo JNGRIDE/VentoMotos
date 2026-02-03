@@ -23,26 +23,27 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
-import { getSalespeople } from "@/firebase/db";
-import type { NewSale, Salesperson } from "@/lib/data";
+import { getUserProfiles } from "@/firebase/db";
+import type { NewSale, UserProfile } from "@/lib/data";
 
 interface RecordSaleDialogProps {
   onAddSale: (sale: NewSale) => Promise<void>;
+  currentUserProfile: UserProfile;
 }
 
-export function RecordSaleDialog({ onAddSale }: RecordSaleDialogProps) {
+export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDialogProps) {
   const db = useFirestore();
   const [open, setOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("");
-  const [salespeople, setSalespeople] = useState<Salesperson[]>([]);
+  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
       setIsLoading(true);
-      getSalespeople(db).then(data => {
-        setSalespeople(data);
+      getUserProfiles(db).then(data => {
+        setUserProfiles(data);
         setIsLoading(false);
       });
     }
@@ -54,7 +55,7 @@ export function RecordSaleDialog({ onAddSale }: RecordSaleDialogProps) {
     const newSale: NewSale = {
       salespersonId: String(formData.get("salesperson-id")),
       prospectName: String(formData.get("prospect-name")),
-      motorcycleModel: String(formData.get("motorcycle-model")), // New field
+      motorcycleModel: String(formData.get("motorcycle-model")),
       amount: Number(formData.get("amount")),
       paymentMethod: formData.get("payment-method") as "Cash" | "Financing",
       creditProvider: formData.get("credit-provider") as "Vento" | "Other" | undefined,
@@ -80,11 +81,11 @@ export function RecordSaleDialog({ onAddSale }: RecordSaleDialogProps) {
       setPaymentMethod("");
       event.currentTarget.reset();
     } catch (error) {
-      // The error toast is handled by the parent component (DashboardPage).
-      // We catch the error here to prevent the dialog from closing on failure.
-      console.error("Dialog submit error:", error);
+      // Error is handled by the caller
     }
   };
+
+  const isManager = currentUserProfile.role === 'Manager';
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -109,30 +110,35 @@ export function RecordSaleDialog({ onAddSale }: RecordSaleDialogProps) {
               <Label htmlFor="salesperson-id" className="text-right">
                 Salesperson
               </Label>
-              <Select name="salesperson-id">
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder={isLoading ? "Loading..." : "Select salesperson"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoading ? (
-                    <div className="flex items-center justify-center p-4">
-                      <LoaderCircle className="h-5 w-5 animate-spin" />
-                    </div>
-                  ) : (
-                    salespeople.map((sp) => (
-                      <SelectItem key={sp.uid} value={sp.uid}>
-                        {sp.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+              {isManager ? (
+                 <Select name="salesperson-id">
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder={isLoading ? "Loading..." : "Select salesperson"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {isLoading ? (
+                        <div className="flex items-center justify-center p-4">
+                          <LoaderCircle className="h-5 w-5 animate-spin" />
+                        </div>
+                      ) : (
+                        userProfiles.map((sp) => (
+                          <SelectItem key={sp.uid} value={sp.uid}>
+                            {sp.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+              ) : (
+                <Input id="salesperson-id" name="salesperson-id" type="hidden" value={currentUserProfile.uid} />
+              )}
+             
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="prospect-name" className="text-right">
-                Prospect
-              </Label>
-              <Input id="prospect-name" name="prospect-name" placeholder="John Doe" className="col-span-3" />
+                <Label htmlFor="prospect-name" className="text-right">
+                    Prospect
+                </Label>
+                <Input id="prospect-name" name="prospect-name" placeholder="John Doe" className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="motorcycle-model" className="text-right">
@@ -161,22 +167,20 @@ export function RecordSaleDialog({ onAddSale }: RecordSaleDialogProps) {
               </Select>
             </div>
             {paymentMethod === "Financing" && (
-              <>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="credit-provider" className="text-right">
-                    Credit
-                  </Label>
-                  <Select name="credit-provider">
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select provider" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Vento">Vento Crédito</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="credit-provider" className="text-right">
+                  Credit
+                </Label>
+                <Select name="credit-provider">
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Vento">Vento Crédito</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </div>
           <DialogFooter>

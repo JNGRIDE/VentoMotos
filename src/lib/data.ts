@@ -1,18 +1,22 @@
-export type Salesperson = {
+export type UserProfile = {
   uid: string; // Corresponds to Firebase Auth UID
   name: string;
   email: string;
   avatarUrl: string;
   salesGoal: number;
   creditsGoal: number;
+  role: "Manager" | "Salesperson";
 };
+
+// For creating a new profile document in Firestore
+export type NewUserProfile = Omit<UserProfile, "uid">;
 
 export type Sale = {
   id: string; // Firestore document ID
   salespersonId: string; // This is now the salesperson's UID
   prospectName:string;
   amount: number;
-  motorcycleModel: string; // New field
+  motorcycleModel: string;
   date: string;
   paymentMethod: "Cash" | "Financing";
   creditProvider?: "Vento" | "Other";
@@ -30,6 +34,6 @@ export type Prospect = {
   lastContact: string;
 };
 
-// This function will be used by components to filter data fetched from Firestore.
-export const getSalesBySalesperson = (id: string, salesList: Sale[]) => salesList.filter(s => s.salespersonId === id);
-export const getProspectsBySalesperson = (id: string, prospectsList: Prospect[]) => prospectsList.filter(p => p.salespersonId === id);
+// This function will be used by components to filter data already fetched from Firestore.
+export const getSalesByUser = (uid: string, salesList: Sale[]) => salesList.filter(s => s.salespersonId === uid);
+export const getProspectsByUser = (uid: string, prospectsList: Prospect[]) => prospectsList.filter(p => p.salespersonId === uid);

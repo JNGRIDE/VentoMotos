@@ -2,23 +2,36 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Cualquier usuario autenticado puede leer los perfiles de los demás (para ver nombres, etc.).
-    // Un usuario solo puede crear o modificar su propio perfil.
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == userId;
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
-    // Cualquier usuario autenticado puede leer el historial de ventas y registrar nuevas ventas.
-    // Por seguridad, las ventas no se pueden modificar ni eliminar desde la aplicación.
+    function isManager() {
+      // Check if the user's profile document has the role 'Manager'
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Manager';
+    }
+
+    match /users/{userId} {
+      // Any authenticated user can read profiles (to see names, avatars, etc.)
+      allow read: if request.auth != null;
+      // Only the user themselves or a manager can edit a profile.
+      allow write: if isOwner(userId) || isManager();
+    }
+
     match /sales/{saleId} {
-      allow read, create: if request.auth != null;
+      // A manager can read any sale. A salesperson can only read their own.
+      allow read: if isManager() || request.auth.uid == resource.data.salespersonId;
+      // A manager can create a sale for anyone. A salesperson only for themselves.
+      allow create: if isManager() || request.auth.uid == request.resource.data.salespersonId;
+      // For safety, disallow updates and deletes from the client.
       allow update, delete: if false; 
     }
 
-    // Cualquier usuario autenticado puede ver y gestionar los prospectos.
     match /prospects/{prospectId} {
-      allow read, write: if request.auth != null;
+      // A manager can read any prospect. A salesperson only their own.
+      allow read: if isManager() || request.auth.uid == resource.data.salespersonId;
+      // A manager can write to any prospect. A salesperson can only write to their own.
+      allow write: if isManager() || request.auth.uid == request.resource.data.salespersonId;
     }
   }
 }

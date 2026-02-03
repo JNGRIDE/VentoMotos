@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, ShieldAlert } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { useFirestore } from '@/firebase';
-import { getSalespeople, setSalesperson } from '@/firebase/db';
-import type { Salesperson } from '@/lib/data';
+import { useUser } from "@/firebase/auth/use-user";
+import { getUserProfiles, setUserProfile, getUserProfile } from '@/firebase/db';
+import type { UserProfile } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 
 import { Button } from '@/components/ui/button';
@@ -24,30 +25,30 @@ const goalSchema = z.object({
 
 type GoalFormValues = z.infer<typeof goalSchema>;
 
-interface SalespersonCardProps {
-  salesperson: Salesperson;
+interface UserProfileCardProps {
+  userProfile: UserProfile;
   onUpdate: (uid: string, data: GoalFormValues) => Promise<void>;
 }
 
-function SalespersonGoalCard({ salesperson, onUpdate }: SalespersonCardProps) {
+function UserProfileGoalCard({ userProfile, onUpdate }: UserProfileCardProps) {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<GoalFormValues>({
     resolver: zodResolver(goalSchema),
     defaultValues: {
-      salesGoal: salesperson.salesGoal || 0,
-      creditsGoal: salesperson.creditsGoal || 0,
+      salesGoal: userProfile.salesGoal || 0,
+      creditsGoal: userProfile.creditsGoal || 0,
     },
   });
 
   const onSubmit = async (data: GoalFormValues) => {
     setIsSaving(true);
     try {
-      await onUpdate(salesperson.uid, data);
+      await onUpdate(userProfile.uid, data);
       toast({
         title: "Goals Updated",
-        description: `Successfully updated goals for ${salesperson.name}.`,
+        description: `Successfully updated goals for ${userProfile.name}.`,
       });
     } catch (error) {
       toast({
@@ -66,12 +67,12 @@ function SalespersonGoalCard({ salesperson, onUpdate }: SalespersonCardProps) {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardHeader className="flex flex-row items-center gap-4">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={salesperson.avatarUrl} alt={salesperson.name} />
-              <AvatarFallback>{salesperson.name.charAt(0)}</AvatarFallback>
+              <AvatarImage src={userProfile.avatarUrl} alt={userProfile.name} />
+              <AvatarFallback>{userProfile.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle>{salesperson.name}</CardTitle>
-              <CardDescription>{salesperson.email}</CardDescription>
+              <CardTitle>{userProfile.name}</CardTitle>
+              <CardDescription>{userProfile.email} ({userProfile.role})</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="grid gap-6 md:grid-cols-2">
@@ -116,33 +117,40 @@ function SalespersonGoalCard({ salesperson, onUpdate }: SalespersonCardProps) {
 
 export default function SprintSettingsPage() {
   const db = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
-  const [salespeople, setSalespeople] = useState<Salesperson[]>([]);
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
+  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
+    if (!user) return;
     setIsLoading(true);
     try {
-      const salespeopleData = await getSalespeople(db);
-      setSalespeople(salespeopleData);
+      const profile = await getUserProfile(db, user.uid);
+      setCurrentUserProfile(profile);
+
+      if (profile?.role === 'Manager') {
+        const profilesData = await getUserProfiles(db);
+        setUserProfiles(profilesData);
+      }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error loading salespeople",
+        title: "Error loading data",
         description: "Could not fetch data from the database.",
       });
     } finally {
       setIsLoading(false);
     }
-  }, [db, toast]);
+  }, [db, toast, user]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const handleUpdateGoals = async (uid: string, data: GoalFormValues) => {
-    // We can pass a partial Salesperson object because setSalesperson uses { merge: true }
-    await setSalesperson(db, { uid, ...data } as Salesperson);
+    await setUserProfile(db, { uid, ...data });
   };
 
   if (isLoading) {
@@ -151,6 +159,16 @@ export default function SprintSettingsPage() {
         <LoaderCircle className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if (currentUserProfile?.role !== 'Manager') {
+    return (
+       <div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.32))]">
+          <ShieldAlert className="h-10 w-10 text-destructive" />
+          <h2 className="mt-4 text-xl font-semibold">Access Denied</h2>
+          <p className="text-muted-foreground mt-2">Only managers can access this page.</p>
+      </div>
+    )
   }
 
   return (
@@ -164,8 +182,8 @@ export default function SprintSettingsPage() {
         </p>
       </div>
       <div className="space-y-6">
-        {salespeople.map((sp) => (
-          <SalespersonGoalCard key={sp.uid} salesperson={sp} onUpdate={handleUpdateGoals} />
+        {userProfiles.map((sp) => (
+          <UserProfileGoalCard key={sp.uid} userProfile={sp} onUpdate={handleUpdateGoals} />
         ))}
       </div>
     </div>

@@ -11,9 +11,10 @@ import {
   doc,
   setDoc,
   getDoc,
+  runTransaction,
 } from "firebase/firestore";
 import { type User } from "firebase/auth";
-import type { NewSale, Sale, Prospect, UserProfile, NewUserProfile } from "@/lib/data";
+import type { NewSale, Sale, Prospect, UserProfile, NewUserProfile, Motorcycle, NewMotorcycle } from "@/lib/data";
 
 // A helper function to convert Firestore documents to our data types
 function fromFirestore<T>(doc: DocumentData): T {
@@ -78,13 +79,37 @@ export async function getSales(db: Firestore, user: UserProfile): Promise<Sale[]
   return salesList;
 }
 
+// Transactional sale creation with inventory deduction
 export async function addSale(db: Firestore, sale: NewSale): Promise<void> {
-  const salesCol = collection(db, "sales");
-  await addDoc(salesCol, {
+  const motorcycleRef = doc(db, "inventory", sale.motorcycleId);
+  const salesColRef = collection(db, "sales");
+
+  await runTransaction(db, async (transaction) => {
+    const motorcycleDoc = await transaction.get(motorcycleRef);
+    if (!motorcycleDoc.exists()) {
+      throw new Error("Motorcycle does not exist in inventory!");
+    }
+    
+    // If it's not a special order, deduct stock
+    if (!sale.notes || sale.notes === "") {
+        const currentStock = motorcycleDoc.data().stock;
+        if (currentStock < 1) {
+            // This is a server-side safeguard. The UI should prevent this.
+            throw new Error(`No stock available for ${sale.motorcycleModel}. Sale cannot be completed.`);
+        }
+        const newStock = currentStock - 1;
+        transaction.update(motorcycleRef, { stock: newStock });
+    }
+
+    // Create the new sale document (we need to generate a ref inside the transaction)
+    const newSaleRef = doc(salesColRef);
+    transaction.set(newSaleRef, {
       ...sale,
       date: new Date().toISOString(),
+    });
   });
 }
+
 
 export async function getProspects(db: Firestore, user: UserProfile): Promise<Prospect[]> {
     const prospectsCol = collection(db, "prospects");
@@ -95,4 +120,19 @@ export async function getProspects(db: Firestore, user: UserProfile): Promise<Pr
     const prospectsSnapshot = await getDocs(q);
     const prospectsList = prospectsSnapshot.docs.map(doc => fromFirestore<Prospect>(doc));
     return prospectsList;
+}
+
+// --- Inventory Functions ---
+export async function getInventory(db: Firestore): Promise<Motorcycle[]> {
+  const inventoryCol = collection(db, "inventory");
+  const q = query(inventoryCol, orderBy("model"));
+  const snapshot = await getDocs(q);
+  const inventoryList = snapshot.docs.map(doc => fromFirestore<Motorcycle>(doc));
+  return inventoryList;
+}
+
+export async function addMotorcycle(db: Firestore, motorcycle: NewMotorcycle): Promise<string> {
+  const inventoryCol = collection(db, "inventory");
+  const docRef = await addDoc(inventoryCol, motorcycle);
+  return docRef.id;
 }

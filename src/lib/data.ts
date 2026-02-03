@@ -11,18 +11,29 @@ export type UserProfile = {
 // For creating a new profile document in Firestore
 export type NewUserProfile = Omit<UserProfile, "uid">;
 
+export type Motorcycle = {
+  id: string; // Firestore document ID
+  model: string;
+  stock: number;
+  sku: string;
+};
+
+export type NewMotorcycle = Omit<Motorcycle, "id">;
+
 export type Sale = {
   id: string; // Firestore document ID
   salespersonId: string; // This is now the salesperson's UID
   prospectName:string;
   amount: number;
-  motorcycleModel: string;
+  motorcycleId: string; // Link to the inventory item
+  motorcycleModel: string; // Denormalized for easy display
   date: string;
   paymentMethod: "Cash" | "Financing";
   creditProvider?: "Vento" | "Other";
+  notes?: string; // For special orders, e.g. "Sobre pedido (CEDIS)"
 };
 
-// NewSale will be used in the form
+// NewSale will be used in the form. Note `notes` is optional
 export type NewSale = Omit<Sale, "id" | "date">;
 
 export type Prospect = {

@@ -33,5 +33,12 @@ service cloud.firestore {
       // A manager can write to any prospect. A salesperson can only write to their own.
       allow write: if isManager() || request.auth.uid == request.resource.data.salespersonId;
     }
+
+    match /inventory/{motorcycleId} {
+      // Any authenticated user can read the inventory (to see available models)
+      allow read: if request.auth != null;
+      // Only a manager can add or update inventory items
+      allow write: if isManager();
+    }
   }
 }

@@ -31,7 +31,7 @@ import { useUser } from "@/firebase/auth/use-user";
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/dashboard/prospects", icon: Users, label: "Prospects" },
-  { href: "#", icon: FileText, label: "Reports" },
+  { href: "/dashboard/reports", icon: FileText, label: "Reports" },
   { href: "/dashboard/settings", icon: Settings, label: "Sprint Settings" },
 ];
 
@@ -61,7 +61,7 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
+      <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex print:hidden">
         <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
           <Link
             href="#"
@@ -93,7 +93,7 @@ export default function DashboardLayout({
         </nav>
       </aside>
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 print:hidden">
           <Sheet>
             <SheetTrigger asChild>
               <Button size="icon" variant="outline" className="sm:hidden">
@@ -132,7 +132,7 @@ export default function DashboardLayout({
           </div>
           <UserNav user={user} />
         </header>
-        <main className="flex-1 p-4 sm:px-6 sm:py-0">{children}</main>
+        <main className="flex-1 p-4 sm:px-6 sm:py-0 print:p-0">{children}</main>
       </div>
     </div>
   );

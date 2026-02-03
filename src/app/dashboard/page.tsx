@@ -83,7 +83,7 @@ export default function DashboardPage() {
     const adminProfile: Salesperson = {
       uid: ADMIN_UID,
       name: "Admin Manager",
-      email: user.email || "admin@example.com",
+      email: user.email || "theinhumanride10@gmail.com",
       salesGoal: 200000,
       creditsGoal: 15,
       avatarUrl: "https://picsum.photos/seed/admin/100/100"

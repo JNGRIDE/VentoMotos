@@ -1,20 +1,27 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { DollarSign, CreditCard, Award, TrendingUp, LoaderCircle } from 'lucide-react';
+import { DollarSign, CreditCard, Award, TrendingUp, LoaderCircle, UserPlus } from 'lucide-react';
 
+import { Button } from "@/components/ui/button";
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { SalesProgressChart } from '@/components/dashboard/sales-progress-chart';
 import { RecentSales } from '@/components/dashboard/recent-sales';
 import { RecordSaleDialog } from '@/components/sales/record-sale-dialog';
 import { useFirestore } from "@/firebase";
-import { getSales, addSale, getSalespeople } from "@/firebase/db";
+import { useUser } from "@/firebase/auth/use-user";
+import { useToast } from "@/hooks/use-toast";
+import { getSales, addSale, getSalespeople, setSalesperson } from "@/firebase/db";
 
 import { getSalesBySalesperson } from '@/lib/data';
 import type { Sale, NewSale, Salesperson } from '@/lib/data';
 
+const ADMIN_UID = "wVN7TmLeOyQDTRevAUWQYDqvou42";
+
 export default function DashboardPage() {
   const db = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
   const [sales, setSales] = useState<Sale[]>([]);
   const [salespeople, setSalespeople] = useState<Salesperson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +60,30 @@ export default function DashboardPage() {
       currentCredits: spSales.filter(s => s.paymentMethod === 'Financing').length,
     }
   }), [sales, salespeople]);
+  
+  const adminProfileExists = useMemo(() => salespeople.some(sp => sp.uid === ADMIN_UID), [salespeople]);
+
+  const handleCreateAdminProfile = useCallback(async () => {
+    if (!user || user.uid !== ADMIN_UID) return;
+
+    const adminProfile: Salesperson = {
+      uid: ADMIN_UID,
+      name: "Admin Manager",
+      email: user.email || "admin@example.com",
+      salesGoal: 200000,
+      creditsGoal: 15,
+      avatarUrl: "https://picsum.photos/seed/admin/100/100"
+    };
+
+    await setSalesperson(db, adminProfile);
+
+    toast({
+      title: "Admin Profile Created!",
+      description: "The salesperson profile for the admin has been created.",
+    });
+
+    fetchData();
+  }, [db, fetchData, toast, user]);
 
   const handleAddSale = async (newSaleData: NewSale) => {
     await addSale(db, newSaleData);
@@ -77,6 +108,14 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">Here's a summary of your team's sales performance.</p>
         </div>
         <div className="flex items-center space-x-2">
+          {user && user.uid === ADMIN_UID && !adminProfileExists && (
+            <Button onClick={handleCreateAdminProfile} variant="outline" size="sm" className="h-8 gap-1">
+              <UserPlus className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Create Admin Profile
+              </span>
+            </Button>
+          )}
           <RecordSaleDialog onAddSale={handleAddSale} />
         </div>
       </div>

@@ -7,6 +7,8 @@ import {
   orderBy,
   DocumentData,
   Firestore,
+  doc,
+  setDoc,
 } from "firebase/firestore";
 import type { NewSale, Sale, Prospect, Salesperson } from "@/lib/data";
 
@@ -32,6 +34,12 @@ export async function getSalespeople(db: Firestore): Promise<Salesperson[]> {
   // Assuming 'users' collection documents have fields matching the Salesperson type
   const salespeopleList = salespeopleSnapshot.docs.map(doc => fromFirestore<Salesperson>(doc));
   return salespeopleList;
+}
+
+export async function setSalesperson(db: Firestore, salesperson: Salesperson): Promise<void> {
+  const userRef = doc(db, "users", salesperson.uid);
+  const { uid, ...salespersonData } = salesperson; // Remove uid from the object to be saved
+  await setDoc(userRef, salespersonData, { merge: true });
 }
 
 export async function getSales(db: Firestore): Promise<Sale[]> {

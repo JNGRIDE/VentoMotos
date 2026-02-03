@@ -200,8 +200,26 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile }: RecordSaleDi
                           <CommandEmpty>No motorcycle found.</CommandEmpty>
                           <CommandGroup>
                             {inventory.map((moto) => (
-                              <CommandItem key={moto.id} value={moto.model} onSelect={() => handleMotorcycleSelect(moto)}>
-                                <Check className={cn("mr-2 h-4 w-4", selectedMotorcycle?.id === moto.id ? "opacity-100" : "opacity-0")} />
+                              <CommandItem
+                                key={moto.id}
+                                value={moto.model}
+                                onSelect={(currentValue) => {
+                                  const motoToSelect = inventory.find(
+                                    (m) => m.model.toLowerCase() === currentValue.toLowerCase()
+                                  );
+                                  if (motoToSelect) {
+                                    handleMotorcycleSelect(motoToSelect);
+                                  }
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedMotorcycle && selectedMotorcycle.model.toLowerCase() === moto.model.toLowerCase()
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
                                 {moto.model}
                               </CommandItem>
                             ))}

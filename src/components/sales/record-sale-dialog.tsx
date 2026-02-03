@@ -27,7 +27,7 @@ import { getSalespeople } from "@/firebase/db";
 import type { NewSale, Salesperson } from "@/lib/data";
 
 interface RecordSaleDialogProps {
-  onAddSale: (sale: NewSale) => void;
+  onAddSale: (sale: NewSale) => Promise<void>;
 }
 
 export function RecordSaleDialog({ onAddSale }: RecordSaleDialogProps) {
@@ -48,7 +48,7 @@ export function RecordSaleDialog({ onAddSale }: RecordSaleDialogProps) {
     }
   }, [db, open]);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const newSale: NewSale = {
@@ -69,15 +69,21 @@ export function RecordSaleDialog({ onAddSale }: RecordSaleDialogProps) {
         return;
     }
 
-    onAddSale(newSale);
-    
-    toast({
-      title: "Sale Recorded!",
-      description: "The new sale has been successfully added to the system.",
-    });
-    setOpen(false);
-    setPaymentMethod("");
-    event.currentTarget.reset();
+    try {
+      await onAddSale(newSale);
+      
+      toast({
+        title: "Sale Recorded!",
+        description: "The new sale has been successfully added to the system.",
+      });
+      setOpen(false);
+      setPaymentMethod("");
+      event.currentTarget.reset();
+    } catch (error) {
+      // The error toast is handled by the parent component (DashboardPage).
+      // We catch the error here to prevent the dialog from closing on failure.
+      console.error("Dialog submit error:", error);
+    }
   };
 
   return (

@@ -28,14 +28,28 @@ export default function DashboardPage() {
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
-    const [salesData, salespeopleData] = await Promise.all([
-      getSales(db),
-      getSalespeople(db),
-    ]);
-    setSales(salesData);
-    setSalespeople(salespeopleData);
-    setIsLoading(false);
-  }, [db]);
+    try {
+      const [salesData, salespeopleData] = await Promise.all([
+        getSales(db),
+        getSalespeople(db),
+      ]);
+      setSales(salesData);
+      setSalespeople(salespeopleData);
+    } catch (error: any) {
+      console.error("Failed to fetch data:", error);
+       let description = "An unexpected error occurred while fetching data.";
+        if (error.code === 'failed-precondition') {
+            description = "Could not connect to the database. Have you created a Firestore database in your Firebase project console?";
+        }
+      toast({
+        variant: "destructive",
+        title: "Error loading dashboard",
+        description,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [db, toast]);
 
   useEffect(() => {
     fetchData();
@@ -75,19 +89,51 @@ export default function DashboardPage() {
       avatarUrl: "https://picsum.photos/seed/admin/100/100"
     };
 
-    await setSalesperson(db, adminProfile);
-
-    toast({
-      title: "Admin Profile Created!",
-      description: "The salesperson profile for the admin has been created.",
-    });
-
-    fetchData();
+    try {
+        await setSalesperson(db, adminProfile);
+        toast({
+          title: "Admin Profile Created!",
+          description: "The salesperson profile for the admin has been created.",
+        });
+        fetchData();
+    } catch (error: any) {
+        console.error("Failed to create admin profile:", error);
+        let description = "An unexpected error occurred. Please check the console for details.";
+        if (error.code === 'failed-precondition') {
+            description = "Could not connect to the database. Have you created a Firestore database in your Firebase project console?";
+        } else if (error.code === 'permission-denied') {
+            description = "You don't have permission to perform this action. Check your Firestore security rules.";
+        }
+        
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: description,
+        });
+    }
   }, [db, fetchData, toast, user]);
 
   const handleAddSale = async (newSaleData: NewSale) => {
-    await addSale(db, newSaleData);
-    fetchData(); // Refetch all data after adding a new one
+    try {
+      await addSale(db, newSaleData);
+      fetchData(); // Refetch all data after adding a new one
+    } catch (error: any) {
+      console.error("Failed to add sale:", error);
+      let description = "An unexpected error occurred. Please check the console for details.";
+      if (error.code === 'failed-precondition') {
+          description = "Could not connect to the database. Have you created a Firestore database in your Firebase project console?";
+      } else if (error.code === 'permission-denied') {
+          description = "You don't have permission to perform this action. Check your Firestore security rules.";
+      }
+      
+      toast({
+          variant: "destructive",
+          title: "Uh oh! Could not record sale.",
+          description: description,
+      });
+      // Re-throw the error so the caller in the dialog knows it failed
+      throw error;
+    }
   };
   
   if (isLoading) {

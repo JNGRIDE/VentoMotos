@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -30,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { useFirebaseApp, useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { createUserProfile } from "@/firebase/services";
+import { useUser } from "@/firebase/auth/use-user";
 
 export default function LoginPage() {
   const firebaseConfigIncomplete = !process.env.NEXT_PUBLIC_API_KEY || !process.env.NEXT_PUBLIC_PROJECT_ID;
@@ -38,18 +38,22 @@ export default function LoginPage() {
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  
+  const { user, isLoading: isAuthLoading } = useUser();
+
   const [auth, setAuth] = useState<Auth | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isProcessingRedirect, setIsProcessingRedirect] = useState(true);
   const [isSignUp, setIsSignUp] = useState(false);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // Effect to handle the redirect from Google Sign-In
   useEffect(() => {
     if (firebaseConfigIncomplete) {
-      setIsLoading(false);
+      setIsProcessingRedirect(false);
       return;
     }
     const authInstance = getAuth(app);
@@ -58,6 +62,8 @@ export default function LoginPage() {
     getRedirectResult(authInstance)
       .then(async (result) => {
         if (result) {
+          // A user has just signed in or signed up via redirect.
+          // Handle new user creation if necessary.
           const info = getAdditionalUserInfo(result);
           if (info?.isNewUser) {
             await createUserProfile(
@@ -70,9 +76,7 @@ export default function LoginPage() {
               description: "Your profile has been created.",
             });
           }
-          router.push("/dashboard");
-        } else {
-          setIsLoading(false);
+          // The redirect to dashboard will be handled by the other useEffect
         }
       })
       .catch((error) => {
@@ -83,9 +87,20 @@ export default function LoginPage() {
           description:
             error.message || "There was a problem with Google Sign-In.",
         });
-        setIsLoading(false);
+      })
+      .finally(() => {
+        // Finished checking for a redirect result.
+        setIsProcessingRedirect(false);
       });
-  }, [app, db, router, toast, firebaseConfigIncomplete]);
+  }, [app, db, toast, firebaseConfigIncomplete]);
+
+  // Effect to redirect if user is logged in
+  useEffect(() => {
+    // Once auth is not loading and we have a user, go to dashboard.
+    if (!isAuthLoading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, isAuthLoading, router]);
 
   const handleGoogleSignIn = async () => {
     if (!auth) return;
@@ -108,7 +123,7 @@ export default function LoginPage() {
     setIsSigningIn(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/dashboard");
+      // Let the useEffect handle the redirect
     } catch (error: any) {
       handleAuthError(error, "Login failed");
     } finally {
@@ -138,7 +153,7 @@ export default function LoginPage() {
       const user = userCredential.user;
       await updateProfile(user, { displayName: name });
       await createUserProfile(db, user, name);
-      router.push("/dashboard");
+      // Let the useEffect handle the redirect
     } catch (error: any) {
       handleAuthError(error, "Sign-up failed");
     } finally {
@@ -174,6 +189,8 @@ export default function LoginPage() {
     toast({ variant: "destructive", title, description });
   };
   
+  const isLoading = isAuthLoading || isProcessingRedirect;
+
   if (firebaseConfigIncomplete) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">

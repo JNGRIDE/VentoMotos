@@ -74,6 +74,8 @@ export default function DashboardPage() {
     fetchData();
   }, [fetchData]);
   
+  const isManager = currentUserProfile?.role === 'Manager';
+  
   const totalSales = useMemo(() => sales.reduce((sum, sale) => sum + sale.amount, 0), [sales]);
   const totalCredits = useMemo(() => sales.filter(s => s.paymentMethod === 'Financing').length, [sales]);
   const ventoCredits = useMemo(() => sales.filter(s => s.creditProvider === 'Vento').length, [sales]);
@@ -94,7 +96,19 @@ export default function DashboardPage() {
 
 
   const salesProgress = salesGoal > 0 ? (totalSales / salesGoal) * 100 : 0;
-  const commissionEarned = salesProgress >= 80 ? (totalSales * (1 - 0.16)) * 0.019 : 0;
+  
+  const commissionData = useMemo(() => {
+    const commissionRate = isManager ? 0.012 : 0.019;
+    const earned =
+      salesProgress >= 80 ? totalSales * (1 - 0.16) * commissionRate : 0;
+    const description =
+      salesProgress < 80
+        ? `${(80 - salesProgress).toFixed(1)}% to unlock`
+        : `${(commissionRate * 100).toFixed(1)}% rate on sales (net of 16% VAT)`;
+
+    return { earned, description };
+  }, [isManager, salesProgress, totalSales]);
+
   const creditBonus = ventoCredits >= 5 ? (ventoCredits - 4) * 200 : 0;
 
   const teamChartData = useMemo(() => {
@@ -175,8 +189,6 @@ export default function DashboardPage() {
     )
   }
 
-  const isManager = currentUserProfile.role === 'Manager';
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between space-y-2">
@@ -217,8 +229,8 @@ export default function DashboardPage() {
         />
         <KpiCard
           title="Commission"
-          value={`$${commissionEarned.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
-          description={salesProgress < 80 ? `${(80 - salesProgress).toFixed(1)}% to unlock` : "1.9% rate on sales (net of 16% VAT)"}
+          value={`$${commissionData.earned.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
+          description={commissionData.description}
           icon={TrendingUp}
           iconColor={salesProgress >= 80 ? 'text-green-500' : ''}
         />

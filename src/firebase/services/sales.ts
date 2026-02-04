@@ -23,10 +23,14 @@ export async function getSales(db: Firestore, user: UserProfile, sprint: string)
     constraints.push(where("salespersonId", "==", user.uid));
   }
 
-  const q = query(salesCol, ...constraints, orderBy("date", "desc"));
+  // We order by date on the client side to simplify the query and avoid complex indexes
+  const q = query(salesCol, ...constraints);
     
   const salesSnapshot = await getDocs(q);
   const salesList = salesSnapshot.docs.map(doc => fromFirestore<Sale>(doc));
+
+  // Sort here on the client side
+  salesList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return salesList;
 }

@@ -37,8 +37,10 @@ service cloud.firestore {
     match /inventory/{motorcycleId} {
       // Any authenticated user can read the inventory (to see available models)
       allow read: if request.auth != null;
-      // Only a manager can add or update inventory items
-      allow write: if isManager();
+      // Any authenticated user can UPDATE inventory (to decrement stock during a sale)
+      allow update: if request.auth != null;
+      // Only a manager can CREATE or DELETE inventory items
+      allow create, delete: if isManager();
     }
   }
 }

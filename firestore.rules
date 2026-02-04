@@ -23,8 +23,8 @@ service cloud.firestore {
       allow read: if isManager() || request.auth.uid == resource.data.salespersonId;
       // A manager can create a sale for anyone. A salesperson only for themselves.
       allow create: if isManager() || request.auth.uid == request.resource.data.salespersonId;
-      // For safety, disallow updates and deletes from the client.
-      allow update, delete: if false; 
+      // Only a manager can update or delete a sale record.
+      allow update, delete: if isManager();
     }
 
     match /prospects/{prospectId} {

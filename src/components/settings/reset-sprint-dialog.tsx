@@ -55,7 +55,7 @@ export function ResetSprintDialog({ sprint, onSprintReset }: ResetSprintDialogPr
       await resetSprintData(db, sprint);
       toast({
         title: "Sprint Reiniciado",
-        description: `Todos los datos de ventas y prospectos para ${formattedSprint} han sido borrados.`,
+        description: `Todos los datos para ${formattedSprint} han sido borrados.`,
       });
       onSprintReset();
       setOpen(false);
@@ -85,8 +85,7 @@ export function ResetSprintDialog({ sprint, onSprintReset }: ResetSprintDialogPr
           <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
           <AlertDialogDescription>
             Esta acción es irreversible. Se borrarán TODAS las ventas y prospectos del sprint de{' '}
-            <span className="font-bold text-destructive">{formattedSprint}</span>.
-            También se reiniciarán las metas de todos los vendedores a cero.
+            <span className="font-bold text-destructive">{formattedSprint}</span>, se eliminará el inventario completo y se restablecerán las metas de los vendedores.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="py-2">

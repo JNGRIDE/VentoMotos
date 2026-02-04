@@ -23,7 +23,6 @@ export async function getSales(db: Firestore, user: UserProfile, sprint: string)
     constraints.push(where("salespersonId", "==", user.uid));
   }
 
-  // We order by date on the client side to simplify the query and avoid complex indexes
   const q = query(salesCol, ...constraints);
     
   const salesSnapshot = await getDocs(q);
@@ -96,6 +95,13 @@ export async function resetSprintData(db: Firestore, sprint: string): Promise<vo
   const usersSnapshot = await getDocs(usersQuery);
   usersSnapshot.forEach(userDoc => {
     batch.update(userDoc.ref, { salesGoal: 0, creditsGoal: 0 });
+  });
+
+  // 4. Delete all inventory
+  const inventoryQuery = query(collection(db, "inventory"));
+  const inventorySnapshot = await getDocs(inventoryQuery);
+  inventorySnapshot.forEach(doc => {
+    batch.delete(doc.ref);
   });
 
   await batch.commit();

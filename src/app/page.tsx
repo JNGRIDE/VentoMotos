@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFirebaseApp, useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { createUserProfile } from "@/firebase/services";
+import { createUserProfile, getUserProfile } from "@/firebase/services";
 import { useUser } from "@/firebase/auth/use-user";
 
 export default function LoginPage() {
@@ -62,30 +62,35 @@ export default function LoginPage() {
     getRedirectResult(authInstance)
       .then(async (result) => {
         if (result) {
-          // A user has just signed in or signed up via redirect.
-          // Handle new user creation if necessary.
-          const info = getAdditionalUserInfo(result);
-          if (info?.isNewUser) {
+          const user = result.user;
+          // Check if a profile exists. If not, create one.
+          // This is more robust than relying on isNewUser.
+          const userProfile = await getUserProfile(db, user.uid);
+          if (!userProfile) {
             await createUserProfile(
               db,
-              result.user,
-              result.user.displayName || "New User"
+              user,
+              user.displayName || "New User"
             );
             toast({
               title: "Welcome!",
-              description: "Your profile has been created.",
+              description: "Your user profile has been created.",
             });
           }
-          // The redirect to dashboard will be handled by the other useEffect
         }
       })
       .catch((error) => {
         console.error("Authentication error on redirect:", error);
+        let description = "There was a problem with Google Sign-In.";
+        if (error.code === 'auth/unauthorized-domain') {
+            description = "This domain is not authorized. Please add it to your Firebase project's authorized domains."
+        } else {
+            description = error.message || description;
+        }
         toast({
           variant: "destructive",
           title: "Uh oh! Login failed.",
-          description:
-            error.message || "There was a problem with Google Sign-In.",
+          description,
         });
       })
       .finally(() => {

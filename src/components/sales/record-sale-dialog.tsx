@@ -129,18 +129,23 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
     }
     
     setIsSaving(true);
+
     const newSale: NewSale = {
       sprint,
       salespersonId,
       prospectName,
       amount: Number(amount),
       paymentMethod: paymentMethod as "Cash" | "Financing",
-      creditProvider,
       motorcycleId: selectedMotorcycleId,
       motorcycleModel: selectedMotorcycle!.model,
       soldSku,
       notes: currentSpecialOrderNotes,
     };
+    
+    // Conditionally add creditProvider only if payment method is Financing
+    if (newSale.paymentMethod === 'Financing') {
+      newSale.creditProvider = creditProvider;
+    }
 
     try {
       await onAddSale(newSale);

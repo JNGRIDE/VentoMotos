@@ -2,12 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Bike, Chrome, LoaderCircle, AlertTriangle } from "lucide-react";
+import { Bike, LoaderCircle, AlertTriangle } from "lucide-react";
 import {
   getAuth,
-  GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
@@ -20,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFirebaseApp, useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { createUserProfile, getUserProfile } from "@/firebase/services";
+import { createUserProfile } from "@/firebase/services";
 import { useUser } from "@/firebase/auth/use-user";
 
 export default function LoginPage() {
@@ -36,7 +33,6 @@ export default function LoginPage() {
 
   const [auth, setAuth] = useState<Auth | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isProcessingRedirect, setIsProcessingRedirect] = useState(true);
   const [isSignUp, setIsSignUp] = useState(false);
 
   const [name, setName] = useState("");
@@ -49,38 +45,14 @@ export default function LoginPage() {
     setConfigStatus(isConfigIncomplete ? 'incomplete' : 'complete');
   }, []);
 
-  // Effect to handle the redirect from Google Sign-In
+  // Set auth instance once config is ready
   useEffect(() => {
-    // Only run if config is complete
-    if (configStatus !== 'complete') {
-        setIsProcessingRedirect(false);
-        return;
-    };
-    const authInstance = getAuth(app);
-    setAuth(authInstance);
+    if (configStatus === 'complete') {
+        const authInstance = getAuth(app);
+        setAuth(authInstance);
+    }
+  }, [app, configStatus]);
 
-    getRedirectResult(authInstance)
-      .then(async (result) => {
-        if (result) {
-          const user = result.user;
-          const userProfile = await getUserProfile(db, user.uid);
-          if (!userProfile) {
-            await createUserProfile(db, user, user.displayName || "New User");
-            toast({
-              title: "Welcome!",
-              description: "Your user profile has been created.",
-            });
-          }
-        }
-      })
-      .catch((error) => {
-        console.error("Authentication error on redirect:", error);
-        handleAuthError(error, "Uh oh! Login failed.");
-      })
-      .finally(() => {
-        setIsProcessingRedirect(false);
-      });
-  }, [app, db, toast, configStatus]);
 
   // Effect to redirect if user is logged in
   useEffect(() => {
@@ -89,11 +61,6 @@ export default function LoginPage() {
     }
   }, [user, isAuthLoading, router]);
 
-  const handleGoogleSignIn = async () => {
-    if (!auth) return;
-    const provider = new GoogleAuthProvider();
-    signInWithRedirect(auth, provider);
-  };
 
   const handleEmailSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -104,6 +71,7 @@ export default function LoginPage() {
     setIsSigningIn(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      // On successful sign-in, the useEffect above will redirect to dashboard
     } catch (error: any) {
       handleAuthError(error, "Login failed");
     } finally {
@@ -123,6 +91,7 @@ export default function LoginPage() {
       const user = userCredential.user;
       await updateProfile(user, { displayName: name });
       await createUserProfile(db, user, name);
+      // On successful sign-up, the useEffect above will redirect to dashboard
     } catch (error: any) {
       handleAuthError(error, "Sign-up failed");
     } finally {
@@ -164,7 +133,7 @@ export default function LoginPage() {
     toast({ variant: "destructive", title, description });
   };
   
-  const isLoading = isAuthLoading || isProcessingRedirect || configStatus === 'checking';
+  const isLoading = isAuthLoading || configStatus === 'checking';
 
   // Initial state for server-render and first client render
   if (configStatus === 'checking') {
@@ -253,38 +222,26 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6">
-            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={!auth || isSigningIn}>
-              <Chrome className="mr-2 h-4 w-4" />
-              Sign {isSignUp ? "up" : "in"} with Google
-            </Button>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+          <form onSubmit={isSignUp ? handleEmailSignUp : handleEmailSignIn} className="grid gap-4">
+            {isSignUp && (
+              <div className="grid gap-2">
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} disabled={isSigningIn}/>
               </div>
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={isSigningIn}/>
             </div>
-            <form onSubmit={isSignUp ? handleEmailSignUp : handleEmailSignIn} className="grid gap-4">
-              {isSignUp && (
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} disabled={isSigningIn}/>
-                </div>
-              )}
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={isSigningIn}/>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isSigningIn} placeholder={isSignUp ? "6+ characters" : ""}/>
-              </div>
-              <Button type="submit" className="w-full" disabled={isSigningIn}>
-                {isSigningIn && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                {isSignUp ? "Create Account" : "Sign In"}
-              </Button>
-            </form>
-          </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isSigningIn} placeholder={isSignUp ? "6+ characters" : ""}/>
+            </div>
+            <Button type="submit" className="w-full mt-2" disabled={!auth || isSigningIn}>
+              {isSigningIn && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+              {isSignUp ? "Create Account" : "Sign In"}
+            </Button>
+          </form>
         </CardContent>
         <CardFooter className="flex justify-center text-sm">
           <p onClick={() => setIsSignUp(!isSignUp)} className="cursor-pointer text-muted-foreground hover:text-primary">

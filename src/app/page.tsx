@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Bike, Chrome, LoaderCircle, AlertTriangle, KeyRound, Copy } from "lucide-react";
+import { Bike, Chrome, LoaderCircle, AlertTriangle } from "lucide-react";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -11,19 +11,11 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
-  getAdditionalUserInfo,
   type Auth,
 } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFirebaseApp, useFirestore } from "@/firebase";
@@ -32,7 +24,8 @@ import { createUserProfile, getUserProfile } from "@/firebase/services";
 import { useUser } from "@/firebase/auth/use-user";
 
 export default function LoginPage() {
-  const firebaseConfigIncomplete = !process.env.NEXT_PUBLIC_API_KEY || !process.env.NEXT_PUBLIC_PROJECT_ID;
+  // State to manage configuration check and avoid hydration errors
+  const [configStatus, setConfigStatus] = useState<'checking' | 'incomplete' | 'complete'>('checking');
   
   const app = useFirebaseApp();
   const db = useFirestore();
@@ -49,13 +42,20 @@ export default function LoginPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  
+  // Hydration-safe check for Firebase configuration
+  useEffect(() => {
+    const isConfigIncomplete = !process.env.NEXT_PUBLIC_API_KEY || !process.env.NEXT_PUBLIC_PROJECT_ID;
+    setConfigStatus(isConfigIncomplete ? 'incomplete' : 'complete');
+  }, []);
 
   // Effect to handle the redirect from Google Sign-In
   useEffect(() => {
-    if (firebaseConfigIncomplete) {
-      setIsProcessingRedirect(false);
-      return;
-    }
+    // Only run if config is complete
+    if (configStatus !== 'complete') {
+        setIsProcessingRedirect(false);
+        return;
+    };
     const authInstance = getAuth(app);
     setAuth(authInstance);
 
@@ -63,15 +63,9 @@ export default function LoginPage() {
       .then(async (result) => {
         if (result) {
           const user = result.user;
-          // Check if a profile exists. If not, create one.
-          // This is more robust than relying on isNewUser.
           const userProfile = await getUserProfile(db, user.uid);
           if (!userProfile) {
-            await createUserProfile(
-              db,
-              user,
-              user.displayName || "New User"
-            );
+            await createUserProfile(db, user, user.displayName || "New User");
             toast({
               title: "Welcome!",
               description: "Your user profile has been created.",
@@ -81,27 +75,15 @@ export default function LoginPage() {
       })
       .catch((error) => {
         console.error("Authentication error on redirect:", error);
-        let description = "There was a problem with Google Sign-In.";
-        if (error.code === 'auth/unauthorized-domain') {
-            description = "This domain is not authorized. Please add it to your Firebase project's authorized domains."
-        } else {
-            description = error.message || description;
-        }
-        toast({
-          variant: "destructive",
-          title: "Uh oh! Login failed.",
-          description,
-        });
+        handleAuthError(error, "Uh oh! Login failed.");
       })
       .finally(() => {
-        // Finished checking for a redirect result.
         setIsProcessingRedirect(false);
       });
-  }, [app, db, toast, firebaseConfigIncomplete]);
+  }, [app, db, toast, configStatus]);
 
   // Effect to redirect if user is logged in
   useEffect(() => {
-    // Once auth is not loading and we have a user, go to dashboard.
     if (!isAuthLoading && user) {
       router.push("/dashboard");
     }
@@ -116,19 +98,12 @@ export default function LoginPage() {
   const handleEmailSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!auth) return;
-
     if (!email || !password) {
-      return toast({
-        variant: "destructive",
-        title: "Missing fields",
-        description: "Please enter both email and password.",
-      });
+      return toast({ variant: "destructive", title: "Missing fields", description: "Please enter both email and password." });
     }
-
     setIsSigningIn(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // Let the useEffect handle the redirect
     } catch (error: any) {
       handleAuthError(error, "Login failed");
     } finally {
@@ -139,26 +114,15 @@ export default function LoginPage() {
   const handleEmailSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!auth) return;
-
     if (!name || !email || !password) {
-      return toast({
-        variant: "destructive",
-        title: "Missing fields",
-        description: "Please fill in all fields to create an account.",
-      });
+      return toast({ variant: "destructive", title: "Missing fields", description: "Please fill in all fields to create an account." });
     }
-
     setIsSigningIn(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       await updateProfile(user, { displayName: name });
       await createUserProfile(db, user, name);
-      // Let the useEffect handle the redirect
     } catch (error: any) {
       handleAuthError(error, "Sign-up failed");
     } finally {
@@ -169,6 +133,12 @@ export default function LoginPage() {
   const handleAuthError = (error: any, title: string) => {
     let description = "An unexpected error occurred.";
     switch (error.code) {
+      case "auth/invalid-api-key":
+        description = "The provided API Key is invalid. Please check your environment variables in Vercel.";
+        break;
+      case "auth/unauthorized-domain":
+        description = "This domain is not authorized for OAuth operations. Please add it to your Firebase project's authorized domains.";
+        break;
       case "auth/user-not-found":
       case "auth/wrong-password":
       case "auth/invalid-credential":
@@ -184,71 +154,79 @@ export default function LoginPage() {
         description = "Password should be at least 6 characters long.";
         break;
       case "auth/too-many-requests":
-        description =
-          "Too many failed login attempts. Please try again later.";
+        description = "Too many failed login attempts. Please try again later.";
         break;
       default:
         console.error("Authentication error:", error);
+        description = error.message || description;
         break;
     }
     toast({ variant: "destructive", title, description });
   };
   
-  const isLoading = isAuthLoading || isProcessingRedirect;
+  const isLoading = isAuthLoading || isProcessingRedirect || configStatus === 'checking';
 
-  if (firebaseConfigIncomplete) {
+  // Initial state for server-render and first client render
+  if (configStatus === 'checking') {
+     return (
+       <div className="flex min-h-screen items-center justify-center bg-background p-4">
+         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+       </div>
+     );
+  }
+
+  // Render config error guide if incomplete
+  if (configStatus === 'incomplete') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <Card className="mx-auto w-full max-w-2xl border-2 border-destructive shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-destructive">
               <AlertTriangle className="h-7 w-7" />
-              <span className="font-headline text-3xl">Acción Requerida: Configura tus Claves</span>
+              <span className="font-headline text-3xl">Action Required: Configure Your Keys</span>
             </CardTitle>
             <CardDescription className="text-base">
-              Tu aplicación no puede conectar con Firebase. Sigue esta guía visual para solucionarlo.
+              Your application cannot connect to Firebase. Follow this visual guide to fix it.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6 text-sm">
-            
             <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
-              <h3 className="font-semibold text-lg">Paso 1: Encuentra tus claves en Firebase</h3>
+              <h3 className="font-semibold text-lg">Step 1: Find your keys in Firebase</h3>
               <ul className="space-y-3 pl-4">
-                <li><span className="font-bold">1.</span> Abre la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Consola de Firebase</a> y selecciona tu proyecto.</li>
-                <li><span className="font-bold">2.</span> Haz clic en el icono de engranaje (⚙️) y ve a <span className="font-semibold">Project settings</span>.</li>
-                <li><span className="font-bold">3.</span> En la pestaña "General", baja hasta "Your apps" y haz clic en tu aplicación web (icono: <span className="inline-block font-mono text-primary">&lt;/&gt;</span>).</li>
-                <li><span className="font-bold">4.</span> Selecciona la opción <span className="font-semibold">Config</span> para ver tus claves. Verás un objeto <code className="text-xs">firebaseConfig</code>.</li>
+                <li><span className="font-bold">1.</span> Open the <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Firebase Console</a> and select your project.</li>
+                <li><span className="font-bold">2.</span> Click the gear icon (⚙️) and go to <span className="font-semibold">Project settings</span>.</li>
+                <li><span className="font-bold">3.</span> Under the "General" tab, scroll to "Your apps" and click on your web app (icon: <span className="inline-block font-mono text-primary">&lt;/&gt;</span>).</li>
+                <li><span className="font-bold">4.</span> Select the <span className="font-semibold">Config</span> option to see your keys. You'll see a `firebaseConfig` object.</li>
               </ul>
             </div>
-            
             <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
-              <h3 className="font-semibold text-lg">Paso 2: Añade las claves a Vercel</h3>
-               <p>Copia cada valor del objeto <code className="text-xs">firebaseConfig</code> y pégalo en una Variable de Entorno en Vercel. Ve a <span className="font-semibold">Settings &gt; Environment Variables</span> en tu proyecto de Vercel.</p>
+              <h3 className="font-semibold text-lg">Step 2: Add keys to Vercel</h3>
+               <p>Copy each value from the `firebaseConfig` object and paste it into an Environment Variable in Vercel. Go to <span className="font-semibold">Settings &gt; Environment Variables</span> in your Vercel project.</p>
               <div className="space-y-2 rounded-md bg-background p-4 font-mono text-xs shadow-inner">
-                <p><span className="text-muted-foreground"># En Vercel (Name)</span>  = <span className="text-muted-foreground"># En Firebase (Value)</span></p>
-                <p><span className="text-primary">NEXT_PUBLIC_API_KEY</span> = "AIzaSy..." <span className="text-muted-foreground">(de apiKey)</span></p>
-                <p><span className="text-primary">NEXT_PUBLIC_AUTH_DOMAIN</span> = "..." <span className="text-muted-foreground">(de authDomain)</span></p>
-                <p><span className="text-primary">NEXT_PUBLIC_PROJECT_ID</span> = "..." <span className="text-muted-foreground">(de projectId)</span></p>
-                <p><span className="text-primary">NEXT_PUBLIC_STORAGE_BUCKET</span> = "..." <span className="text-muted-foreground">(de storageBucket)</span></p>
-                <p><span className="text-primary">NEXT_PUBLIC_MESSAGING_SENDER_ID</span> = "..." <span className="text-muted-foreground">(de messagingSenderId)</span></p>
-                <p><span className="text-primary">NEXT_PUBLIC_APP_ID</span> = "..." <span className="text-muted-foreground">(de appId)</span></p>
-                <p><span className="text-primary">NEXT_PUBLIC_MEASUREMENT_ID</span> = "..." <span className="text-muted-foreground">(de measurementId, si existe - opcional)</span></p>
+                <p><span className="text-muted-foreground"># Vercel Name</span>  = <span className="text-muted-foreground"># Firebase Value</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_API_KEY</span> = "AIzaSy..." <span className="text-muted-foreground">(from apiKey)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_AUTH_DOMAIN</span> = "..." <span className="text-muted-foreground">(from authDomain)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_PROJECT_ID</span> = "..." <span className="text-muted-foreground">(from projectId)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_STORAGE_BUCKET</span> = "..." <span className="text-muted-foreground">(from storageBucket)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_MESSAGING_SENDER_ID</span> = "..." <span className="text-muted-foreground">(from messagingSenderId)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_APP_ID</span> = "..." <span className="text-muted-foreground">(from appId)</span></p>
+                <p><span className="text-primary">NEXT_PUBLIC_MEASUREMENT_ID</span> = "..." <span className="text-muted-foreground">(from measurementId - optional)</span></p>
               </div>
-               <p>No te olvides de añadir también tu clave de Gemini:</p>
+               <p>Don't forget to also add your Gemini key:</p>
                <div className="rounded-md bg-background p-4 font-mono text-xs shadow-inner">
-                 <p><span className="text-primary">GEMINI_API_KEY</span> = "AIza..." <span className="text-muted-foreground">(la obtienes de Google AI Studio)</span></p>
+                 <p><span className="text-primary">GEMINI_API_KEY</span> = "AIza..." <span className="text-muted-foreground">(obtained from Google AI Studio)</span></p>
                </div>
             </div>
-
           </CardContent>
            <CardFooter>
-            <p className="text-sm text-muted-foreground">Después de guardar las variables en Vercel, la plataforma iniciará un nuevo despliegue (re-deploy) automáticamente. ¡Con eso, la aplicación funcionará!</p>
+            <p className="text-sm text-muted-foreground">After saving the variables in Vercel, the platform will automatically start a new deployment. Once complete, the application will work!</p>
           </CardFooter>
         </Card>
       </div>
     )
   }
 
+  // Show loader while auth state is being resolved
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -257,6 +235,7 @@ export default function LoginPage() {
     );
   }
 
+  // Render the login form
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="mx-auto w-full max-w-sm border-2 border-primary/20 shadow-xl">
@@ -270,93 +249,46 @@ export default function LoginPage() {
             {isSignUp ? "Create an Account" : "MotoSales CRM"}
           </CardTitle>
           <CardDescription>
-            {isSignUp
-              ? "Enter your details to get started"
-              : "Sign in to access your dashboard"}
+            {isSignUp ? "Enter your details to get started" : "Sign in to access your dashboard"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-6">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleGoogleSignIn}
-              disabled={!auth || isSigningIn}
-            >
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={!auth || isSigningIn}>
               <Chrome className="mr-2 h-4 w-4" />
               Sign {isSignUp ? "up" : "in"} with Google
             </Button>
-
             <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                  Or continue with
-                </span>
+                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
               </div>
             </div>
-
-            <form
-              onSubmit={isSignUp ? handleEmailSignUp : handleEmailSignIn}
-              className="grid gap-4"
-            >
+            <form onSubmit={isSignUp ? handleEmailSignUp : handleEmailSignIn} className="grid gap-4">
               {isSignUp && (
                 <div className="grid gap-2">
                   <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="John Doe"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    disabled={isSigningIn}
-                  />
+                  <Input id="name" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} disabled={isSigningIn}/>
                 </div>
               )}
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isSigningIn}
-                />
+                <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={isSigningIn}/>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isSigningIn}
-                  placeholder={isSignUp ? "6+ characters" : ""}
-                />
+                <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isSigningIn} placeholder={isSignUp ? "6+ characters" : ""}/>
               </div>
               <Button type="submit" className="w-full" disabled={isSigningIn}>
-                {isSigningIn && (
-                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                )}
+                {isSigningIn && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                 {isSignUp ? "Create Account" : "Sign In"}
               </Button>
             </form>
           </div>
         </CardContent>
         <CardFooter className="flex justify-center text-sm">
-          <p
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="cursor-pointer text-muted-foreground hover:text-primary"
-          >
-            {isSignUp
-              ? "Already have an account? Sign In"
-              : "Don't have an account? Sign Up"}
+          <p onClick={() => setIsSignUp(!isSignUp)} className="cursor-pointer text-muted-foreground hover:text-primary">
+            {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
           </p>
         </CardFooter>
       </Card>

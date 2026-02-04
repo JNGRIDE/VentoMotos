@@ -31,10 +31,11 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   
   const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [selectedSprint, setSelectedSprint] = useState<string>(getCurrentSprintValue());
+  const [selectedSprint, setSelectedSprint] = useState<string>('');
 
   useEffect(() => {
     setSprints(generateSprints());
+    setSelectedSprint(getCurrentSprintValue());
   }, []);
 
   const fetchData = useCallback(async () => {

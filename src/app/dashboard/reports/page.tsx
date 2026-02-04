@@ -29,7 +29,7 @@ export default function ReportsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [selectedSprint, setSelectedSprint] = useState<string>(getCurrentSprintValue());
+  const [selectedSprint, setSelectedSprint] = useState<string>('');
 
   const reportDate = useMemo(() => {
     if (!selectedSprint) return "";
@@ -40,6 +40,7 @@ export default function ReportsPage() {
 
   useEffect(() => {
     setSprints(generateSprints());
+    setSelectedSprint(getCurrentSprintValue());
   }, []);
 
   const fetchData = useCallback(async () => {

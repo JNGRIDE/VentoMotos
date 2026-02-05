@@ -1,0 +1,195 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { LoaderCircle } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useToast } from "@/hooks/use-toast";
+import { useFirestore } from "@/firebase";
+import { updateProspect, getUserProfiles } from "@/firebase/services";
+import type { Prospect, UserProfile } from "@/lib/data";
+
+const prospectSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  source: z.enum(["Organic", "Advertising"]),
+  salespersonId: z.string().min(1, "Salesperson is required"),
+  stage: z.enum(["Potential", "Appointment", "Credit", "Closed"]),
+});
+
+type ProspectFormValues = z.infer<typeof prospectSchema>;
+
+interface EditProspectDialogProps {
+  prospect: Prospect;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onProspectUpdated: () => void;
+  currentUserProfile: UserProfile | null;
+}
+
+export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpdated, currentUserProfile }: EditProspectDialogProps) {
+  const db = useFirestore();
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
+  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
+
+  const form = useForm<ProspectFormValues>({
+    resolver: zodResolver(prospectSchema),
+    defaultValues: {
+      name: prospect.name,
+      source: prospect.source,
+      salespersonId: prospect.salespersonId,
+      stage: prospect.stage,
+    },
+  });
+
+  useEffect(() => {
+    if (open) {
+        form.reset({
+            name: prospect.name,
+            source: prospect.source,
+            salespersonId: prospect.salespersonId,
+            stage: prospect.stage,
+        });
+
+        if (currentUserProfile?.role === 'Manager') {
+            getUserProfiles(db).then(setUserProfiles);
+        }
+    }
+  }, [open, prospect, form, db, currentUserProfile]);
+
+  const onSubmit = async (data: ProspectFormValues) => {
+    setIsSaving(true);
+    try {
+      await updateProspect(db, prospect.id, data);
+      toast({
+        title: "Prospect Updated",
+        description: "The prospect details have been saved.",
+      });
+      onProspectUpdated();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update prospect.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const isManager = currentUserProfile?.role === 'Manager';
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Prospect</DialogTitle>
+          <DialogDescription>
+            Update the details for this lead.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Name</FormLabel>
+                            <FormControl>
+                                <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="source"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Source</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select source" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Organic">Organic</SelectItem>
+                                    <SelectItem value="Advertising">Advertising</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="stage"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Stage</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select stage" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Potential">Potential</SelectItem>
+                                    <SelectItem value="Appointment">Appointment</SelectItem>
+                                    <SelectItem value="Credit">Credit</SelectItem>
+                                    <SelectItem value="Closed">Closed</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                {isManager && (
+                     <FormField
+                        control={form.control}
+                        name="salespersonId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Assigned To</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select salesperson" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                         {userProfiles.map(p => <SelectItem key={p.uid} value={p.uid}>{p.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
+
+                <DialogFooter>
+                    <Button type="submit" disabled={isSaving}>
+                        {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                    </Button>
+                </DialogFooter>
+            </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}

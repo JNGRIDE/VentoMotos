@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useEffect } from 'react';
-import { DollarSign, CreditCard, Award, TrendingUp, UserPlus, ShieldAlert, Download, CalendarOff } from 'lucide-react';
+import { DollarSign, CreditCard, Award, TrendingUp, UserPlus, ShieldAlert, Download, CalendarOff, CalendarPlus } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { KpiCard } from '@/components/dashboard/kpi-card';
@@ -32,6 +32,7 @@ export default function DashboardPage() {
     createAdminProfile,
     recordSale,
     finishSprint,
+    startNextSprint,
     error
   } = useDashboardData();
 
@@ -148,6 +149,15 @@ export default function DashboardPage() {
       }
   };
 
+  const handleStartNextSprint = async () => {
+    try {
+        await startNextSprint();
+        toast({ title: "New Sprint Started", description: "The next month's sprint has been created and selected." });
+    } catch (e) {
+        toast({ variant: "destructive", title: "Error", description: "Failed to start new sprint." });
+    }
+  };
+
   if (isLoading) {
     return <DashboardSkeleton />;
   }
@@ -188,11 +198,20 @@ export default function DashboardPage() {
             </SelectContent>
           </Select>
 
-          {isManager && currentSprintStatus === 'active' && (
-              <Button onClick={handleFinishSprint} variant="destructive" size="sm" className="h-8 gap-1">
-                  <CalendarOff className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">End Sprint</span>
-              </Button>
+          {isManager && (
+            <>
+                <Button onClick={handleStartNextSprint} variant="outline" size="sm" className="h-8 gap-1">
+                    <CalendarPlus className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">New Sprint</span>
+                </Button>
+
+                {currentSprintStatus === 'active' && (
+                    <Button onClick={handleFinishSprint} variant="destructive" size="sm" className="h-8 gap-1">
+                        <CalendarOff className="h-3.5 w-3.5" />
+                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">End Sprint</span>
+                    </Button>
+                )}
+            </>
           )}
 
           {user && user.uid === ADMIN_UID && !adminProfileExists && (

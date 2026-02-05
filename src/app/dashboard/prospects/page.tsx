@@ -31,7 +31,7 @@ export default function ProspectsPage() {
 
   const fetchData = useCallback(async () => {
     if (!user || !selectedSprint) return;
-    setIsLoading(true);
+    
     try {
       const profile = await getUserProfile(db, user.uid);
       if (!profile) {

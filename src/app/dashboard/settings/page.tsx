@@ -116,11 +116,12 @@ export default function SprintSettingsPage() {
         description: `New goals have been assigned to ${numSalespeople} salespeople for the current sprint.`,
       });
       fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const errorObj = error as { message?: string };
         toast({
             variant: "destructive",
             title: "Update Failed",
-            description: error.message || "Could not save the new team goals.",
+            description: errorObj.message || "Could not save the new team goals.",
         });
     } finally {
       setIsSaving(false);

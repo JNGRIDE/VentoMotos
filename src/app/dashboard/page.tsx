@@ -1,83 +1,49 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { DollarSign, CreditCard, Award, TrendingUp, LoaderCircle, UserPlus, ShieldAlert } from 'lucide-react';
-import { format } from "date-fns";
+import React, { useMemo, useEffect } from 'react';
+import { DollarSign, CreditCard, Award, TrendingUp, UserPlus, ShieldAlert, Download } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { SalesProgressChart } from '@/components/dashboard/sales-progress-chart';
 import { RecentSales } from '@/components/dashboard/recent-sales';
 import { RecordSaleDialog } from '@/components/sales/record-sale-dialog';
-import { useFirestore } from "@/firebase";
-import { useUser } from "@/firebase/auth/use-user";
+import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { useToast } from "@/hooks/use-toast";
-import { getSales, addSale, getUserProfiles, setUserProfile, getUserProfile } from "@/firebase/services";
 import { getSalesByUser } from '@/lib/data';
-import type { Sale, NewSale, UserProfile } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { generateSprints, getCurrentSprintValue, type Sprint } from '@/lib/sprints';
-
-const ADMIN_UID = "wVN7TmLeOyQDTRevAUWQYDqvou42";
+import { ADMIN_UID, COMMISSION_RATES, GOALS } from '@/lib/constants';
+import { useDashboardData } from '@/hooks/use-dashboard-data';
+import { useUser } from '@/firebase/auth/use-user';
+import { exportSalesToCSV } from '@/lib/export-utils';
 
 export default function DashboardPage() {
-  const db = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
   
-  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [selectedSprint, setSelectedSprint] = useState<string>('');
+  const {
+    currentUserProfile,
+    sales,
+    userProfiles,
+    isLoading,
+    sprints,
+    selectedSprint,
+    setSelectedSprint,
+    createAdminProfile,
+    recordSale,
+    error
+  } = useDashboardData();
 
+  // Show error toast if error occurs in hook
   useEffect(() => {
-    setSprints(generateSprints());
-    setSelectedSprint(getCurrentSprintValue());
-  }, []);
-
-  const fetchData = useCallback(async () => {
-    if (!user || !selectedSprint) return;
-    setIsLoading(true);
-    try {
-      const profile = await getUserProfile(db, user.uid);
-      if (!profile) {
-        setIsLoading(false);
-        return;
-      }
-      setCurrentUserProfile(profile);
-
-      const [salesData, profilesData] = await Promise.all([
-        getSales(db, profile, selectedSprint),
-        getUserProfiles(db),
-      ]);
-      setSales(salesData);
-      setUserProfiles(profilesData);
-    } catch (error: any) {
-      console.error("Failed to fetch data:", error);
-      let description = "An unexpected error occurred while fetching data.";
-      if (error.code === 'failed-precondition') {
-          description = "Could not connect to the database. Have you created a Firestore database in your Firebase project console?";
-      } else if (error.code === 'permission-denied') {
-          description = "You do not have permission to view this data. Contact your administrator.";
-      }
+    if (error) {
       toast({
         variant: "destructive",
-        title: "Error loading dashboard",
-        description,
+        title: error.title,
+        description: error.description,
       });
-    } finally {
-      setIsLoading(false);
     }
-  }, [db, toast, user, selectedSprint]);
-
-  useEffect(() => {
-    if (selectedSprint) {
-      fetchData();
-    }
-  }, [fetchData, selectedSprint]);
+  }, [error, toast]);
   
   const isManager = currentUserProfile?.role === 'Manager';
   
@@ -103,13 +69,13 @@ export default function DashboardPage() {
   const salesProgress = salesGoal > 0 ? (totalSales / salesGoal) * 100 : 0;
   
   const commissionData = useMemo(() => {
-    const commissionRate = isManager ? 0.012 : 0.019;
+    const commissionRate = isManager ? COMMISSION_RATES.MANAGER : COMMISSION_RATES.SALESPERSON;
     const earned =
-      salesProgress >= 80 ? totalSales * (1 - 0.16) * commissionRate : 0;
+      salesProgress >= GOALS.SALES_PROGRESS_THRESHOLD ? totalSales * (1 - GOALS.VAT_RATE) * commissionRate : 0;
     const description =
-      salesProgress < 80
-        ? `${(80 - salesProgress).toFixed(1)}% to unlock`
-        : `${(commissionRate * 100).toFixed(1)}% rate on sales (net of 16% VAT)`;
+      salesProgress < GOALS.SALES_PROGRESS_THRESHOLD
+        ? `${(GOALS.SALES_PROGRESS_THRESHOLD - salesProgress).toFixed(1)}% to unlock`
+        : `${(commissionRate * 100).toFixed(1)}% rate on sales (net of ${(GOALS.VAT_RATE * 100).toFixed(0)}% VAT)`;
 
     return { earned, description };
   }, [isManager, salesProgress, totalSales]);
@@ -130,57 +96,43 @@ export default function DashboardPage() {
   
   const adminProfileExists = useMemo(() => userProfiles.some(sp => sp.uid === ADMIN_UID), [userProfiles]);
 
-  const handleCreateAdminProfile = useCallback(async () => {
-    if (!user || user.uid !== ADMIN_UID) return;
-
-    const adminProfile: UserProfile = {
-      uid: ADMIN_UID,
-      name: "Admin Manager",
-      email: "theinhumanride10@gmail.com",
-      salesGoal: 200000,
-      creditsGoal: 15,
-      avatarUrl: user.photoURL || "https://picsum.photos/seed/admin/100/100",
-      role: 'Manager'
-    };
-
+  const handleCreateAdminProfile = async () => {
     try {
-        await setUserProfile(db, adminProfile);
+        await createAdminProfile();
         toast({
           title: "Admin Profile Created!",
           description: "The salesperson profile for the admin has been created.",
         });
-        fetchData();
-    } catch (error: any) {
-        console.error("Failed to create admin profile:", error);
+    } catch (err: unknown) {
+        const errorObj = err as { message?: string };
         toast({
             variant: "destructive",
             title: "Uh oh! Something went wrong.",
-            description: error.message || "An unexpected error occurred.",
+            description: errorObj.message || "An unexpected error occurred.",
         });
     }
-  }, [db, fetchData, toast, user]);
+  };
 
-  const handleAddSale = async (newSaleData: NewSale) => {
+  const handleAddSale = async (newSaleData: any) => {
     try {
-      await addSale(db, newSaleData);
-      fetchData();
-    } catch (error: any) {
-      console.error("Failed to add sale:", error);
+      await recordSale(newSaleData);
+      toast({
+        title: "Sale Recorded!",
+        description: "The sale has been successfully added.",
+      });
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string };
       toast({
           variant: "destructive",
           title: "Uh oh! Could not record sale.",
-          description: error.message || "An unexpected error occurred.",
+          description: errorObj.message || "An unexpected error occurred.",
       });
-      throw error;
+      throw err;
     }
   };
   
   if (isLoading) {
-    return (
-        <div className="flex items-center justify-center h-[calc(100vh-theme(spacing.32))]">
-            <LoaderCircle className="h-10 w-10 animate-spin text-primary" />
-        </div>
-    )
+    return <DashboardSkeleton />;
   }
 
   if (!currentUserProfile) {
@@ -226,6 +178,14 @@ export default function DashboardPage() {
               </span>
             </Button>
           )}
+          {sales.length > 0 && (
+            <Button onClick={() => exportSalesToCSV(sales, `sales-${selectedSprint}`)} variant="outline" size="sm" className="h-8 gap-1">
+              <Download className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Export
+              </span>
+            </Button>
+          )}
           <RecordSaleDialog onAddSale={handleAddSale} currentUserProfile={currentUserProfile} sprint={selectedSprint} />
         </div>
       </div>
@@ -248,7 +208,7 @@ export default function DashboardPage() {
           value={`$${commissionData.earned.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
           description={commissionData.description}
           icon={TrendingUp}
-          iconColor={salesProgress >= 80 ? 'text-green-500' : ''}
+          iconColor={salesProgress >= GOALS.SALES_PROGRESS_THRESHOLD ? 'text-green-500' : ''}
         />
         <KpiCard
           title="Vento Bonus"

@@ -72,7 +72,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // On successful sign-in, the useEffect above will redirect to dashboard
-    } catch (error: any) {
+    } catch (error: unknown) {
       handleAuthError(error, "Login failed");
     } finally {
       setIsSigningIn(false);
@@ -92,16 +92,17 @@ export default function LoginPage() {
       await updateProfile(user, { displayName: name });
       await createUserProfile(db, user, name);
       // On successful sign-up, the useEffect above will redirect to dashboard
-    } catch (error: any) {
+    } catch (error: unknown) {
       handleAuthError(error, "Sign-up failed");
     } finally {
       setIsSigningIn(false);
     }
   };
 
-  const handleAuthError = (error: any, title: string) => {
+  const handleAuthError = (error: unknown, title: string) => {
     let description = "An unexpected error occurred.";
-    switch (error.code) {
+    const errorObj = error as { code?: string; message?: string };
+    switch (errorObj.code) {
       case "auth/invalid-api-key":
         description = "The provided API Key is invalid. Please check your environment variables in Vercel.";
         break;
@@ -127,7 +128,7 @@ export default function LoginPage() {
         break;
       default:
         console.error("Authentication error:", error);
-        description = error.message || description;
+        description = errorObj.message || description;
         break;
     }
     toast({ variant: "destructive", title, description });

@@ -46,6 +46,13 @@ export type Prospect = {
   source: "Organic" | "Advertising";
   salespersonId: string; // This is now the salesperson's UID
   lastContact: string;
+
+  // New fields
+  phone?: string;
+  email?: string;
+  rfc?: string;
+  address?: string;
+  notes?: string;
 };
 
 export type NewProspect = Omit<Prospect, "id">;

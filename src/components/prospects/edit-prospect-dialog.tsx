@@ -9,6 +9,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +22,11 @@ const prospectSchema = z.object({
   source: z.enum(["Organic", "Advertising"]),
   salespersonId: z.string().min(1, "Salesperson is required"),
   stage: z.enum(["Potential", "Appointment", "Credit", "Closed"]),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  rfc: z.string().optional(),
+  address: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 type ProspectFormValues = z.infer<typeof prospectSchema>;
@@ -46,6 +52,11 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
       source: prospect.source,
       salespersonId: prospect.salespersonId,
       stage: prospect.stage,
+      phone: prospect.phone || "",
+      email: prospect.email || "",
+      rfc: prospect.rfc || "",
+      address: prospect.address || "",
+      notes: prospect.notes || "",
     },
   });
 
@@ -56,6 +67,11 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
             source: prospect.source,
             salespersonId: prospect.salespersonId,
             stage: prospect.stage,
+            phone: prospect.phone || "",
+            email: prospect.email || "",
+            rfc: prospect.rfc || "",
+            address: prospect.address || "",
+            notes: prospect.notes || "",
         });
 
         if (currentUserProfile?.role === 'Manager') {
@@ -89,7 +105,7 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Prospect</DialogTitle>
           <DialogDescription>
@@ -103,9 +119,74 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                     name="name"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Name</FormLabel>
+                            <FormLabel>Name *</FormLabel>
                             <FormControl>
                                 <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Phone</FormLabel>
+                            <FormControl>
+                                <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                                <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="rfc"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>RFC</FormLabel>
+                            <FormControl>
+                                <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Address</FormLabel>
+                            <FormControl>
+                                <Textarea {...field} className="min-h-[60px]" />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Notes</FormLabel>
+                            <FormControl>
+                                <Textarea {...field} className="min-h-[60px]" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>

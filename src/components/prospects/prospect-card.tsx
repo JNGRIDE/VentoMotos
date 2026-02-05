@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash, Phone, Mail } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,9 +20,10 @@ interface ProspectCardProps {
   userProfile?: UserProfile; // The assigned salesperson
   currentUserProfile: UserProfile | null; // The logged-in user
   onUpdate: () => void;
+  onDragStart: (e: React.DragEvent<HTMLDivElement>, prospectId: string) => void;
 }
 
-export function ProspectCard({ prospect, userProfile, currentUserProfile, onUpdate }: ProspectCardProps) {
+export function ProspectCard({ prospect, userProfile, currentUserProfile, onUpdate, onDragStart }: ProspectCardProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -31,7 +32,11 @@ export function ProspectCard({ prospect, userProfile, currentUserProfile, onUpda
 
   return (
     <>
-      <Card className="mb-4 shadow-sm hover:shadow-md transition-shadow duration-200 group relative">
+      <Card
+        className="mb-4 shadow-sm hover:shadow-md transition-shadow duration-200 group relative cursor-move"
+        draggable
+        onDragStart={(e) => onDragStart(e, prospect.id)}
+      >
         <CardHeader className="p-4">
           <div className="flex items-center justify-between">
               <CardTitle className="text-base font-semibold truncate max-w-[150px]">{prospect.name}</CardTitle>
@@ -60,7 +65,15 @@ export function ProspectCard({ prospect, userProfile, currentUserProfile, onUpda
               </div>
           </div>
         </CardHeader>
-        <CardContent className="p-4 pt-0">
+        <CardContent className="p-4 pt-0 space-y-2">
+           {/* Quick Info Icons */}
+           {(prospect.phone || prospect.email) && (
+              <div className="flex gap-2 text-muted-foreground">
+                  {prospect.phone && <Phone className="h-3 w-3" />}
+                  {prospect.email && <Mail className="h-3 w-3" />}
+              </div>
+           )}
+
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">

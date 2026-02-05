@@ -2,15 +2,27 @@
 
 import { useState, useEffect } from "react";
 import { PlusCircle, LoaderCircle } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { addProspect, getUserProfiles } from "@/firebase/services";
 import type { NewProspect, UserProfile } from "@/lib/data";
+
+const addProspectSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  source: z.enum(["Organic", "Advertising"]),
+  salespersonId: z.string().min(1, "Salesperson is required"),
+});
+
+type AddProspectFormValues = z.infer<typeof addProspectSchema>;
 
 interface AddProspectDialogProps {
   sprint: string;
@@ -25,29 +37,37 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
   const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const { toast } = useToast();
 
-  const [name, setName] = useState("");
-  const [source, setSource] = useState<"Organic" | "Advertising">("Organic");
-  const [salespersonId, setSalespersonId] = useState(currentUserProfile.uid);
+  const form = useForm<AddProspectFormValues>({
+    resolver: zodResolver(addProspectSchema),
+    defaultValues: {
+      name: "",
+      source: "Organic",
+      salespersonId: currentUserProfile.uid,
+    },
+  });
 
   useEffect(() => {
-    if (open && currentUserProfile.role === 'Manager') {
-      getUserProfiles(db).then(setUserProfiles);
-    }
-  }, [open, db, currentUserProfile.role]);
+    if (open) {
+        form.reset({
+             name: "",
+             source: "Organic",
+             salespersonId: currentUserProfile.uid,
+        });
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!name) {
-      toast({ variant: "destructive", title: "Name is required" });
-      return;
+        if (currentUserProfile.role === 'Manager') {
+            getUserProfiles(db).then(setUserProfiles);
+        }
     }
+  }, [open, db, currentUserProfile, form]);
+
+  const handleSubmit = async (data: AddProspectFormValues) => {
     setIsSaving(true);
     
     const newProspect: NewProspect = {
-      name,
+      name: data.name,
       sprint,
-      source,
-      salespersonId,
+      source: data.source,
+      salespersonId: data.salespersonId,
       stage: "Potential",
       lastContact: new Date().toISOString(),
     };
@@ -56,14 +76,10 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
       await addProspect(db, newProspect);
       toast({
         title: "Prospect Added!",
-        description: `${name} has been added to the funnel.`,
+        description: `${data.name} has been added to the funnel.`,
       });
       onProspectAdded();
       setOpen(false);
-      // reset form
-      setName("");
-      setSource("Organic");
-      setSalespersonId(currentUserProfile.uid);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -88,47 +104,87 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle className="font-headline">Add New Prospect</DialogTitle>
-            <DialogDescription>
-              Enter the details for the new lead. It will be added to the current sprint.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" />
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <DialogHeader>
+                <DialogTitle className="font-headline">Add New Prospect</DialogTitle>
+                <DialogDescription>
+                Enter the details for the new lead. It will be added to the current sprint.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                            <FormLabel className="text-right">Name</FormLabel>
+                            <div className="col-span-3">
+                                <FormControl>
+                                    <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="source"
+                    render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                            <FormLabel className="text-right">Source</FormLabel>
+                            <div className="col-span-3">
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Organic">Organic</SelectItem>
+                                        <SelectItem value="Advertising">Advertising</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )}
+                />
+
+                {isManager && (
+                   <FormField
+                        control={form.control}
+                        name="salespersonId"
+                        render={({ field }) => (
+                            <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                                <FormLabel className="text-right">Assign to</FormLabel>
+                                <div className="col-span-3">
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {userProfiles.map(p => <SelectItem key={p.uid} value={p.uid}>{p.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </div>
+                            </FormItem>
+                        )}
+                    />
+                )}
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="source" className="text-right">Source</Label>
-              <Select value={source} onValueChange={(v) => setSource(v as any)}>
-                <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Organic">Organic</SelectItem>
-                  <SelectItem value="Advertising">Advertising</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {isManager && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="salesperson" className="text-right">Assign to</Label>
-                <Select value={salespersonId} onValueChange={setSalespersonId}>
-                  <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {userProfiles.map(p => <SelectItem key={p.uid} value={p.uid}>{p.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-              Save Prospect
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+                <Button type="submit" disabled={isSaving}>
+                {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                Save Prospect
+                </Button>
+            </DialogFooter>
+            </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

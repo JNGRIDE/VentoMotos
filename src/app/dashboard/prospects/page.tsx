@@ -46,12 +46,13 @@ export default function ProspectsPage() {
       ]);
       setProspects(prospectsData);
       setUserProfiles(profilesData);
-    } catch (error: any) {
-        console.error("Failed to fetch prospects data:", error);
+    } catch (err: unknown) {
+        const errorObj = err as { message?: string };
+        console.error("Failed to fetch prospects data:", err);
         toast({
             variant: "destructive",
             title: "Error loading prospects",
-            description: error.message || "Could not fetch data from the database.",
+            description: errorObj.message || "Could not fetch data from the database.",
         });
     } finally {
         setIsLoading(false);
@@ -116,7 +117,12 @@ export default function ProspectsPage() {
         </div>
       </div>
       <div className="flex-1">
-        <KanbanBoard prospects={prospects} userProfiles={userProfiles} />
+        <KanbanBoard
+            prospects={prospects}
+            userProfiles={userProfiles}
+            currentUserProfile={currentUserProfile}
+            onRefresh={fetchData}
+        />
       </div>
     </div>
   );

@@ -4,6 +4,9 @@ import {
   query,
   where,
   addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
   type Firestore,
 } from "firebase/firestore";
 import type { Prospect, UserProfile, NewProspect } from "@/lib/data";
@@ -30,4 +33,14 @@ export async function addProspect(db: Firestore, prospect: NewProspect): Promise
     const prospectsCol = collection(db, "prospects");
     const docRef = await addDoc(prospectsCol, prospect);
     return docRef.id;
+}
+
+export async function updateProspect(db: Firestore, prospectId: string, updates: Partial<Prospect>): Promise<void> {
+    const prospectRef = doc(db, "prospects", prospectId);
+    await updateDoc(prospectRef, updates);
+}
+
+export async function deleteProspect(db: Firestore, prospectId: string): Promise<void> {
+    const prospectRef = doc(db, "prospects", prospectId);
+    await deleteDoc(prospectRef);
 }

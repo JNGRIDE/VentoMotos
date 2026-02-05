@@ -9,7 +9,8 @@ import {
   setUserProfile,
   getSprints,
   ensureCurrentSprint,
-  closeSprint
+  closeSprint,
+  createNextSprint
 } from "@/firebase/services";
 import { generateSprints, getCurrentSprintValue, type SprintDoc } from '@/lib/sprints';
 import type { Sale, UserProfile, NewSale } from '@/lib/data';
@@ -27,6 +28,7 @@ interface UseDashboardDataResult {
   createAdminProfile: () => Promise<void>;
   recordSale: (newSaleData: NewSale) => Promise<void>;
   finishSprint: (sprintId: string) => Promise<void>;
+  startNextSprint: () => Promise<void>;
   error: { title: string; description: string } | null;
 }
 
@@ -166,6 +168,20 @@ export function useDashboardData(): UseDashboardDataResult {
       }
   }
 
+  const startNextSprint = async () => {
+      try {
+          const newSprint = await createNextSprint(db);
+          const sprintList = await getSprints(db);
+          setSprints(sprintList);
+          setSelectedSprint(newSprint.id);
+          toastSuccess("New sprint created!");
+      } catch (err) {
+          console.error("Failed to start next sprint", err);
+          throw err;
+      }
+  }
+
+
   // Helper for internal use, since useToast hook is not here but in the component.
   // We throw error so component handles it.
   const toastSuccess = (msg: string) => {
@@ -184,6 +200,7 @@ export function useDashboardData(): UseDashboardDataResult {
     createAdminProfile,
     recordSale,
     finishSprint,
+    startNextSprint,
     error
   };
 }

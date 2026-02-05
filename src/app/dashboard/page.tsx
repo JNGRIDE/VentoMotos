@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useEffect } from 'react';
-import { DollarSign, CreditCard, Award, TrendingUp, UserPlus, ShieldAlert, Download } from 'lucide-react';
+import { DollarSign, CreditCard, Award, TrendingUp, UserPlus, ShieldAlert, Download, CalendarOff } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { KpiCard } from '@/components/dashboard/kpi-card';
@@ -31,6 +31,7 @@ export default function DashboardPage() {
     setSelectedSprint,
     createAdminProfile,
     recordSale,
+    finishSprint,
     error
   } = useDashboardData();
 
@@ -96,6 +97,11 @@ export default function DashboardPage() {
   
   const adminProfileExists = useMemo(() => userProfiles.some(sp => sp.uid === ADMIN_UID), [userProfiles]);
 
+  const currentSprintStatus = useMemo(() => {
+     const s = sprints.find(sp => sp.id === selectedSprint);
+     return s ? s.status : 'closed';
+  }, [sprints, selectedSprint]);
+
   const handleCreateAdminProfile = async () => {
     try {
         await createAdminProfile();
@@ -131,6 +137,17 @@ export default function DashboardPage() {
     }
   };
   
+  const handleFinishSprint = async () => {
+      if (confirm("Are you sure you want to close this sprint? This action cannot be undone.")) {
+          try {
+              await finishSprint(selectedSprint);
+              toast({ title: "Sprint Closed", description: "The sprint has been successfully closed." });
+          } catch (e) {
+              toast({ variant: "destructive", title: "Error", description: "Failed to close sprint." });
+          }
+      }
+  };
+
   if (isLoading) {
     return <DashboardSkeleton />;
   }
@@ -164,12 +181,20 @@ export default function DashboardPage() {
             </SelectTrigger>
             <SelectContent>
               {sprints.map((sprint) => (
-                <SelectItem key={sprint.value} value={sprint.value}>
-                  {sprint.label}
+                <SelectItem key={sprint.id} value={sprint.id}>
+                  {sprint.label} {sprint.status === 'closed' ? '(Closed)' : ''}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+
+          {isManager && currentSprintStatus === 'active' && (
+              <Button onClick={handleFinishSprint} variant="destructive" size="sm" className="h-8 gap-1">
+                  <CalendarOff className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">End Sprint</span>
+              </Button>
+          )}
+
           {user && user.uid === ADMIN_UID && !adminProfileExists && (
             <Button onClick={handleCreateAdminProfile} variant="outline" size="sm" className="h-8 gap-1">
               <UserPlus className="h-3.5 w-3.5" />
@@ -186,7 +211,9 @@ export default function DashboardPage() {
               </span>
             </Button>
           )}
-          <RecordSaleDialog onAddSale={handleAddSale} currentUserProfile={currentUserProfile} sprint={selectedSprint} />
+          {currentSprintStatus === 'active' && (
+             <RecordSaleDialog onAddSale={handleAddSale} currentUserProfile={currentUserProfile} sprint={selectedSprint} />
+          )}
         </div>
       </div>
       

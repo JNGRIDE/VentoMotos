@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
-import { getUserProfiles, getInventory } from "@/firebase/services";
+import { getUserProfiles, getInventory, getFinanciers } from "@/firebase/services";
 import type { NewSale, UserProfile, Motorcycle } from "@/lib/data";
 
 interface RecordSaleDialogProps {
@@ -33,13 +33,14 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
   // Data states
   const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [inventory, setInventory] = useState<Motorcycle[]>([]);
+  const [financiers, setFinanciers] = useState<string[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Form states
   const [salespersonId, setSalespersonId] = useState(currentUserProfile.uid);
   const [prospectName, setProspectName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
-  const [creditProvider, setCreditProvider] = useState<"Vento" | "Other" | undefined>(undefined);
+  const [creditProvider, setCreditProvider] = useState<string | undefined>(undefined);
   const [selectedMotorcycleId, setSelectedMotorcycleId] = useState("");
   const [soldSku, setSoldSku] = useState("");
   const [amount, setAmount] = useState("");
@@ -54,9 +55,11 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
       Promise.all([
         getUserProfiles(db),
         getInventory(db),
-      ]).then(([profilesData, inventoryData]) => {
+        getFinanciers(db)
+      ]).then(([profilesData, inventoryData, financiersData]) => {
         setUserProfiles(profilesData);
         setInventory(inventoryData);
+        setFinanciers(financiersData);
         setIsLoadingData(false);
       });
     }
@@ -201,11 +204,12 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
         {paymentMethod === "Financing" && (
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="credit-provider" className="text-right">Credit</Label>
-            <Select name="credit-provider" value={creditProvider} onValueChange={(v) => setCreditProvider(v as "Vento" | "Other")}>
+            <Select name="credit-provider" value={creditProvider} onValueChange={(v) => setCreditProvider(v)}>
               <SelectTrigger className="col-span-3"><SelectValue placeholder="Select provider" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Vento">Vento Crédito</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
+                {financiers.map((f) => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

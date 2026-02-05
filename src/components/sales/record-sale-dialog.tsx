@@ -2,18 +2,43 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { PlusCircle, LoaderCircle, AlertCircle, ArrowLeft } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { getUserProfiles, getInventory, getFinanciers } from "@/firebase/services";
 import type { NewSale, UserProfile, Motorcycle } from "@/lib/data";
+
+const saleSchema = z.object({
+  salespersonId: z.string().min(1, "Salesperson is required"),
+  prospectName: z.string().min(2, "Prospect name is required"),
+  paymentMethod: z.enum(["Cash", "Financing"]),
+  creditProvider: z.string().optional(),
+  motorcycleId: z.string().min(1, "Motorcycle is required"),
+  soldSku: z.string().optional(),
+  amount: z.coerce.number().positive("Amount must be positive"),
+  notes: z.string().optional(),
+}).superRefine((data, ctx) => {
+    if (data.paymentMethod === 'Financing' && !data.creditProvider) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Credit provider is required for financing",
+            path: ["creditProvider"]
+        });
+    }
+});
+
+type SaleFormValues = z.infer<typeof saleSchema>;
 
 interface RecordSaleDialogProps {
   onAddSale: (sale: NewSale) => Promise<void>;
@@ -36,18 +61,21 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
   const [financiers, setFinanciers] = useState<string[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
-  // Form states
-  const [salespersonId, setSalespersonId] = useState(currentUserProfile.uid);
-  const [prospectName, setProspectName] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [creditProvider, setCreditProvider] = useState<string | undefined>(undefined);
-  const [selectedMotorcycleId, setSelectedMotorcycleId] = useState("");
-  const [soldSku, setSoldSku] = useState("");
-  const [amount, setAmount] = useState("");
-  
   // Zero-stock alert states
   const [showZeroStockAlert, setShowZeroStockAlert] = useState(false);
   const [specialOrderNotes, setSpecialOrderNotes] = useState("");
+
+  const form = useForm<SaleFormValues>({
+    resolver: zodResolver(saleSchema),
+    defaultValues: {
+      salespersonId: currentUserProfile.uid,
+      prospectName: "",
+      paymentMethod: "Cash" as any, // Initial placeholder
+      motorcycleId: "",
+      amount: 0,
+    },
+    mode: "onChange"
+  });
 
   useEffect(() => {
     if (open) {
@@ -61,41 +89,36 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
         setInventory(inventoryData);
         setFinanciers(financiersData);
         setIsLoadingData(false);
+        // Reset form when opening
+        form.reset({
+            salespersonId: currentUserProfile.uid,
+            prospectName: "",
+            paymentMethod: "Cash" as any, // Cast to any to avoid type error if empty initially, though Zod handles it
+            motorcycleId: "",
+            amount: 0,
+        });
+        setStep(1);
       });
     }
-  }, [db, open]);
+  }, [db, open, currentUserProfile.uid, form]);
 
+  const selectedMotorcycleId = form.watch("motorcycleId");
   const selectedMotorcycle = useMemo(() => {
     return inventory.find(m => m.id === selectedMotorcycleId) || null;
   }, [inventory, selectedMotorcycleId]);
   
-  const resetForm = () => {
-    setStep(1);
-    setSalespersonId(currentUserProfile.uid);
-    setProspectName("");
-    setPaymentMethod("");
-    setCreditProvider(undefined);
-    setSelectedMotorcycleId("");
-    setSoldSku("");
-    setAmount("");
-    setSpecialOrderNotes("");
-  }
-  
-  const handleNextStep = () => {
-    if (!salespersonId || !prospectName || !paymentMethod) {
-      toast({ variant: "destructive", title: "Missing fields", description: "Please fill out all fields before continuing." });
-      return;
+  const paymentMethod = form.watch("paymentMethod");
+
+  const handleNextStep = async () => {
+    const valid = await form.trigger(["salespersonId", "prospectName", "paymentMethod", "creditProvider"]);
+    if (valid) {
+        setStep(2);
     }
-    if (paymentMethod === "Financing" && !creditProvider) {
-       toast({ variant: "destructive", title: "Missing Credit Provider", description: "Please select a credit provider for financing." });
-       return;
-    }
-    setStep(2);
   }
 
   const handleMotorcycleSelect = (motorcycleId: string) => {
-    setSelectedMotorcycleId(motorcycleId);
-    setSoldSku(""); // Reset SKU when motorcycle changes
+    form.setValue("motorcycleId", motorcycleId);
+    form.setValue("soldSku", ""); // Reset SKU
     const motorcycle = inventory.find(m => m.id === motorcycleId);
     if (motorcycle && motorcycle.stock === 0) {
       setSpecialOrderNotes(""); // ensure it is reset
@@ -106,55 +129,41 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
   const handleSpecialOrderAndSubmit = (notes: string) => {
       setSpecialOrderNotes(notes);
       setShowZeroStockAlert(false);
-      // Use a timeout to ensure state is set before submitting
       setTimeout(() => {
-        handleSubmit(notes);
+        form.handleSubmit((data) => onSubmit(data, notes))();
       }, 0);
   }
 
-  const handleSubmit = async (currentSpecialOrderNotes = specialOrderNotes) => {
+  const onSubmit = async (data: SaleFormValues, currentSpecialOrderNotes = specialOrderNotes) => {
     if (selectedMotorcycle?.stock === 0 && !currentSpecialOrderNotes) {
       setShowZeroStockAlert(true);
       return;
     }
 
-    if (!selectedMotorcycleId) {
-      toast({ variant: "destructive", title: "Motorcycle not selected", description: "Please select a motorcycle model." });
-      return;
-    }
-    if (selectedMotorcycle && selectedMotorcycle.stock > 0 && !soldSku) {
-      toast({ variant: "destructive", title: "SKU not selected", description: "Please select the specific SKU being sold." });
-      return;
-    }
-     if (!amount || Number(amount) <= 0) {
-      toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid sale amount." });
-      return;
+    if (selectedMotorcycle && selectedMotorcycle.stock > 0 && !data.soldSku) {
+       form.setError("soldSku", { message: "SKU is required for in-stock items" });
+       return;
     }
     
     setIsSaving(true);
 
     const newSale: NewSale = {
       sprint,
-      salespersonId,
-      prospectName,
-      amount: Number(amount),
-      paymentMethod: paymentMethod as "Cash" | "Financing",
-      motorcycleId: selectedMotorcycleId,
+      salespersonId: data.salespersonId,
+      prospectName: data.prospectName,
+      amount: data.amount,
+      paymentMethod: data.paymentMethod,
+      creditProvider: data.paymentMethod === 'Financing' ? data.creditProvider : undefined,
+      motorcycleId: data.motorcycleId,
       motorcycleModel: selectedMotorcycle!.model,
-      soldSku,
-      notes: currentSpecialOrderNotes,
+      soldSku: data.soldSku || "",
+      notes: currentSpecialOrderNotes || data.notes,
     };
     
-    // Conditionally add creditProvider only if payment method is Financing
-    if (newSale.paymentMethod === 'Financing') {
-      newSale.creditProvider = creditProvider;
-    }
-
     try {
       await onAddSale(newSale);
       toast({ title: "Sale Recorded!", description: "The new sale has been successfully added." });
       setOpen(false);
-      resetForm();
     } catch (error) {
       // Error is handled by the caller.
     } finally {
@@ -165,123 +174,184 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
   const isManager = currentUserProfile.role === 'Manager';
 
   const renderStepOne = () => (
-    <>
-      <div className="grid gap-4 py-4">
-        {/* Salesperson Select */}
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="salesperson-id" className="text-right">Salesperson</Label>
-          {isManager ? (
-            <Select name="salesperson-id" value={salespersonId} onValueChange={setSalespersonId}>
-                <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select salesperson" />
-                </SelectTrigger>
-                <SelectContent>
-                    {userProfiles.map((sp) => (
-                        <SelectItem key={sp.uid} value={sp.uid}>{sp.name}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-          ) : ( <p className="col-span-3 font-medium text-sm">{currentUserProfile.name}</p> )}
-        </div>
+    <div className="grid gap-4 py-4">
+        <FormField
+            control={form.control}
+            name="salespersonId"
+            render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                    <FormLabel className="text-right">Salesperson</FormLabel>
+                    <div className="col-span-3">
+                        {isManager ? (
+                             <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select salesperson" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {userProfiles.map((sp) => (
+                                        <SelectItem key={sp.uid} value={sp.uid}>{sp.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        ) : (
+                             <Input value={currentUserProfile.name} disabled className="bg-muted" />
+                        )}
+                        <FormMessage />
+                    </div>
+                </FormItem>
+            )}
+        />
 
-        {/* Prospect Name */}
-        <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="prospect-name" className="text-right">Prospect</Label>
-            <Input id="prospect-name" name="prospect-name" placeholder="John Doe" className="col-span-3" value={prospectName} onChange={(e) => setProspectName(e.target.value)} />
-        </div>
+        <FormField
+            control={form.control}
+            name="prospectName"
+            render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                    <FormLabel className="text-right">Prospect</FormLabel>
+                    <div className="col-span-3">
+                        <FormControl>
+                            <Input placeholder="John Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </div>
+                </FormItem>
+            )}
+        />
 
-        {/* Payment, Credit Provider */}
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="payment-method" className="text-right">Payment</Label>
-          <Select name="payment-method" value={paymentMethod} onValueChange={setPaymentMethod}>
-            <SelectTrigger className="col-span-3"><SelectValue placeholder="Select method" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Cash">Cash</SelectItem>
-              <SelectItem value="Financing">Financing</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <FormField
+            control={form.control}
+            name="paymentMethod"
+            render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                    <FormLabel className="text-right">Payment</FormLabel>
+                    <div className="col-span-3">
+                         <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select method" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="Cash">Cash</SelectItem>
+                                <SelectItem value="Financing">Financing</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </div>
+                </FormItem>
+            )}
+        />
+
         {paymentMethod === "Financing" && (
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="credit-provider" className="text-right">Credit</Label>
-            <Select name="credit-provider" value={creditProvider} onValueChange={(v) => setCreditProvider(v)}>
-              <SelectTrigger className="col-span-3"><SelectValue placeholder="Select provider" /></SelectTrigger>
-              <SelectContent>
-                {financiers.map((f) => (
-                  <SelectItem key={f} value={f}>{f}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            <FormField
+                control={form.control}
+                name="creditProvider"
+                render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                        <FormLabel className="text-right">Credit</FormLabel>
+                        <div className="col-span-3">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select provider" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {financiers.map((f) => (
+                                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </div>
+                    </FormItem>
+                )}
+            />
         )}
       </div>
-      <DialogFooter>
-        <Button onClick={handleNextStep}>Next</Button>
-      </DialogFooter>
-    </>
   );
 
   const renderStepTwo = () => (
-    <>
-      <div className="grid gap-4 py-4">
-        {/* Motorcycle Selector */}
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="motorcycle-model" className="text-right">Model</Label>
-           <Select name="motorcycle-model" onValueChange={handleMotorcycleSelect} value={selectedMotorcycleId}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select a model..." />
-              </SelectTrigger>
-              <SelectContent>
-                {inventory.map(moto => (
-                  <SelectItem key={moto.id} value={moto.id}>
-                    {moto.model} (Stock: {moto.stock})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-        </div>
+    <div className="grid gap-4 py-4">
+         <FormField
+            control={form.control}
+            name="motorcycleId"
+            render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                    <FormLabel className="text-right">Model</FormLabel>
+                    <div className="col-span-3">
+                        <Select onValueChange={handleMotorcycleSelect} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a model..." />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {inventory.map(moto => (
+                                <SelectItem key={moto.id} value={moto.id}>
+                                    {moto.model} (Stock: {moto.stock})
+                                </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </div>
+                </FormItem>
+            )}
+        />
 
-        {/* SKU Selector */}
         {selectedMotorcycle && selectedMotorcycle.stock > 0 && (
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="sold-sku" className="text-right">SKU</Label>
-            <Select name="sold-sku" onValueChange={setSoldSku} value={soldSku}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select SKU to sell..." />
-              </SelectTrigger>
-              <SelectContent>
-                {(selectedMotorcycle.skus || []).map(sku => (
-                  <SelectItem key={sku} value={sku}>
-                    ...{sku.slice(-6)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            <FormField
+                control={form.control}
+                name="soldSku"
+                render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                        <FormLabel className="text-right">SKU</FormLabel>
+                        <div className="col-span-3">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select SKU to sell..." />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {(selectedMotorcycle.skus || []).map(sku => (
+                                    <SelectItem key={sku} value={sku}>
+                                        ...{sku.slice(-6)}
+                                    </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </div>
+                    </FormItem>
+                )}
+            />
         )}
 
-        {/* Amount */}
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="amount" className="text-right">Amount</Label>
-          <Input id="amount" name="amount" type="number" placeholder="35000" className="col-span-3" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        </div>
+        <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                    <FormLabel className="text-right">Amount</FormLabel>
+                    <div className="col-span-3">
+                        <FormControl>
+                            <Input type="number" placeholder="35000" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </div>
+                </FormItem>
+            )}
+        />
       </div>
-      <DialogFooter>
-        <Button variant="ghost" onClick={() => setStep(1)}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button>
-        <Button onClick={() => handleSubmit()} disabled={isSaving}>
-          {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-          Save Sale
-        </Button>
-      </DialogFooter>
-    </>
   );
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(isOpen) => {
-        setOpen(isOpen);
-        if (!isOpen) resetForm();
-      }}>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button size="sm" className="h-8 gap-1">
             <PlusCircle className="h-3.5 w-3.5" />
@@ -301,7 +371,24 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
                 <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : (
-              step === 1 ? renderStepOne() : renderStepTwo()
+                <Form {...form}>
+                    <form>
+                        {step === 1 ? renderStepOne() : renderStepTwo()}
+                        <DialogFooter>
+                             {step === 1 ? (
+                                <Button type="button" onClick={handleNextStep}>Next</Button>
+                             ) : (
+                                <>
+                                    <Button type="button" variant="ghost" onClick={() => setStep(1)}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button>
+                                    <Button type="button" onClick={form.handleSubmit((data) => onSubmit(data))} disabled={isSaving}>
+                                        {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                        Save Sale
+                                    </Button>
+                                </>
+                             )}
+                        </DialogFooter>
+                    </form>
+                </Form>
             )}
         </DialogContent>
       </Dialog>
@@ -315,7 +402,7 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedMotorcycleId("")}>Cancel Sale</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => form.setValue("motorcycleId", "")}>Cancel Sale</AlertDialogCancel>
             <Button variant="secondary" onClick={() => handleSpecialOrderAndSubmit("Recoger en otra sucursal")}>Pickup at another branch</Button>
             <Button onClick={() => handleSpecialOrderAndSubmit("Sobre pedido (CEDIS)")}>Special Order (CEDIS)</Button>
           </AlertDialogFooter>

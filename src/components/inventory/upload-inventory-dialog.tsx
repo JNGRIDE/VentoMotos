@@ -92,12 +92,13 @@ export function UploadInventoryDialog({ onInventoryUpdated }: UploadInventoryDia
       onInventoryUpdated();
       setOpen(false);
       setSelectedFile(null);
-    } catch (error: any) {
-      console.error("Failed to process or upload inventory:", error);
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      console.error("Failed to process or upload inventory:", err);
       toast({
           variant: "destructive",
           title: "Uh oh! Something went wrong.",
-          description: error.message || "Failed to process the PDF file.",
+          description: err.message || "Failed to process the PDF file.",
       });
     } finally {
       setIsProcessing(false);

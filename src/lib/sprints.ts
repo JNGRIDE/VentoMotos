@@ -6,6 +6,14 @@ export interface Sprint {
   label: string; // MMMM yyyy
 }
 
+export interface SprintDoc {
+    id: string; // YYYY-MM (Document ID)
+    label: string; // MMMM yyyy
+    status: 'active' | 'closed';
+    createdAt: string;
+    closedAt?: string;
+}
+
 export function generateSprints(numPast = 6, numFuture = 2): Sprint[] {
   const sprints: Sprint[] = [];
   const today = new Date();
@@ -34,4 +42,9 @@ export function generateSprints(numPast = 6, numFuture = 2): Sprint[] {
 
 export function getCurrentSprintValue(): string {
     return format(new Date(), 'yyyy-MM');
+}
+
+export function getSprintLabel(dateStr: string): string {
+    const date = new Date(dateStr + "-02"); // add day to avoid timezone issues with YYYY-MM
+    return format(date, 'MMMM yyyy', { locale: es });
 }

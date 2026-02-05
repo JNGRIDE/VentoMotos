@@ -1,8 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
-import { getSales, getUserProfiles, getUserProfile, addSale, setUserProfile } from "@/firebase/services";
-import { generateSprints, getCurrentSprintValue, type Sprint } from '@/lib/sprints';
+import {
+  getSales,
+  getUserProfiles,
+  getUserProfile,
+  addSale,
+  setUserProfile,
+  getSprints,
+  ensureCurrentSprint,
+  closeSprint
+} from "@/firebase/services";
+import { generateSprints, getCurrentSprintValue, type SprintDoc } from '@/lib/sprints';
 import type { Sale, UserProfile, NewSale } from '@/lib/data';
 import { ADMIN_UID } from '@/lib/constants';
 
@@ -11,12 +20,13 @@ interface UseDashboardDataResult {
   sales: Sale[];
   userProfiles: UserProfile[];
   isLoading: boolean;
-  sprints: Sprint[];
+  sprints: SprintDoc[];
   selectedSprint: string;
   setSelectedSprint: (sprint: string) => void;
   refreshData: () => Promise<void>;
   createAdminProfile: () => Promise<void>;
   recordSale: (newSaleData: NewSale) => Promise<void>;
+  finishSprint: (sprintId: string) => Promise<void>;
   error: { title: string; description: string } | null;
 }
 
@@ -30,13 +40,41 @@ export function useDashboardData(): UseDashboardDataResult {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<{ title: string; description: string } | null>(null);
 
-  const [sprints, setSprints] = useState<Sprint[]>([]);
+  const [sprints, setSprints] = useState<SprintDoc[]>([]);
   const [selectedSprint, setSelectedSprint] = useState<string>('');
 
+  // Initialize Sprints from DB
   useEffect(() => {
-    setSprints(generateSprints());
-    setSelectedSprint(getCurrentSprintValue());
-  }, []);
+    const initSprints = async () => {
+       if (!db) return;
+       try {
+         // Ensure the current month exists as a sprint
+         await ensureCurrentSprint(db);
+         // Fetch all sprints
+         const sprintList = await getSprints(db);
+         setSprints(sprintList);
+
+         // Set default selection to current month
+         if (!selectedSprint) {
+             setSelectedSprint(getCurrentSprintValue());
+         }
+       } catch (e) {
+         console.error("Failed to init sprints", e);
+         // Fallback to generated sprints if DB fails
+         const generated = generateSprints();
+         setSprints(generated.map(s => ({
+             id: s.value,
+             label: s.label,
+             status: 'active',
+             createdAt: new Date().toISOString()
+         })));
+         if (!selectedSprint) {
+            setSelectedSprint(getCurrentSprintValue());
+         }
+       }
+    };
+    initSprints();
+  }, [db]); // Run once on mount (and when db is ready)
 
   const fetchData = useCallback(async () => {
     if (!user || !selectedSprint) return;
@@ -115,6 +153,25 @@ export function useDashboardData(): UseDashboardDataResult {
     }
   };
 
+  const finishSprint = async (sprintId: string) => {
+      try {
+          await closeSprint(db, sprintId);
+          // Refresh sprints list
+          const sprintList = await getSprints(db);
+          setSprints(sprintList);
+          toastSuccess("Sprint closed successfully.");
+      } catch (err) {
+          console.error("Failed to close sprint", err);
+          throw err;
+      }
+  }
+
+  // Helper for internal use, since useToast hook is not here but in the component.
+  // We throw error so component handles it.
+  const toastSuccess = (msg: string) => {
+      // Placeholder if we wanted to handle toast here, but pattern is component handles UI feedback usually.
+  }
+
   return {
     currentUserProfile,
     sales,
@@ -126,6 +183,7 @@ export function useDashboardData(): UseDashboardDataResult {
     refreshData: fetchData,
     createAdminProfile,
     recordSale,
+    finishSprint,
     error
   };
 }

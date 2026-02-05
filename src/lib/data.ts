@@ -31,7 +31,7 @@ export type Sale = {
   soldSku: string; // The specific SKU that was sold
   date: string;
   paymentMethod: "Cash" | "Financing";
-  creditProvider?: "Vento" | "Other";
+  creditProvider?: string; // "Vento", "Maxicash", "Galgo", etc.
   notes?: string; // For special orders, e.g. "Sobre pedido (CEDIS)"
 };
 

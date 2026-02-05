@@ -9,6 +9,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,11 @@ const addProspectSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   source: z.enum(["Organic", "Advertising"]),
   salespersonId: z.string().min(1, "Salesperson is required"),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  rfc: z.string().optional(),
+  address: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 type AddProspectFormValues = z.infer<typeof addProspectSchema>;
@@ -43,6 +49,11 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
       name: "",
       source: "Organic",
       salespersonId: currentUserProfile.uid,
+      phone: "",
+      email: "",
+      rfc: "",
+      address: "",
+      notes: "",
     },
   });
 
@@ -52,6 +63,11 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
              name: "",
              source: "Organic",
              salespersonId: currentUserProfile.uid,
+             phone: "",
+             email: "",
+             rfc: "",
+             address: "",
+             notes: "",
         });
 
         if (currentUserProfile.role === 'Manager') {
@@ -70,6 +86,11 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
       salespersonId: data.salespersonId,
       stage: "Potential",
       lastContact: new Date().toISOString(),
+      phone: data.phone,
+      email: data.email,
+      rfc: data.rfc,
+      address: data.address,
+      notes: data.notes,
     };
 
     try {
@@ -103,13 +124,13 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
           </span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)}>
             <DialogHeader>
                 <DialogTitle className="font-headline">Add New Prospect</DialogTitle>
                 <DialogDescription>
-                Enter the details for the new lead. It will be added to the current sprint.
+                Enter the details for the new lead. Only name is required.
                 </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -118,7 +139,7 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                     name="name"
                     render={({ field }) => (
                         <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                            <FormLabel className="text-right">Name</FormLabel>
+                            <FormLabel className="text-right">Name *</FormLabel>
                             <div className="col-span-3">
                                 <FormControl>
                                     <Input {...field} />
@@ -128,6 +149,82 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                         </FormItem>
                     )}
                 />
+                 <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                            <FormLabel className="text-right">Phone</FormLabel>
+                            <div className="col-span-3">
+                                <FormControl>
+                                    <Input {...field} placeholder="55 1234 5678" />
+                                </FormControl>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                            <FormLabel className="text-right">Email</FormLabel>
+                            <div className="col-span-3">
+                                <FormControl>
+                                    <Input {...field} placeholder="client@example.com" />
+                                </FormControl>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="rfc"
+                    render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                            <FormLabel className="text-right">RFC</FormLabel>
+                            <div className="col-span-3">
+                                <FormControl>
+                                    <Input {...field} placeholder="XAXX010101000" />
+                                </FormControl>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                            <FormLabel className="text-right">Address</FormLabel>
+                            <div className="col-span-3">
+                                <FormControl>
+                                    <Textarea {...field} className="min-h-[60px]" placeholder="Calle 123, Col. Centro..." />
+                                </FormControl>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                            <FormLabel className="text-right">Notes</FormLabel>
+                            <div className="col-span-3">
+                                <FormControl>
+                                    <Textarea {...field} className="min-h-[60px]" placeholder="Interested in Vento Rocketman..." />
+                                </FormControl>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )}
+                />
+
                 <FormField
                     control={form.control}
                     name="source"

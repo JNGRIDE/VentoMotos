@@ -7,10 +7,11 @@ interface KanbanColumnProps {
   title: string;
   prospects: Prospect[];
   userProfilesMap: Record<string, UserProfile>;
-  className?: string;
+  currentUserProfile: UserProfile | null;
+  onRefresh: () => void;
 }
 
-function KanbanColumn({ title, prospects, userProfilesMap, className }: KanbanColumnProps) {
+function KanbanColumn({ title, prospects, userProfilesMap, currentUserProfile, onRefresh }: KanbanColumnProps) {
   return (
     <div className="flex flex-col w-72 min-w-72 flex-shrink-0">
       <div className="flex items-center justify-between p-2">
@@ -21,7 +22,13 @@ function KanbanColumn({ title, prospects, userProfilesMap, className }: KanbanCo
       </div>
       <div className="flex-1 rounded-lg bg-muted/50 p-2">
         {prospects.map((prospect) => (
-          <ProspectCard key={prospect.id} prospect={prospect} userProfile={userProfilesMap[prospect.salespersonId]} />
+          <ProspectCard
+            key={prospect.id}
+            prospect={prospect}
+            userProfile={userProfilesMap[prospect.salespersonId]}
+            currentUserProfile={currentUserProfile}
+            onUpdate={onRefresh}
+          />
         ))}
       </div>
     </div>
@@ -31,9 +38,11 @@ function KanbanColumn({ title, prospects, userProfilesMap, className }: KanbanCo
 interface KanbanBoardProps {
   prospects: Prospect[];
   userProfiles: UserProfile[];
+  currentUserProfile: UserProfile | null;
+  onRefresh: () => void;
 }
 
-export function KanbanBoard({ prospects, userProfiles }: KanbanBoardProps) {
+export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRefresh }: KanbanBoardProps) {
   const stages: Prospect["stage"][] = ["Potential", "Appointment", "Credit", "Closed"];
   
   const userProfilesMap = useMemo(() => {
@@ -52,6 +61,8 @@ export function KanbanBoard({ prospects, userProfiles }: KanbanBoardProps) {
             title={stage}
             prospects={prospects.filter((p) => p.stage === stage)}
             userProfilesMap={userProfilesMap}
+            currentUserProfile={currentUserProfile}
+            onRefresh={onRefresh}
           />
         ))}
       </div>

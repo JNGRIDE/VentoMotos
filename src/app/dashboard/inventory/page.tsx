@@ -31,12 +31,13 @@ export default function InventoryPage() {
         const inventoryData = await getInventory(db);
         setInventory(inventoryData);
       }
-    } catch (error: any) {
-      console.error("Failed to fetch inventory data:", error);
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      console.error("Failed to fetch inventory data:", err);
       toast({
         variant: "destructive",
         title: "Error loading inventory",
-        description: error.message || "Could not fetch data from the database.",
+        description: err.message || "Could not fetch data from the database.",
       });
     } finally {
       setIsLoading(false);

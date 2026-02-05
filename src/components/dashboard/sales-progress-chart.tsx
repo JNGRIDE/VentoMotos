@@ -47,7 +47,7 @@ export function SalesProgressChart({ data }: SalesProgressChartProps) {
               }}
             />
             <Legend iconSize={10} />
-            <Bar dataKey="Sales Goal" fill="hsl(var(--secondary))" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="Sales Goal" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
             <Bar dataKey="Current Sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             <Bar dataKey="Current Credits" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
           </BarChart>

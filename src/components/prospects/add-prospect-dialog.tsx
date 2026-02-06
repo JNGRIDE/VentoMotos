@@ -57,12 +57,14 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
     },
   });
 
+  const { uid, role } = currentUserProfile;
+
   useEffect(() => {
     if (open) {
         form.reset({
              name: "",
              source: "Organic",
-             salespersonId: currentUserProfile.uid,
+             salespersonId: uid,
              phone: "",
              email: "",
              rfc: "",
@@ -70,11 +72,11 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
              notes: "",
         });
 
-        if (currentUserProfile.role === 'Manager') {
+        if (role === 'Manager') {
             getUserProfiles(db).then(setUserProfiles);
         }
     }
-  }, [open, db, currentUserProfile, form]);
+  }, [open, db, uid, role, form]);
 
   const handleSubmit = async (data: AddProspectFormValues) => {
     setIsSaving(true);
@@ -101,11 +103,12 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
       });
       onProspectAdded();
       setOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
       toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: error.message || "An unexpected error occurred.",
+        description: errorMessage,
       });
     } finally {
       setIsSaving(false);

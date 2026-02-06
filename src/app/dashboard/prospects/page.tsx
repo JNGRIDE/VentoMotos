@@ -29,9 +29,12 @@ export default function ProspectsPage() {
     setSelectedSprint(getCurrentSprintValue());
   }, []);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isRefresh = false) => {
     if (!user || !selectedSprint) return;
-    setIsLoading(true);
+
+    // Only show full loading spinner on initial load, not on refresh
+    if (!isRefresh) setIsLoading(true);
+
     try {
       const profile = await getUserProfile(db, user.uid);
       if (!profile) {
@@ -64,6 +67,10 @@ export default function ProspectsPage() {
       fetchData();
     }
   }, [fetchData, selectedSprint]);
+
+  const handleRefresh = useCallback(() => {
+    fetchData(true);
+  }, [fetchData]);
 
   if (isLoading) {
     return (
@@ -112,7 +119,7 @@ export default function ProspectsPage() {
             <AddProspectDialog
               sprint={selectedSprint}
               currentUserProfile={currentUserProfile}
-              onProspectAdded={fetchData}
+              onProspectAdded={handleRefresh}
             />
         </div>
       </div>
@@ -121,7 +128,7 @@ export default function ProspectsPage() {
             prospects={prospects}
             userProfiles={userProfiles}
             currentUserProfile={currentUserProfile}
-            onRefresh={fetchData}
+            onRefresh={handleRefresh}
         />
       </div>
     </div>

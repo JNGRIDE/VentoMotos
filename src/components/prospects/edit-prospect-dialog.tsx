@@ -62,6 +62,7 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
 
   useEffect(() => {
     if (open) {
+        // Reset form to current prospect values when dialog opens
         form.reset({
             name: prospect.name,
             source: prospect.source,
@@ -78,7 +79,7 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
             getUserProfiles(db).then(setUserProfiles);
         }
     }
-  }, [open, prospect, form, db, currentUserProfile]);
+  }, [open, db, currentUserProfile, form, prospect]); // prospect in dep array is fine now that parent doesn't unmount
 
   const onSubmit = async (data: ProspectFormValues) => {
     setIsSaving(true);
@@ -88,8 +89,10 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
         title: "Prospect Updated",
         description: "The prospect details have been saved.",
       });
-      onProspectUpdated();
+      // Close dialog FIRST to avoid race conditions with refresh
       onOpenChange(false);
+      // THEN trigger refresh
+      onProspectUpdated();
     } catch (error: any) {
       toast({
         variant: "destructive",

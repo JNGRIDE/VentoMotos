@@ -52,11 +52,11 @@ export function ProspectCard({ prospect, userProfile, currentUserProfile, onUpda
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowEditDialog(true); }}>
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive focus:text-destructive">
+                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowDeleteDialog(true); }} className="text-destructive focus:text-destructive">
                       <Trash className="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>

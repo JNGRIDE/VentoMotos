@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { MoreHorizontal, Pencil, Trash, Phone, Mail } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,8 @@ interface ProspectCardProps {
   onDragStart: (e: React.DragEvent<HTMLDivElement>, prospectId: string) => void;
 }
 
-export function ProspectCard({ prospect, userProfile, currentUserProfile, onUpdate, onDragStart }: ProspectCardProps) {
+// Optimization: Memoize ProspectCard to prevent re-renders when parent re-renders but props (like prospect data) are stable
+export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, currentUserProfile, onUpdate, onDragStart }: ProspectCardProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -104,4 +105,4 @@ export function ProspectCard({ prospect, userProfile, currentUserProfile, onUpda
       />
     </>
   );
-}
+});

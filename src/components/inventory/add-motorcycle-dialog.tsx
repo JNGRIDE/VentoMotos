@@ -66,12 +66,13 @@ export function AddMotorcycleDialog({ onMotorcycleAdded }: AddMotorcycleDialogPr
       onMotorcycleAdded(); // Refresh the list
       setOpen(false);
       event.currentTarget.reset();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to add motorcycle:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
       toast({
           variant: "destructive",
           title: "Uh oh! Something went wrong.",
-          description: error.message || "An unexpected error occurred.",
+          description: errorMessage,
       });
     } finally {
         setIsSaving(false);

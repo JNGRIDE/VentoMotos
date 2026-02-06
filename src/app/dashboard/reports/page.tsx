@@ -61,7 +61,7 @@ export default function ReportsPage() {
 
       setSales(salesData);
       setUserProfiles(profilesData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to fetch report data:", error);
       toast({
         variant: "destructive",

@@ -93,11 +93,12 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
       onOpenChange(false);
       // THEN trigger refresh
       onProspectUpdated();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to update prospect.";
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to update prospect.",
+        description: errorMessage,
       });
     } finally {
       setIsSaving(false);

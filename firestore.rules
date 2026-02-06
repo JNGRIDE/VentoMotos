@@ -42,5 +42,16 @@ service cloud.firestore {
       // Only a manager can CREATE or DELETE inventory items
       allow create, delete: if isManager();
     }
+
+    match /sprints/{sprintId} {
+      // Any authenticated user can read sprints (to populate dropdowns, etc.)
+      allow read: if request.auth != null;
+      // Any authenticated user can create a sprint document (for ensureCurrentSprint)
+      allow create: if request.auth != null;
+      // Only a manager can update a sprint (e.g., to close it)
+      allow update: if isManager();
+      // Only a manager can delete a sprint
+      allow delete: if isManager();
+    }
   }
 }

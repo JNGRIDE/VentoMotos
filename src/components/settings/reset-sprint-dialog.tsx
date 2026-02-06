@@ -59,12 +59,13 @@ export function ResetSprintDialog({ sprint, onSprintReset }: ResetSprintDialogPr
       });
       onSprintReset();
       setOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to reset sprint:", error);
+      const errorMessage = error instanceof Error ? error.message : "No se pudieron borrar los datos del sprint.";
       toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: error.message || "No se pudieron borrar los datos del sprint.",
+        description: errorMessage,
       });
     } finally {
       setIsDeleting(false);

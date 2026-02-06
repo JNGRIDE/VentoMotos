@@ -74,8 +74,9 @@ export default function ProfilePage() {
       await setUserProfile(db, { uid: user.uid, name: data.name });
 
       toast({ title: "Profile Updated", description: "Your name has been updated successfully." });
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Error", description: error.message || "Failed to update profile." });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to update profile.";
+      toast({ variant: "destructive", title: "Error", description: errorMessage });
     } finally {
       setIsSavingProfile(false);
     }
@@ -88,12 +89,13 @@ export default function ProfilePage() {
       await updatePassword(user, data.newPassword);
       toast({ title: "Password Updated", description: "Your password has been changed successfully." });
       passwordForm.reset();
-    } catch (error: any) {
+    } catch (error: unknown) {
        // Re-authentication might be required
-       if (error.code === 'auth/requires-recent-login') {
+       const errorObj = error as { code?: string; message?: string };
+       if (errorObj.code === 'auth/requires-recent-login') {
            toast({ variant: "destructive", title: "Login Required", description: "For security, please log out and log back in to change your password." });
        } else {
-           toast({ variant: "destructive", title: "Error", description: error.message || "Failed to update password." });
+           toast({ variant: "destructive", title: "Error", description: errorObj.message || "Failed to update password." });
        }
     } finally {
       setIsSavingPassword(false);

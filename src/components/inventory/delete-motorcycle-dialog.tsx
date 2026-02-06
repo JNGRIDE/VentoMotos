@@ -40,12 +40,13 @@ export function DeleteMotorcycleDialog({ motorcycleId, motorcycleModel, onMotorc
       });
       onMotorcycleDeleted();
       setOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to delete motorcycle:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
       toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: error.message || "An unexpected error occurred.",
+        description: errorMessage,
       });
     } finally {
       setIsDeleting(false);

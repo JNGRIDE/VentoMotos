@@ -1,8 +1,6 @@
-// THIS FILE IS DEPRECATED AND NO LONGER USED.
+// Firebase configuration
 //
-// All Firebase configuration is now handled by environment variables.
-// The app reads them directly from `process.env`.
-//
+// The app reads these values directly from `process.env`.
 // For local development and for importing into Vercel,
 // please use the `.env` file in the root of the project.
 

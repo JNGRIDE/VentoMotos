@@ -10,7 +10,7 @@ import { RecentSales } from '@/components/dashboard/recent-sales';
 import { RecordSaleDialog } from '@/components/sales/record-sale-dialog';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { useToast } from "@/hooks/use-toast";
-import { getSalesByUser } from '@/lib/data';
+import { getSalesByUser, type NewSale } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ADMIN_UID, COMMISSION_RATES, GOALS } from '@/lib/constants';
 import { useDashboardData } from '@/hooks/use-dashboard-data';
@@ -120,7 +120,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleAddSale = async (newSaleData: any) => {
+  const handleAddSale = async (newSaleData: NewSale) => {
     try {
       await recordSale(newSaleData);
       toast({

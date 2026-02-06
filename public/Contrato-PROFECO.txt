@@ -1,0 +1,5 @@
+Este es un marcador de posición para el Contrato de Adhesión registrado ante la PROFECO.
+
+Por favor, reemplace este archivo con el documento PDF oficial de su contrato.
+
+Una vez que coloque el archivo PDF real aquí (por ejemplo, "Contrato-PROFECO.pdf"), podrá enlazarlo desde su aplicación utilizando la ruta "/Contrato-PROFECO.pdf".

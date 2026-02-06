@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback, memo } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
@@ -17,7 +17,8 @@ interface KanbanColumnProps {
   onDrop: (e: React.DragEvent<HTMLDivElement>, newStage: Prospect["stage"]) => void;
 }
 
-function KanbanColumn({
+// Optimization: Memoize KanbanColumn to prevent re-renders when parent re-renders but props are unchanged
+const KanbanColumn = memo(function KanbanColumn({
   title,
   stageValue,
   prospects,
@@ -70,7 +71,7 @@ function KanbanColumn({
       </div>
     </div>
   );
-}
+});
 
 interface KanbanBoardProps {
   prospects: Prospect[];
@@ -91,11 +92,12 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
     }, {} as Record<string, UserProfile>);
   }, [userProfiles]);
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, prospectId: string) => {
+  // Optimization: Memoize handleDragStart to provide a stable reference to child components, preventing unnecessary re-renders
+  const handleDragStart = useCallback((e: React.DragEvent<HTMLDivElement>, prospectId: string) => {
     e.dataTransfer.setData("prospectId", prospectId);
-  };
+  }, []);
 
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, newStage: Prospect["stage"]) => {
+  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>, newStage: Prospect["stage"]) => {
       const prospectId = e.dataTransfer.getData("prospectId");
       if (!prospectId) return;
 
@@ -120,7 +122,7 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
               description: "Could not move prospect.",
           });
       }
-  };
+  }, [prospects, db, toast, onRefresh]);
 
   return (
     <ScrollArea className="w-full">

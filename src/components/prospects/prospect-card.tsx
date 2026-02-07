@@ -23,6 +23,18 @@ interface ProspectCardProps {
   onDragStart: (e: React.DragEvent<HTMLDivElement>, prospectId: string) => void;
 }
 
+// Custom comparison function for React.memo to prevent unnecessary re-renders
+// particularly when the prospects list is refreshed but the individual card data hasn't changed.
+function arePropsEqual(prevProps: ProspectCardProps, nextProps: ProspectCardProps) {
+  return (
+    prevProps.userProfile === nextProps.userProfile &&
+    prevProps.currentUserProfile === nextProps.currentUserProfile &&
+    prevProps.onUpdate === nextProps.onUpdate &&
+    prevProps.onDragStart === nextProps.onDragStart &&
+    (prevProps.prospect === nextProps.prospect || JSON.stringify(prevProps.prospect) === JSON.stringify(nextProps.prospect))
+  );
+}
+
 // Optimization: Memoize ProspectCard to prevent re-renders when parent re-renders but props (like prospect data) are stable
 export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, currentUserProfile, onUpdate, onDragStart }: ProspectCardProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -105,4 +117,4 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
       />
     </>
   );
-});
+}, arePropsEqual);

@@ -10,6 +10,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { Prospect, UserProfile } from "@/lib/data";
 import { EditProspectDialog } from "./edit-prospect-dialog";
@@ -59,7 +64,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                  </Badge>
                  <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity">
                       <span className="sr-only">Open menu</span>
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
@@ -82,8 +87,30 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
            {/* Quick Info Icons */}
            {(prospect.phone || prospect.email) && (
               <div className="flex gap-2 text-muted-foreground">
-                  {prospect.phone && <Phone className="h-3 w-3" />}
-                  {prospect.email && <Mail className="h-3 w-3" />}
+                  {prospect.phone && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="cursor-help focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm" aria-label={`Phone: ${prospect.phone}`}>
+                          <Phone className="h-3 w-3" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{prospect.phone}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                  {prospect.email && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="cursor-help focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm" aria-label={`Email: ${prospect.email}`}>
+                          <Mail className="h-3 w-3" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{prospect.email}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
               </div>
            )}
 

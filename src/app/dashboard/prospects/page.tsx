@@ -19,7 +19,8 @@ export default function ProspectsPage() {
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isProspectsLoading, setIsProspectsLoading] = useState(false);
 
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [selectedSprint, setSelectedSprint] = useState<string>('');
@@ -29,50 +30,68 @@ export default function ProspectsPage() {
     setSelectedSprint(getCurrentSprintValue());
   }, []);
 
-  const fetchData = useCallback(async (isRefresh = false) => {
-    if (!user || !selectedSprint) return;
-
-    // Only show full loading spinner on initial load, not on refresh
-    if (!isRefresh) setIsLoading(true);
-
+  // Fetch static data (profiles) only once or when user changes
+  const fetchInitialData = useCallback(async () => {
+    if (!user) return;
+    setIsInitialLoading(true);
     try {
-      const profile = await getUserProfile(db, user.uid);
-      if (!profile) {
-          setIsLoading(false);
-          return;
-      }
-      setCurrentUserProfile(profile);
-
-      const [prospectsData, profilesData] = await Promise.all([
-        getProspects(db, profile, selectedSprint),
-        getUserProfiles(db),
+      const [profile, profilesData] = await Promise.all([
+        getUserProfile(db, user.uid),
+        getUserProfiles(db)
       ]);
-      setProspects(prospectsData);
+
+      if (profile) {
+        setCurrentUserProfile(profile);
+      }
       setUserProfiles(profilesData);
     } catch (err: unknown) {
-        const errorObj = err as { message?: string };
-        console.error("Failed to fetch prospects data:", err);
-        toast({
-            variant: "destructive",
-            title: "Error loading prospects",
-            description: errorObj.message || "Could not fetch data from the database.",
-        });
+      console.error("Failed to fetch initial data:", err);
+      toast({
+        variant: "destructive",
+        title: "Error loading profile",
+        description: "Could not fetch user profile data.",
+      });
     } finally {
-        setIsLoading(false);
+      setIsInitialLoading(false);
     }
-  }, [db, user, toast, selectedSprint]);
+  }, [db, user, toast]);
 
   useEffect(() => {
-    if(selectedSprint) {
-      fetchData();
+    fetchInitialData();
+  }, [fetchInitialData]);
+
+  // Fetch prospects when sprint changes or refresh is requested
+  const fetchProspects = useCallback(async (isRefresh = false) => {
+    if (!currentUserProfile || !selectedSprint) return;
+
+    // Only show loading state if not a refresh (or if we want to show loading on sprint change)
+    if (!isRefresh) setIsProspectsLoading(true);
+
+    try {
+      const prospectsData = await getProspects(db, currentUserProfile, selectedSprint);
+      setProspects(prospectsData);
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string };
+      console.error("Failed to fetch prospects:", err);
+      toast({
+        variant: "destructive",
+        title: "Error loading prospects",
+        description: errorObj.message || "Could not fetch data from the database.",
+      });
+    } finally {
+      setIsProspectsLoading(false);
     }
-  }, [fetchData, selectedSprint]);
+  }, [db, currentUserProfile, selectedSprint, toast]);
+
+  useEffect(() => {
+    fetchProspects();
+  }, [fetchProspects]);
 
   const handleRefresh = useCallback(() => {
-    fetchData(true);
-  }, [fetchData]);
+    fetchProspects(true);
+  }, [fetchProspects]);
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
         <div className="flex items-center justify-center h-[calc(100vh-theme(spacing.32))]">
             <LoaderCircle className="h-10 w-10 animate-spin text-primary" />
@@ -123,7 +142,12 @@ export default function ProspectsPage() {
             />
         </div>
       </div>
-      <div className="flex-1">
+      <div className="flex-1 relative">
+        {isProspectsLoading && (
+           <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10 backdrop-blur-[1px]">
+             <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+           </div>
+        )}
         <KanbanBoard
             prospects={prospects}
             userProfiles={userProfiles}

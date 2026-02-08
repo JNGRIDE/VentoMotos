@@ -92,6 +92,19 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
     }, {} as Record<string, UserProfile>);
   }, [userProfiles]);
 
+  // Optimization: Pre-calculate prospects by stage to avoid filtering on every render
+  // This ensures that KanbanColumn receives stable arrays unless prospects actually change
+  const prospectsByStage = useMemo(() => {
+    const grouped: Record<string, Prospect[]> = {};
+    for (const p of prospects) {
+      if (!grouped[p.stage]) {
+        grouped[p.stage] = [];
+      }
+      grouped[p.stage].push(p);
+    }
+    return grouped;
+  }, [prospects]);
+
   // Optimization: Memoize handleDragStart to provide a stable reference to child components, preventing unnecessary re-renders
   const handleDragStart = useCallback((e: React.DragEvent<HTMLDivElement>, prospectId: string) => {
     e.dataTransfer.setData("prospectId", prospectId);
@@ -132,7 +145,7 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
             key={stage}
             title={stage}
             stageValue={stage}
-            prospects={prospects.filter((p) => p.stage === stage)}
+            prospects={prospectsByStage[stage] || []}
             userProfilesMap={userProfilesMap}
             currentUserProfile={currentUserProfile}
             onRefresh={onRefresh}

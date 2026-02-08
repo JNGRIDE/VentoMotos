@@ -32,9 +32,10 @@ export function AddMotorcycleDialog({ onMotorcycleAdded }: AddMotorcycleDialogPr
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const form = event.currentTarget;
     setIsSaving(true);
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     const model = String(formData.get("model"));
     const skus = String(formData.get("skus"))
       .split('\n')
@@ -65,7 +66,7 @@ export function AddMotorcycleDialog({ onMotorcycleAdded }: AddMotorcycleDialogPr
       });
       onMotorcycleAdded(); // Refresh the list
       setOpen(false);
-      event.currentTarget.reset();
+      form.reset();
     } catch (error: unknown) {
       console.error("Failed to add motorcycle:", error);
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";

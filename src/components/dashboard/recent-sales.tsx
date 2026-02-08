@@ -54,28 +54,37 @@ export function RecentSales({ sales, userProfiles }: RecentSalesProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sales.slice(0, 5).map((sale) => {
-              const userProfile = userProfilesMap[sale.salespersonId];
-              return (
-              <TableRow key={sale.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={userProfile?.avatarUrl} alt="Avatar" />
-                      <AvatarFallback>{userProfile?.name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="font-medium">{userProfile?.name}</div>
-                  </div>
+            {sales.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                  No sales recorded yet.
                 </TableCell>
-                <TableCell>
-                  <div className="text-muted-foreground">{sale.prospectName}</div>
-                </TableCell>
-                <TableCell>
-                  <div className="text-muted-foreground">{sale.motorcycleModel}</div>
-                </TableCell>
-                <TableCell className="text-right font-medium">${sale.amount.toLocaleString()}</TableCell>
               </TableRow>
-            )})}
+            ) : (
+              sales.slice(0, 5).map((sale) => {
+                const userProfile = userProfilesMap[sale.salespersonId];
+                return (
+                  <TableRow key={sale.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={userProfile?.avatarUrl} alt="Avatar" />
+                          <AvatarFallback>{userProfile?.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="font-medium">{userProfile?.name}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-muted-foreground">{sale.prospectName}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-muted-foreground">{sale.motorcycleModel}</div>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">${sale.amount.toLocaleString()}</TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </CardContent>

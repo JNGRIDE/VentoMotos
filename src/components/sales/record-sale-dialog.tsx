@@ -153,11 +153,11 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
       prospectName: data.prospectName,
       amount: data.amount,
       paymentMethod: data.paymentMethod,
-      creditProvider: data.paymentMethod === 'Financing' ? data.creditProvider : undefined,
+      ...(data.paymentMethod === 'Financing' && data.creditProvider ? { creditProvider: data.creditProvider } : {}),
       motorcycleId: data.motorcycleId,
       motorcycleModel: selectedMotorcycle!.model,
       soldSku: data.soldSku || "",
-      notes: currentSpecialOrderNotes || data.notes,
+      notes: currentSpecialOrderNotes || data.notes || "",
     };
     
     try {

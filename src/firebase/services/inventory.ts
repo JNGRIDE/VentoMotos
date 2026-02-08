@@ -24,8 +24,27 @@ export async function getInventory(db: Firestore): Promise<Motorcycle[]> {
 
 export async function addMotorcycle(db: Firestore, motorcycle: NewMotorcycle): Promise<string> {
   const inventoryCol = collection(db, "inventory");
-  const docRef = await addDoc(inventoryCol, motorcycle);
-  return docRef.id;
+
+  const q = query(inventoryCol, where("model", "==", motorcycle.model));
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    const existingDoc = querySnapshot.docs[0];
+    const existingData = existingDoc.data() as Motorcycle;
+    const docRef = existingDoc.ref;
+
+    const existingSkus = existingData.skus || [];
+    const newSkusToAdd = motorcycle.skus.filter(sku => !existingSkus.includes(sku));
+
+    const updatedSkus = [...existingSkus, ...newSkusToAdd];
+    const updatedStock = updatedSkus.length;
+
+    await setDoc(docRef, { stock: updatedStock, skus: updatedSkus }, { merge: true });
+    return docRef.id;
+  } else {
+    const docRef = await addDoc(inventoryCol, motorcycle);
+    return docRef.id;
+  }
 }
 
 export async function updateMotorcycle(db: Firestore, motorcycleId: string, data: Partial<NewMotorcycle>): Promise<void> {

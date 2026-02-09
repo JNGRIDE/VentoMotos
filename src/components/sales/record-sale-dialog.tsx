@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { getUserProfiles, getInventory, getFinanciers } from "@/firebase/services";
 import type { NewSale, UserProfile, Motorcycle } from "@/lib/data";
+import { EXTERNAL_SALESPERSON_ID } from "@/lib/constants";
 
 const saleSchema = z.object({
   salespersonId: z.string().min(1, "Salesperson is required"),
@@ -190,6 +191,7 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
+                                    <SelectItem value={EXTERNAL_SALESPERSON_ID}>External Sale (No Commission)</SelectItem>
                                     {userProfiles.map((sp) => (
                                         <SelectItem key={sp.uid} value={sp.uid}>{sp.name}</SelectItem>
                                     ))}

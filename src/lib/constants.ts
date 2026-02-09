@@ -1,4 +1,5 @@
 export const ADMIN_UID = "wVN7TmLeOyQDTRevAUWQYDqvou42";
+export const EXTERNAL_SALESPERSON_ID = "EXTERNAL_SALE";
 
 export const COMMISSION_RATES = {
   MANAGER: 0.012,

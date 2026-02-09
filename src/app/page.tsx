@@ -245,9 +245,14 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="flex justify-center text-sm">
-          <p onClick={() => setIsSignUp(!isSignUp)} className="cursor-pointer text-muted-foreground hover:text-primary">
+          <Button
+            type="button"
+            variant="link"
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="h-auto p-0 font-normal text-muted-foreground hover:text-primary hover:no-underline"
+          >
             {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
-          </p>
+          </Button>
         </CardFooter>
       </Card>
     </div>

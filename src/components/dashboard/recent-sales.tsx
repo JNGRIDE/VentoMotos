@@ -21,6 +21,7 @@ import {
 
 import type { Sale, UserProfile } from "@/lib/data"
 import { useMemo } from "react"
+import { EXTERNAL_SALESPERSON_ID } from "@/lib/constants"
 
 interface RecentSalesProps {
   sales: Sale[];
@@ -62,16 +63,17 @@ export function RecentSales({ sales, userProfiles }: RecentSalesProps) {
               </TableRow>
             ) : (
               sales.slice(0, 5).map((sale) => {
-                const userProfile = userProfilesMap[sale.salespersonId];
+                const isExternal = sale.salespersonId === EXTERNAL_SALESPERSON_ID;
+                const userProfile = isExternal ? null : userProfilesMap[sale.salespersonId];
                 return (
                   <TableRow key={sale.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
                           <AvatarImage src={userProfile?.avatarUrl} alt="Avatar" />
-                          <AvatarFallback>{userProfile?.name?.charAt(0)}</AvatarFallback>
+                          <AvatarFallback>{isExternal ? 'EX' : userProfile?.name?.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <div className="font-medium">{userProfile?.name}</div>
+                        <div className="font-medium">{isExternal ? 'External Sale' : userProfile?.name}</div>
                       </div>
                     </TableCell>
                     <TableCell>

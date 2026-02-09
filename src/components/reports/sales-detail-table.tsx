@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table"
 
 import type { Sale, UserProfile } from "@/lib/data"
+import { EXTERNAL_SALESPERSON_ID } from "@/lib/constants"
 
 interface SalesDetailTableProps {
   sales: Sale[];
@@ -53,11 +54,12 @@ export function SalesDetailTable({ sales, userProfiles }: SalesDetailTableProps)
           </TableHeader>
           <TableBody>
             {sales.map((sale) => {
-              const userProfile = userProfilesMap[sale.salespersonId];
+              const isExternal = sale.salespersonId === EXTERNAL_SALESPERSON_ID;
+              const userProfile = isExternal ? null : userProfilesMap[sale.salespersonId];
               return (
               <TableRow key={sale.id}>
                 <TableCell className="font-medium">{format(new Date(sale.date), "MMM d, yyyy")}</TableCell>
-                <TableCell>{userProfile?.name || 'N/A'}</TableCell>
+                <TableCell>{isExternal ? 'External Sale' : (userProfile?.name || 'N/A')}</TableCell>
                 <TableCell>{sale.prospectName}</TableCell>
                 <TableCell>{sale.motorcycleModel}</TableCell>
                 <TableCell>{sale.paymentMethod}</TableCell>

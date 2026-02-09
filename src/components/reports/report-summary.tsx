@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { DollarSign, Hash, BarChart, Trophy } from 'lucide-react';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import type { Sale, UserProfile } from '@/lib/data';
+import { EXTERNAL_SALESPERSON_ID } from '@/lib/constants';
 
 interface ReportSummaryProps {
   sales: Sale[];
@@ -19,7 +20,9 @@ export function ReportSummary({ sales, userProfiles, isManager }: ReportSummaryP
 
     const salesByPerson: Record<string, number> = {};
     sales.forEach(sale => {
-      salesByPerson[sale.salespersonId] = (salesByPerson[sale.salespersonId] || 0) + sale.amount;
+      if (sale.salespersonId !== EXTERNAL_SALESPERSON_ID) {
+        salesByPerson[sale.salespersonId] = (salesByPerson[sale.salespersonId] || 0) + sale.amount;
+      }
     });
 
     if (Object.keys(salesByPerson).length === 0) return null;

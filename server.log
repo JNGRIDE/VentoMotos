@@ -1,10 +1,35 @@
 
-> nextn@0.1.0 start
-> next start
+> nextn@0.1.0 dev
+> next dev -p 9002
 
    ▲ Next.js 15.5.9
-   - Local:        http://localhost:3000
-   - Network:      http://192.168.0.2:3000
+   - Local:        http://localhost:9002
+   - Network:      http://192.168.0.2:9002
+   - Experiments (use with caution):
+     · serverActions
 
  ✓ Starting...
- ✓ Ready in 896ms
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Ready in 2.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 11.9s (2008 modules)
+ ⨯ Error: Firebase configuration is incomplete. Please make sure that NEXT_PUBLIC_API_KEY and other required Firebase environment variables are set correctly in your Vercel/deployment project settings.
+    at initializeFirebase (src/firebase/index.ts:22:11)
+    at FirebaseProvider.useMemo[firebaseValue] (src/firebase/provider.tsx:24:57)
+    at FirebaseProvider (src/firebase/provider.tsx:24:32)
+  20 |   // This provides a clearer error message if environment variables are missing.
+  21 |   if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+> 22 |     throw new Error(
+     |           ^
+  23 |       "Firebase configuration is incomplete. Please make sure that NEXT_PUBLIC_API_KEY and other required Firebase environment variables are set correctly in your Vercel/deployment project settings."
+  24 |     );
+  25 |   } {
+  digest: '1865328772'
+}
+ HEAD / 500 in 13849ms
+ ✓ Compiled in 2.2s (868 modules)
+[?25h

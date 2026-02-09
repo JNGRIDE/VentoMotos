@@ -17,6 +17,23 @@ interface KanbanColumnProps {
   onDrop: (e: React.DragEvent<HTMLDivElement>, newStage: Prospect["stage"]) => void;
 }
 
+const EMPTY_PROSPECTS: Prospect[] = [];
+
+// Custom comparison function for KanbanColumn to prevent unnecessary re-renders.
+// Uses JSON.stringify for the prospects array to handle new array references with identical content.
+function areKanbanColumnPropsEqual(prev: KanbanColumnProps, next: KanbanColumnProps) {
+  return (
+    prev.title === next.title &&
+    prev.stageValue === next.stageValue &&
+    prev.userProfilesMap === next.userProfilesMap &&
+    prev.currentUserProfile === next.currentUserProfile &&
+    prev.onRefresh === next.onRefresh &&
+    prev.onDragStart === next.onDragStart &&
+    prev.onDrop === next.onDrop &&
+    (prev.prospects === next.prospects || JSON.stringify(prev.prospects) === JSON.stringify(next.prospects))
+  );
+}
+
 // Optimization: Memoize KanbanColumn to prevent re-renders when parent re-renders but props are unchanged
 const KanbanColumn = memo(function KanbanColumn({
   title,
@@ -71,7 +88,7 @@ const KanbanColumn = memo(function KanbanColumn({
       </div>
     </div>
   );
-});
+}, areKanbanColumnPropsEqual);
 
 interface KanbanBoardProps {
   prospects: Prospect[];
@@ -80,8 +97,9 @@ interface KanbanBoardProps {
   onRefresh: () => void;
 }
 
+const STAGES: Prospect["stage"][] = ["Potential", "Appointment", "Credit", "Closed"];
+
 export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRefresh }: KanbanBoardProps) {
-  const stages: Prospect["stage"][] = ["Potential", "Appointment", "Credit", "Closed"];
   const db = useFirestore();
   const { toast } = useToast();
   
@@ -140,12 +158,12 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
   return (
     <ScrollArea className="w-full">
       <div className="flex gap-4 pb-4">
-        {stages.map((stage) => (
+        {STAGES.map((stage) => (
           <KanbanColumn
             key={stage}
             title={stage}
             stageValue={stage}
-            prospects={prospectsByStage[stage] || []}
+            prospects={prospectsByStage[stage] || EMPTY_PROSPECTS}
             userProfilesMap={userProfilesMap}
             currentUserProfile={currentUserProfile}
             onRefresh={onRefresh}

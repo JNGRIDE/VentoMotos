@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, memo } from "react";
+import { useMemo, useState, useCallback, memo, useRef, useEffect } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
@@ -123,6 +123,13 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
     return grouped;
   }, [prospects]);
 
+  // Keep a ref to prospects to avoid re-creating handleDrop when prospects change.
+  // This prevents all KanbanColumns from re-rendering just because the prospects list updated.
+  const prospectsRef = useRef(prospects);
+  useEffect(() => {
+    prospectsRef.current = prospects;
+  }, [prospects]);
+
   // Optimization: Memoize handleDragStart to provide a stable reference to child components, preventing unnecessary re-renders
   const handleDragStart = useCallback((e: React.DragEvent<HTMLDivElement>, prospectId: string) => {
     e.dataTransfer.setData("prospectId", prospectId);
@@ -132,7 +139,7 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
       const prospectId = e.dataTransfer.getData("prospectId");
       if (!prospectId) return;
 
-      const prospect = prospects.find(p => p.id === prospectId);
+      const prospect = prospectsRef.current.find(p => p.id === prospectId);
       if (!prospect) return;
 
       if (prospect.stage === newStage) return; // No change
@@ -153,7 +160,7 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
               description: "Could not move prospect.",
           });
       }
-  }, [prospects, db, toast, onRefresh]);
+  }, [db, toast, onRefresh]);
 
   return (
     <ScrollArea className="w-full">

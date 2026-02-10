@@ -145,7 +145,7 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                             <FormLabel className="text-right">Name *</FormLabel>
                             <div className="col-span-3">
                                 <FormControl>
-                                    <Input {...field} />
+                                    <Input {...field} autoComplete="name" />
                                 </FormControl>
                                 <FormMessage />
                             </div>
@@ -160,7 +160,7 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                             <FormLabel className="text-right">Phone</FormLabel>
                             <div className="col-span-3">
                                 <FormControl>
-                                    <Input {...field} placeholder="55 1234 5678" />
+                                    <Input {...field} type="tel" autoComplete="tel" placeholder="55 1234 5678" />
                                 </FormControl>
                                 <FormMessage />
                             </div>
@@ -175,7 +175,7 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                             <FormLabel className="text-right">Email</FormLabel>
                             <div className="col-span-3">
                                 <FormControl>
-                                    <Input {...field} placeholder="client@example.com" />
+                                    <Input {...field} type="email" autoComplete="email" placeholder="client@example.com" />
                                 </FormControl>
                                 <FormMessage />
                             </div>
@@ -205,7 +205,7 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                             <FormLabel className="text-right">Address</FormLabel>
                             <div className="col-span-3">
                                 <FormControl>
-                                    <Textarea {...field} className="min-h-[60px]" placeholder="Calle 123, Col. Centro..." />
+                                    <Textarea {...field} autoComplete="street-address" className="min-h-[60px]" placeholder="Calle 123, Col. Centro..." />
                                 </FormControl>
                                 <FormMessage />
                             </div>

@@ -125,7 +125,7 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                         <FormItem>
                             <FormLabel>Name *</FormLabel>
                             <FormControl>
-                                <Input {...field} />
+                                <Input {...field} autoComplete="name" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -138,7 +138,7 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                         <FormItem>
                             <FormLabel>Phone</FormLabel>
                             <FormControl>
-                                <Input {...field} />
+                                <Input {...field} type="tel" autoComplete="tel" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -151,7 +151,7 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                         <FormItem>
                             <FormLabel>Email</FormLabel>
                             <FormControl>
-                                <Input {...field} />
+                                <Input {...field} type="email" autoComplete="email" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -177,7 +177,7 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                         <FormItem>
                             <FormLabel>Address</FormLabel>
                             <FormControl>
-                                <Textarea {...field} className="min-h-[60px]" />
+                                <Textarea {...field} autoComplete="street-address" className="min-h-[60px]" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>

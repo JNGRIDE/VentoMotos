@@ -3,7 +3,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { updateProspect } from "@/firebase/services";
-import type { Prospect, UserProfile } from "@/lib/data";
+import { type Prospect, type UserProfile, PROSPECT_STAGES } from "@/lib/data";
 import { ProspectCard } from "./prospect-card";
 
 interface KanbanColumnProps {
@@ -97,8 +97,6 @@ interface KanbanBoardProps {
   onRefresh: () => void;
 }
 
-const STAGES: Prospect["stage"][] = ["Potential", "Appointment", "Credit", "Closed"];
-
 export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRefresh }: KanbanBoardProps) {
   const db = useFirestore();
   const { toast } = useToast();
@@ -165,7 +163,7 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
   return (
     <ScrollArea className="w-full">
       <div className="flex gap-4 pb-4">
-        {STAGES.map((stage) => (
+        {PROSPECT_STAGES.map((stage) => (
           <KanbanColumn
             key={stage}
             title={stage}

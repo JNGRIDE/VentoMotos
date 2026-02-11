@@ -1,5 +1,7 @@
+"use client";
+
 import { useState, memo } from "react";
-import { MoreHorizontal, Pencil, Trash, Phone, Mail } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash, Phone, Mail, ArrowRight, LoaderCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +11,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
@@ -16,7 +22,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { Prospect, UserProfile } from "@/lib/data";
+import { type Prospect, type UserProfile, PROSPECT_STAGES } from "@/lib/data";
+import { useFirestore } from "@/firebase";
+import { updateProspect } from "@/firebase/services";
+import { useToast } from "@/hooks/use-toast";
 import { EditProspectDialog } from "./edit-prospect-dialog";
 import { DeleteProspectDialog } from "./delete-prospect-dialog";
 
@@ -44,6 +53,30 @@ function arePropsEqual(prevProps: ProspectCardProps, nextProps: ProspectCardProp
 export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, currentUserProfile, onUpdate, onDragStart }: ProspectCardProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
+  const db = useFirestore();
+  const { toast } = useToast();
+
+  const handleMoveStage = async (newStage: Prospect["stage"]) => {
+    setIsMoving(true);
+    try {
+      await updateProspect(db, prospect.id, { stage: newStage });
+      toast({
+        title: "Stage Updated",
+        description: `Moved to ${newStage}`,
+      });
+      onUpdate();
+    } catch (error) {
+      console.error("Failed to move prospect", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not move prospect.",
+      });
+    } finally {
+      setIsMoving(false);
+    }
+  };
 
   const sourceColor =
     prospect.source === "Advertising" ? "bg-accent/20 text-accent-foreground" : "bg-primary/20 text-primary-foreground";
@@ -74,6 +107,26 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <ArrowRight className="mr-2 h-4 w-4" />
+                        Move to
+                        {isMoving && <LoaderCircle className="ml-2 h-3 w-3 animate-spin" />}
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                          {PROSPECT_STAGES.filter((stage) => stage !== prospect.stage).map((stage) => (
+                            <DropdownMenuItem
+                              key={stage}
+                              onSelect={() => handleMoveStage(stage)}
+                              disabled={isMoving}
+                            >
+                              {stage}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
                     <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowDeleteDialog(true); }} className="text-destructive focus:text-destructive">
                       <Trash className="mr-2 h-4 w-4" />
                       Delete

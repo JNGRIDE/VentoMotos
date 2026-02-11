@@ -1,4 +1,4 @@
-import { useState, memo } from "react";
+import { memo } from "react";
 import { MoreHorizontal, Pencil, Trash, Phone, Mail } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +17,6 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { Prospect, UserProfile } from "@/lib/data";
-import { EditProspectDialog } from "./edit-prospect-dialog";
-import { DeleteProspectDialog } from "./delete-prospect-dialog";
 
 interface ProspectCardProps {
   prospect: Prospect;
@@ -26,6 +24,8 @@ interface ProspectCardProps {
   currentUserProfile: UserProfile | null; // The logged-in user
   onUpdate: () => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, prospectId: string) => void;
+  onEdit: (prospect: Prospect) => void;
+  onDelete: (prospect: Prospect) => void;
 }
 
 // Custom comparison function for React.memo to prevent unnecessary re-renders
@@ -36,112 +36,94 @@ function arePropsEqual(prevProps: ProspectCardProps, nextProps: ProspectCardProp
     prevProps.currentUserProfile === nextProps.currentUserProfile &&
     prevProps.onUpdate === nextProps.onUpdate &&
     prevProps.onDragStart === nextProps.onDragStart &&
+    prevProps.onEdit === nextProps.onEdit &&
+    prevProps.onDelete === nextProps.onDelete &&
     (prevProps.prospect === nextProps.prospect || JSON.stringify(prevProps.prospect) === JSON.stringify(nextProps.prospect))
   );
 }
 
 // Optimization: Memoize ProspectCard to prevent re-renders when parent re-renders but props (like prospect data) are stable
-export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, currentUserProfile, onUpdate, onDragStart }: ProspectCardProps) {
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, currentUserProfile, onUpdate, onDragStart, onEdit, onDelete }: ProspectCardProps) {
 
   const sourceColor =
     prospect.source === "Advertising" ? "bg-accent/20 text-accent-foreground" : "bg-primary/20 text-primary-foreground";
 
   return (
-    <>
-      <Card
-        className="mb-4 shadow-sm hover:shadow-md transition-shadow duration-200 group relative cursor-move"
-        draggable
-        onDragStart={(e) => onDragStart(e, prospect.id)}
-      >
-        <CardHeader className="p-4">
-          <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold truncate max-w-[150px]">{prospect.name}</CardTitle>
-              <div className="flex items-center gap-1">
-                 <Badge className={cn("text-xs mr-1", sourceColor)} variant="outline">
-                    {prospect.source}
-                 </Badge>
-                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity">
-                      <span className="sr-only">Open menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowEditDialog(true); }}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowDeleteDialog(true); }} className="text-destructive focus:text-destructive">
-                      <Trash className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4 pt-0 space-y-2">
-           {/* Quick Info Icons */}
-           {(prospect.phone || prospect.email) && (
-              <div className="flex gap-2 text-muted-foreground">
-                  {prospect.phone && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="cursor-help focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm" aria-label={`Phone: ${prospect.phone}`}>
-                          <Phone className="h-3 w-3" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{prospect.phone}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                  {prospect.email && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="cursor-help focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm" aria-label={`Email: ${prospect.email}`}>
-                          <Mail className="h-3 w-3" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{prospect.email}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-              </div>
-           )}
-
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-6 w-6">
-                <AvatarImage src={userProfile?.avatarUrl} />
-                <AvatarFallback>{userProfile?.name?.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <span className="truncate max-w-[80px]">{userProfile?.name || "Unassigned"}</span>
+    <Card
+      className="mb-4 shadow-sm hover:shadow-md transition-shadow duration-200 group relative cursor-move"
+      draggable
+      onDragStart={(e) => onDragStart(e, prospect.id)}
+    >
+      <CardHeader className="p-4">
+        <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold truncate max-w-[150px]">{prospect.name}</CardTitle>
+            <div className="flex items-center gap-1">
+               <Badge className={cn("text-xs mr-1", sourceColor)} variant="outline">
+                  {prospect.source}
+               </Badge>
+               <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity">
+                    <span className="sr-only">Open menu</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onEdit(prospect); }}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDelete(prospect); }} className="text-destructive focus:text-destructive">
+                    <Trash className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            <span>{new Date(prospect.lastContact).toLocaleDateString()}</span>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4 pt-0 space-y-2">
+         {/* Quick Info Icons */}
+         {(prospect.phone || prospect.email) && (
+            <div className="flex gap-2 text-muted-foreground">
+                {prospect.phone && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="cursor-help focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm" aria-label={`Phone: ${prospect.phone}`}>
+                        <Phone className="h-3 w-3" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{prospect.phone}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {prospect.email && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="cursor-help focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm" aria-label={`Email: ${prospect.email}`}>
+                        <Mail className="h-3 w-3" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{prospect.email}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+            </div>
+         )}
+
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-6 w-6">
+              <AvatarImage src={userProfile?.avatarUrl} />
+              <AvatarFallback>{userProfile?.name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <span className="truncate max-w-[80px]">{userProfile?.name || "Unassigned"}</span>
           </div>
-        </CardContent>
-      </Card>
-
-      <EditProspectDialog
-        prospect={prospect}
-        open={showEditDialog}
-        onOpenChange={setShowEditDialog}
-        onProspectUpdated={onUpdate}
-        currentUserProfile={currentUserProfile}
-      />
-
-      <DeleteProspectDialog
-        prospectId={prospect.id}
-        prospectName={prospect.name}
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        onProspectDeleted={onUpdate}
-      />
-    </>
+          <span>{new Date(prospect.lastContact).toLocaleDateString()}</span>
+        </div>
+      </CardContent>
+    </Card>
   );
 }, arePropsEqual);

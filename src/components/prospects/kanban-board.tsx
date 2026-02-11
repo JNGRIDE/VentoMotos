@@ -5,6 +5,8 @@ import { useFirestore } from "@/firebase";
 import { updateProspect } from "@/firebase/services";
 import type { Prospect, UserProfile } from "@/lib/data";
 import { ProspectCard } from "./prospect-card";
+import { EditProspectDialog } from "./edit-prospect-dialog";
+import { DeleteProspectDialog } from "./delete-prospect-dialog";
 
 interface KanbanColumnProps {
   title: string;
@@ -15,6 +17,8 @@ interface KanbanColumnProps {
   onRefresh: () => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, prospectId: string) => void;
   onDrop: (e: React.DragEvent<HTMLDivElement>, newStage: Prospect["stage"]) => void;
+  onEdit: (prospect: Prospect) => void;
+  onDelete: (prospect: Prospect) => void;
 }
 
 const EMPTY_PROSPECTS: Prospect[] = [];
@@ -30,6 +34,8 @@ function areKanbanColumnPropsEqual(prev: KanbanColumnProps, next: KanbanColumnPr
     prev.onRefresh === next.onRefresh &&
     prev.onDragStart === next.onDragStart &&
     prev.onDrop === next.onDrop &&
+    prev.onEdit === next.onEdit &&
+    prev.onDelete === next.onDelete &&
     (prev.prospects === next.prospects || JSON.stringify(prev.prospects) === JSON.stringify(next.prospects))
   );
 }
@@ -43,7 +49,9 @@ const KanbanColumn = memo(function KanbanColumn({
   currentUserProfile,
   onRefresh,
   onDragStart,
-  onDrop
+  onDrop,
+  onEdit,
+  onDelete
 }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -83,6 +91,8 @@ const KanbanColumn = memo(function KanbanColumn({
             currentUserProfile={currentUserProfile}
             onUpdate={onRefresh}
             onDragStart={onDragStart}
+            onEdit={onEdit}
+            onDelete={onDelete}
           />
         ))}
       </div>
@@ -102,6 +112,11 @@ const STAGES: Prospect["stage"][] = ["Potential", "Appointment", "Credit", "Clos
 export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRefresh }: KanbanBoardProps) {
   const db = useFirestore();
   const { toast } = useToast();
+
+  const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [deletingProspect, setDeletingProspect] = useState<Prospect | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   
   const userProfilesMap = useMemo(() => {
     return userProfiles.reduce((map, sp) => {
@@ -162,24 +177,67 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
       }
   }, [db, toast, onRefresh]);
 
+  const handleEdit = useCallback((prospect: Prospect) => {
+    setEditingProspect(prospect);
+    setIsEditOpen(true);
+  }, []);
+
+  const handleDelete = useCallback((prospect: Prospect) => {
+    setDeletingProspect(prospect);
+    setIsDeleteOpen(true);
+  }, []);
+
+  const handleEditOpenChange = useCallback((open: boolean) => {
+    setIsEditOpen(open);
+    if (!open) {
+      // Small delay to allow animation to finish before clearing data (optional but safer)
+      // or simply don't clear it until next edit, which is simpler and preserves animation.
+    }
+  }, []);
+
   return (
-    <ScrollArea className="w-full">
-      <div className="flex gap-4 pb-4">
-        {STAGES.map((stage) => (
-          <KanbanColumn
-            key={stage}
-            title={stage}
-            stageValue={stage}
-            prospects={prospectsByStage[stage] || EMPTY_PROSPECTS}
-            userProfilesMap={userProfilesMap}
-            currentUserProfile={currentUserProfile}
-            onRefresh={onRefresh}
-            onDragStart={handleDragStart}
-            onDrop={handleDrop}
-          />
-        ))}
-      </div>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+    <>
+      <ScrollArea className="w-full">
+        <div className="flex gap-4 pb-4">
+          {STAGES.map((stage) => (
+            <KanbanColumn
+              key={stage}
+              title={stage}
+              stageValue={stage}
+              prospects={prospectsByStage[stage] || EMPTY_PROSPECTS}
+              userProfilesMap={userProfilesMap}
+              currentUserProfile={currentUserProfile}
+              onRefresh={onRefresh}
+              onDragStart={handleDragStart}
+              onDrop={handleDrop}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+
+      {editingProspect && (
+        <EditProspectDialog
+          prospect={editingProspect}
+          open={isEditOpen}
+          onOpenChange={handleEditOpenChange}
+          onProspectUpdated={onRefresh}
+          currentUserProfile={currentUserProfile}
+          userProfiles={userProfiles}
+        />
+      )}
+
+      {deletingProspect && (
+        <DeleteProspectDialog
+          prospectId={deletingProspect.id}
+          prospectName={deletingProspect.name}
+          open={isDeleteOpen}
+          onOpenChange={setIsDeleteOpen}
+          onProspectDeleted={onRefresh}
+        />
+      )}
+    </>
   );
 }

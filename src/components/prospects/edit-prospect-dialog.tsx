@@ -37,13 +37,20 @@ interface EditProspectDialogProps {
   onOpenChange: (open: boolean) => void;
   onProspectUpdated: () => void;
   currentUserProfile: UserProfile | null;
+  userProfiles?: UserProfile[];
 }
 
-export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpdated, currentUserProfile }: EditProspectDialogProps) {
+export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpdated, currentUserProfile, userProfiles: initialUserProfiles }: EditProspectDialogProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
+  const [userProfiles, setUserProfiles] = useState<UserProfile[]>(initialUserProfiles || []);
+
+  useEffect(() => {
+    if (initialUserProfiles && initialUserProfiles.length > 0) {
+      setUserProfiles(initialUserProfiles);
+    }
+  }, [initialUserProfiles]);
 
   const form = useForm<ProspectFormValues>({
     resolver: zodResolver(prospectSchema),
@@ -75,11 +82,11 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
             notes: prospect.notes || "",
         });
 
-        if (currentUserProfile?.role === 'Manager') {
+        if (currentUserProfile?.role === 'Manager' && userProfiles.length === 0) {
             getUserProfiles(db).then(setUserProfiles);
         }
     }
-  }, [open, db, currentUserProfile, form, prospect]); // prospect in dep array is fine now that parent doesn't unmount
+  }, [open, db, currentUserProfile, form, prospect, userProfiles.length]); // prospect in dep array is fine now that parent doesn't unmount
 
   const onSubmit = async (data: ProspectFormValues) => {
     setIsSaving(true);

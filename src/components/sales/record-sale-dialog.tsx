@@ -152,7 +152,7 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
       sprint,
       salespersonId: data.salespersonId,
       prospectName: data.prospectName,
-      amount: data.amount,
+      amount: data.amount / 1.16, // Store net amount (remove VAT)
       paymentMethod: data.paymentMethod,
       ...(data.paymentMethod === 'Financing' && data.creditProvider ? { creditProvider: data.creditProvider } : {}),
       motorcycleId: data.motorcycleId,

@@ -75,7 +75,7 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
       creditProvider: sale.creditProvider || undefined,
       motorcycleId: sale.motorcycleId,
       soldSku: sale.soldSku,
-      amount: sale.amount,
+      amount: Math.round(sale.amount * 1.16), // Display Gross Amount
       notes: sale.notes || "",
     },
     mode: "onChange"
@@ -91,7 +91,7 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
               creditProvider: sale.creditProvider || undefined,
               motorcycleId: sale.motorcycleId,
               soldSku: sale.soldSku,
-              amount: sale.amount,
+              amount: Math.round(sale.amount * 1.16), // Display Gross Amount
               notes: sale.notes || "",
           });
           setSpecialOrderNotes(sale.notes || "");
@@ -191,7 +191,7 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
       sprint: sale.sprint, // Keep original sprint
       salespersonId: data.salespersonId,
       prospectName: data.prospectName,
-      amount: data.amount,
+      amount: data.amount / 1.16, // Store Net Amount
       paymentMethod: data.paymentMethod,
       ...(data.paymentMethod === 'Financing' && data.creditProvider ? { creditProvider: data.creditProvider } : {}),
       motorcycleId: data.motorcycleId,

@@ -12,6 +12,7 @@ import {
   Settings,
   Package,
   LoaderCircle,
+  BadgeDollarSign,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import { useUser } from "@/firebase/auth/use-user";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/dashboard/sales", icon: BadgeDollarSign, label: "Sales" },
   { href: "/dashboard/inventory", icon: Package, label: "Inventory" },
   { href: "/dashboard/prospects", icon: Users, label: "Prospects" },
   { href: "/dashboard/reports", icon: FileText, label: "Reports" },

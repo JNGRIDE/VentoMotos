@@ -6,6 +6,8 @@ import {
   getUserProfiles,
   getUserProfile,
   addSale,
+  deleteSale,
+  updateSale,
   setUserProfile,
   getSprints,
   ensureCurrentSprint,
@@ -27,6 +29,8 @@ interface UseDashboardDataResult {
   refreshData: () => Promise<void>;
   createAdminProfile: () => Promise<void>;
   recordSale: (newSaleData: NewSale) => Promise<void>;
+  deleteSale: (sale: Sale) => Promise<void>;
+  updateSale: (saleId: string, oldSale: Sale, newSale: NewSale) => Promise<void>;
   finishSprint: (sprintId: string) => Promise<void>;
   startNextSprint: () => Promise<void>;
   error: { title: string; description: string } | null;
@@ -155,6 +159,28 @@ export function useDashboardData(): UseDashboardDataResult {
     }
   };
 
+  const handleDeleteSale = async (sale: Sale) => {
+    try {
+        await deleteSale(db, sale);
+        await fetchData();
+    } catch (err: unknown) {
+        const errorObj = err as { message?: string };
+        console.error("Failed to delete sale:", err);
+        throw new Error(errorObj.message || "An unexpected error occurred.");
+    }
+  }
+
+  const handleUpdateSale = async (saleId: string, oldSale: Sale, newSale: NewSale) => {
+      try {
+          await updateSale(db, saleId, oldSale, newSale);
+          await fetchData();
+      } catch (err: unknown) {
+          const errorObj = err as { message?: string };
+          console.error("Failed to update sale:", err);
+          throw new Error(errorObj.message || "An unexpected error occurred.");
+      }
+  }
+
   const finishSprint = async (sprintId: string) => {
       try {
           await closeSprint(db, sprintId);
@@ -199,6 +225,8 @@ export function useDashboardData(): UseDashboardDataResult {
     refreshData: fetchData,
     createAdminProfile,
     recordSale,
+    deleteSale: handleDeleteSale,
+    updateSale: handleUpdateSale,
     finishSprint,
     startNextSprint,
     error

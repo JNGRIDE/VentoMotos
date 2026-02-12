@@ -10,7 +10,7 @@ import { RecentSales } from '@/components/dashboard/recent-sales';
 import { RecordSaleDialog } from '@/components/sales/record-sale-dialog';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { useToast } from "@/hooks/use-toast";
-import { getSalesByUser, type NewSale } from '@/lib/data';
+import { getSalesByUser, type NewSale, type Sale } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ADMIN_UID, COMMISSION_RATES, GOALS } from '@/lib/constants';
 import { useDashboardData } from '@/hooks/use-dashboard-data';
@@ -31,6 +31,8 @@ export default function DashboardPage() {
     setSelectedSprint,
     createAdminProfile,
     recordSale,
+    deleteSale,
+    updateSale,
     finishSprint,
     startNextSprint,
     error
@@ -137,6 +139,16 @@ export default function DashboardPage() {
       throw err;
     }
   };
+
+  const handleDeleteSale = async (sale: Sale) => {
+      try {
+          await deleteSale(sale);
+          toast({ title: "Sale Deleted", description: "The sale has been removed and inventory restored." });
+      } catch (err: unknown) {
+          const errorObj = err as { message?: string };
+          toast({ variant: "destructive", title: "Error", description: errorObj.message || "Failed to delete sale." });
+      }
+  }
   
   const handleFinishSprint = async () => {
       if (confirm("Are you sure you want to close this sprint? This action cannot be undone.")) {
@@ -267,7 +279,13 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <SalesProgressChart data={teamChartData} />
-        <RecentSales sales={sales} userProfiles={userProfiles} />
+        <RecentSales
+          sales={sales}
+          userProfiles={userProfiles}
+          onDeleteSale={currentSprintStatus === 'active' ? handleDeleteSale : undefined}
+          onUpdateSale={currentSprintStatus === 'active' ? updateSale : undefined}
+          currentUserProfile={currentUserProfile}
+        />
       </div>
     </div>
   );

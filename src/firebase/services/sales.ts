@@ -36,6 +36,13 @@ export async function getSales(db: Firestore, user: UserProfile, sprint: string)
   return salesList;
 }
 
+export async function getAllSales(db: Firestore): Promise<Sale[]> {
+  const salesCol = collection(db, "sales");
+  const q = query(salesCol, orderBy("date", "desc"));
+  const salesSnapshot = await getDocs(q);
+  return salesSnapshot.docs.map(doc => fromFirestore<Sale>(doc));
+}
+
 // Transactional sale creation with inventory deduction
 export async function addSale(db: Firestore, sale: NewSale): Promise<void> {
   const motorcycleRef = doc(db, "inventory", sale.motorcycleId);
@@ -181,6 +188,15 @@ export async function updateSale(db: Firestore, saleId: string, oldSale: Sale, n
 
         transaction.update(saleRef, { ...newSale, date: oldSale.date });
     });
+}
+
+export async function batchUpdateSales(db: Firestore, updates: {id: string, amount: number}[]): Promise<void> {
+    const batch = writeBatch(db);
+    updates.forEach(({id, amount}) => {
+        const ref = doc(db, "sales", id);
+        batch.update(ref, { amount });
+    });
+    await batch.commit();
 }
 
 

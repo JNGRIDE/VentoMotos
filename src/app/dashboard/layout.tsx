@@ -13,6 +13,7 @@ import {
   Package,
   LoaderCircle,
   BadgeDollarSign,
+  FileSignature,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ const navItems = [
   { href: "/dashboard/inventory", icon: Package, label: "Inventory" },
   { href: "/dashboard/prospects", icon: Users, label: "Prospects" },
   { href: "/dashboard/reports", icon: FileText, label: "Reports" },
+  { href: "/dashboard/editables", icon: FileSignature, label: "Editables" },
   { href: "/dashboard/settings", icon: Settings, label: "Sprint Settings" },
 ];
 

@@ -55,6 +55,8 @@ export type Prospect = {
   notes?: string;
 };
 
+export const PROSPECT_STAGES: Prospect["stage"][] = ["Potential", "Appointment", "Credit", "Closed"];
+
 export type NewProspect = Omit<Prospect, "id">;
 
 // This function will be used by components to filter data already fetched from Firestore.

@@ -74,14 +74,16 @@ export default function DashboardPage() {
   
   const commissionData = useMemo(() => {
     const commissionRate = isManager ? COMMISSION_RATES.MANAGER : COMMISSION_RATES.SALESPERSON;
-    const earned =
-      salesProgress >= GOALS.SALES_PROGRESS_THRESHOLD ? totalSales * (1 - GOALS.VAT_RATE) * commissionRate : 0;
-    const description =
-      salesProgress < GOALS.SALES_PROGRESS_THRESHOLD
-        ? `${(GOALS.SALES_PROGRESS_THRESHOLD - salesProgress).toFixed(1)}% to unlock`
-        : `${(commissionRate * 100).toFixed(1)}% rate on sales (net of ${(GOALS.VAT_RATE * 100).toFixed(0)}% VAT)`;
+    // Calculate commission immediately on net sales (totalSales is stored as net)
+    const earned = totalSales * commissionRate;
 
-    return { earned, description };
+    const isUnlocked = salesProgress >= GOALS.SALES_PROGRESS_THRESHOLD;
+
+    const description = !isUnlocked
+        ? `Pending - ${(GOALS.SALES_PROGRESS_THRESHOLD - salesProgress).toFixed(1)}% more to unlock`
+        : "Active - Commission Unlocked";
+
+    return { earned, description, isUnlocked };
   }, [isManager, salesProgress, totalSales]);
 
   const creditBonus = ventoCredits >= 5 ? (ventoCredits - 4) * 200 : 0;
@@ -266,7 +268,8 @@ export default function DashboardPage() {
           value={`$${commissionData.earned.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
           description={commissionData.description}
           icon={TrendingUp}
-          iconColor={salesProgress >= GOALS.SALES_PROGRESS_THRESHOLD ? 'text-green-500' : ''}
+          iconColor={commissionData.isUnlocked ? 'text-green-500' : 'text-gray-400'}
+          valueClassName={commissionData.isUnlocked ? 'text-green-600' : 'text-gray-400'}
         />
         <KpiCard
           title="Vento Bonus"

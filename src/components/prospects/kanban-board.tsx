@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, memo, useRef, useEffect } from "react";
+import { Inbox, Calendar, FileText, CheckCircle } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
@@ -23,6 +24,13 @@ interface KanbanColumnProps {
 }
 
 const EMPTY_PROSPECTS: Prospect[] = [];
+
+const EMPTY_STATE_CONFIG: Record<Prospect["stage"], { icon: React.ElementType, text: string }> = {
+  "Potential": { icon: Inbox, text: "No leads yet" },
+  "Appointment": { icon: Calendar, text: "No appointments" },
+  "Credit": { icon: FileText, text: "No applications" },
+  "Closed": { icon: CheckCircle, text: "No closed deals" },
+};
 
 // Custom comparison function for KanbanColumn to prevent unnecessary re-renders.
 // Uses shallow comparison for the prospects array to handle new array references with identical content efficiently.
@@ -83,19 +91,34 @@ const KanbanColumn = memo(function KanbanColumn({
           {prospects.length}
         </span>
       </div>
-      <div className="flex-1 rounded-lg bg-muted/50 p-2 min-h-[500px]">
-        {prospects.map((prospect) => (
-          <ProspectCard
-            key={prospect.id}
-            prospect={prospect}
-            userProfile={userProfilesMap[prospect.salespersonId]}
-            currentUserProfile={currentUserProfile}
-            onUpdate={onRefresh}
-            onDragStart={onDragStart}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        ))}
+      <div className="flex-1 rounded-lg bg-muted/50 p-2 min-h-[500px] flex flex-col">
+        {prospects.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/40 min-h-[200px]">
+            {(() => {
+              const Config = EMPTY_STATE_CONFIG[stageValue] || { icon: Inbox, text: "No prospects" };
+              const Icon = Config.icon;
+              return (
+                <>
+                  <Icon className="h-12 w-12 mb-2 opacity-20" />
+                  <p className="text-sm font-medium">{Config.text}</p>
+                </>
+              );
+            })()}
+          </div>
+        ) : (
+          prospects.map((prospect) => (
+            <ProspectCard
+              key={prospect.id}
+              prospect={prospect}
+              userProfile={userProfilesMap[prospect.salespersonId]}
+              currentUserProfile={currentUserProfile}
+              onUpdate={onRefresh}
+              onDragStart={onDragStart}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))
+        )}
       </div>
     </div>
   );

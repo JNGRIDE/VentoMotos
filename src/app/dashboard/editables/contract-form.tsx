@@ -22,6 +22,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -59,6 +66,13 @@ export function ContractForm() {
       precio_letras: "",
       precio_total: "",
       forma_de_pago: "",
+      vendedor: "",
+      pago: "",
+      tipotarjeta: "",
+      banco: "",
+      ultimos_4_digitos: "",
+      tipo_identificacion: "",
+      numero_identificacion: "",
     },
   });
 
@@ -66,56 +80,73 @@ export function ContractForm() {
     JSZipUtils.getBinaryContent(url, callback);
   };
 
-  const onSubmit = (data: ContractFormValues) => {
-    setIsLoading(true);
-    loadFile("/templates/contrato-profeco.docx", function (error: Error | null, content: string | null) {
-      if (error) {
-        console.error(error);
-        setIsLoading(false);
-        alert("Error al cargar la plantilla: " + error.message);
-        return;
-      }
-
-      if (!content) {
-        setIsLoading(false);
-        alert("Error: El contenido de la plantilla está vacío.");
-        return;
-      }
-
-      try {
-        const zip = new PizZip(content);
-        const doc = new Docxtemplater(zip, {
-          paragraphLoop: true,
-          linebreaks: true,
-        });
-
-        // Render the document (replace all occurences of {first_name} by John, {last_name} by Doe, ...)
-        doc.render(data);
-
-        const out = doc.getZip().generate({
-          type: "blob",
-          mimeType:
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        });
-
-        // Output the document using Data-URI
-        saveAs(out, `Contrato-${data.nombre_comprador || "Generado"}.docx`);
-        setIsLoading(false);
-      } catch (error: any) {
-        setIsLoading(false);
-        console.error(error);
-        if (error.properties && error.properties.errors instanceof Array) {
-          const errorMessages = error.properties.errors
-            .map(function (error: any) {
-              return error.properties.explanation;
-            })
-            .join("\n");
-          alert("Error al generar el documento:\n" + errorMessages);
-        } else {
-          alert("Error al generar el documento: " + error);
+  const generateDocument = (templateUrl: string, data: ContractFormValues, outputName: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      loadFile(templateUrl, function (error: Error | null, content: string | null) {
+        if (error) {
+          console.error(`Error loading template ${templateUrl}:`, error);
+          reject(new Error(`Error al cargar la plantilla ${templateUrl}: ${error.message}`));
+          return;
         }
-      }
+
+        if (!content) {
+          reject(new Error(`Error: El contenido de la plantilla ${templateUrl} está vacío.`));
+          return;
+        }
+
+        try {
+          const zip = new PizZip(content);
+          const doc = new Docxtemplater(zip, {
+            paragraphLoop: true,
+            linebreaks: true,
+          });
+
+          // Render the document
+          doc.render(data);
+
+          const out = doc.getZip().generate({
+            type: "blob",
+            mimeType:
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          });
+
+          // Output the document using Data-URI
+          saveAs(out, outputName);
+          resolve();
+        } catch (error: any) {
+          console.error(`Error generating document ${outputName}:`, error);
+           if (error.properties && error.properties.errors instanceof Array) {
+            const errorMessages = error.properties.errors
+              .map(function (error: any) {
+                return error.properties.explanation;
+              })
+              .join("\n");
+             reject(new Error(`Error al generar el documento ${outputName}:\n${errorMessages}`));
+          } else {
+            reject(new Error(`Error al generar el documento ${outputName}: ${error}`));
+          }
+        }
+      });
     });
+  };
+
+  const onSubmit = async (data: ContractFormValues) => {
+    setIsLoading(true);
+
+    const templates = [
+      { url: "/templates/contrato-profeco.docx", name: `Contrato-${data.nombre_comprador || "Cliente"}.docx` },
+      { url: "/templates/carta-aceptacion.docx", name: `Aceptacion-${data.nombre_comprador || "Cliente"}.docx` },
+      { url: "/templates/carta-tarjeta.docx", name: `Tarjeta-${data.nombre_comprador || "Cliente"}.docx` },
+    ];
+
+    try {
+      await Promise.all(templates.map(t => generateDocument(t.url, data, t.name)));
+    } catch (error: any) {
+      // Just alert the error, but some documents might have been downloaded already.
+      alert(error.message || "Ocurrió un error al generar los documentos.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -123,13 +154,14 @@ export function ContractForm() {
       <CardHeader>
         <CardTitle>Generar Contrato PROFECO</CardTitle>
         <CardDescription>
-          Llena el formulario para generar el contrato en formato Word.
+          Llena el formulario para generar los documentos (Contrato, Aceptación, Tarjeta) en formato Word.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 
+            {/* A. Información del Contrato */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Información del Contrato</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -175,6 +207,7 @@ export function ContractForm() {
               </div>
             </div>
 
+            {/* B. Datos del Comprador */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Datos del Comprador</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -233,6 +266,7 @@ export function ContractForm() {
               </div>
             </div>
 
+            {/* Dirección */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Dirección</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -319,6 +353,7 @@ export function ContractForm() {
               </div>
             </div>
 
+            {/* C. Datos de la Motocicleta */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Datos de la Motocicleta</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -377,6 +412,7 @@ export function ContractForm() {
               </div>
             </div>
 
+            {/* D. Detalles de Pago */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Detalles de Pago</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -426,7 +462,7 @@ export function ContractForm() {
                   name="forma_de_pago"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Forma de Pago</FormLabel>
+                      <FormLabel>Forma de Pago (Contrato)</FormLabel>
                       <FormControl>
                         <Input placeholder="Contado / Crédito" {...field} />
                       </FormControl>
@@ -437,9 +473,125 @@ export function ContractForm() {
               </div>
             </div>
 
+             {/* E. Datos del Vendedor y Operación */}
+             <div className="space-y-4">
+              <h3 className="text-lg font-medium">Datos del Vendedor y Operación</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <FormField
+                  control={form.control}
+                  name="vendedor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vendedor</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nombre del Vendedor" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="pago"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Monto del Movimiento (Pago)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Monto" type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="tipotarjeta"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Tarjeta / Forma de Pago</FormLabel>
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccione una opción" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Tarjeta de Crédito">Tarjeta de Crédito</SelectItem>
+                          <SelectItem value="Tarjeta de Débito">Tarjeta de Débito</SelectItem>
+                          <SelectItem value="Transferencia">Transferencia</SelectItem>
+                          <SelectItem value="Efectivo">Efectivo</SelectItem>
+                          <SelectItem value="Cheque">Cheque</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* F. Datos Bancarios y Identificación */}
+             <div className="space-y-4">
+              <h3 className="text-lg font-medium">Datos Bancarios y de Identificación</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <FormField
+                  control={form.control}
+                  name="banco"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Banco</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nombre del Banco" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="ultimos_4_digitos"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Últimos 4 dígitos</FormLabel>
+                      <FormControl>
+                        <Input placeholder="0000" maxLength={4} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="tipo_identificacion"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Identificación</FormLabel>
+                      <FormControl>
+                        <Input placeholder="INE / Pasaporte" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="numero_identificacion"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número de Identificación</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Clave de Elector / Num Pasaporte" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Generar Contrato
+              {isLoading ? "Generando Documentos..." : "Generar Documentos"}
             </Button>
           </form>
         </Form>

@@ -73,6 +73,9 @@ export function ContractForm() {
       ultimos_4_digitos: "",
       tipo_identificacion: "",
       numero_identificacion: "",
+      solicitud: "",
+      enganche: "",
+      financiera: "",
     },
   });
 
@@ -133,13 +136,19 @@ export function ContractForm() {
   const onSubmit = async (data: ContractFormValues) => {
     setIsLoading(true);
 
+    // Sanitize data: Replace undefined or null values with empty strings
+    // to prevent "undefined" appearing in the document.
+    const sanitizedData = Object.fromEntries(
+      Object.entries(data).map(([key, value]) => [key, value ?? ""])
+    ) as ContractFormValues;
+
     const templates = [
       { url: "/templates/contrato-profeco.docx", name: `Contrato-${data.nombre_comprador || "Cliente"}.docx` },
-      { url: "/templates/carta-aceptacion.docx", name: `Aceptacion-${data.nombre_comprador || "Cliente"}.docx` },
+      { url: "/templates/CARTA DE ACEPTACION AGENCIAS Y CALL CENTER NUEVO pagina.docx", name: `Aceptacion-${data.nombre_comprador || "Cliente"}.docx` },
     ];
 
     try {
-      await Promise.all(templates.map(t => generateDocument(t.url, data, t.name)));
+      await Promise.all(templates.map(t => generateDocument(t.url, sanitizedData, t.name)));
     } catch (error: any) {
       // Just alert the error, but some documents might have been downloaded already.
       alert(error.message || "Ocurrió un error al generar los documentos.");
@@ -580,6 +589,52 @@ export function ContractForm() {
                       <FormLabel>Número de Identificación</FormLabel>
                       <FormControl>
                         <Input placeholder="Clave de Elector / Num Pasaporte" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* G. Datos Adicionales */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Datos Adicionales</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="solicitud"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número de Solicitud</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Num Solicitud" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="enganche"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Enganche</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Monto Enganche" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="financiera"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Financiera</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nombre Financiera" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

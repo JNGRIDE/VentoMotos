@@ -42,6 +42,11 @@ export const contractSchema = z.object({
   ultimos_4_digitos: z.string().max(4, "Máximo 4 dígitos").optional(),
   tipo_identificacion: z.string().optional(),
   numero_identificacion: z.string().optional(),
+
+  // G. Datos Adicionales (Solicitud, Enganche, Financiera)
+  solicitud: z.string().optional(),
+  enganche: z.string().optional(),
+  financiera: z.string().optional(),
 });
 
 export type ContractFormValues = z.infer<typeof contractSchema>;

@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { updateProspect } from "@/firebase/services";
 import { type Prospect, type UserProfile, PROSPECT_STAGES } from "@/lib/data";
+import { areArraysOfFlatObjectsEqual } from "@/lib/utils";
 import { ProspectCard } from "./prospect-card";
 import { EditProspectDialog } from "./edit-prospect-dialog";
 import { DeleteProspectDialog } from "./delete-prospect-dialog";
@@ -24,7 +25,7 @@ interface KanbanColumnProps {
 const EMPTY_PROSPECTS: Prospect[] = [];
 
 // Custom comparison function for KanbanColumn to prevent unnecessary re-renders.
-// Uses JSON.stringify for the prospects array to handle new array references with identical content.
+// Uses shallow comparison for the prospects array to handle new array references with identical content efficiently.
 function areKanbanColumnPropsEqual(prev: KanbanColumnProps, next: KanbanColumnProps) {
   return (
     prev.title === next.title &&
@@ -36,7 +37,7 @@ function areKanbanColumnPropsEqual(prev: KanbanColumnProps, next: KanbanColumnPr
     prev.onDrop === next.onDrop &&
     prev.onEdit === next.onEdit &&
     prev.onDelete === next.onDelete &&
-    (prev.prospects === next.prospects || JSON.stringify(prev.prospects) === JSON.stringify(next.prospects))
+    (prev.prospects === next.prospects || areArraysOfFlatObjectsEqual(prev.prospects, next.prospects))
   );
 }
 

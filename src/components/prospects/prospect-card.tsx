@@ -21,7 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { cn, areFlatObjectsEqual } from "@/lib/utils";
 import { type Prospect, type UserProfile, PROSPECT_STAGES } from "@/lib/data";
 import { useFirestore } from "@/firebase";
 import { updateProspect } from "@/firebase/services";
@@ -47,7 +47,7 @@ function arePropsEqual(prevProps: ProspectCardProps, nextProps: ProspectCardProp
     prevProps.onDragStart === nextProps.onDragStart &&
     prevProps.onEdit === nextProps.onEdit &&
     prevProps.onDelete === nextProps.onDelete &&
-    (prevProps.prospect === nextProps.prospect || JSON.stringify(prevProps.prospect) === JSON.stringify(nextProps.prospect))
+    (prevProps.prospect === nextProps.prospect || areFlatObjectsEqual(prevProps.prospect, nextProps.prospect))
   );
 }
 

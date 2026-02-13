@@ -136,7 +136,6 @@ export function ContractForm() {
     const templates = [
       { url: "/templates/contrato-profeco.docx", name: `Contrato-${data.nombre_comprador || "Cliente"}.docx` },
       { url: "/templates/carta-aceptacion.docx", name: `Aceptacion-${data.nombre_comprador || "Cliente"}.docx` },
-      { url: "/templates/carta-tarjeta.docx", name: `Tarjeta-${data.nombre_comprador || "Cliente"}.docx` },
     ];
 
     try {

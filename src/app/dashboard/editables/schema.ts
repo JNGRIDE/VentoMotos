@@ -31,6 +31,17 @@ export const contractSchema = z.object({
   precio_letras: z.string().min(1, "El precio total (letra) es requerido"),
   precio_total: z.string().min(1, "El precio total (formato carátula) es requerido"),
   forma_de_pago: z.string().min(1, "La forma de pago es requerida"),
+
+  // E. Datos del Vendedor y Operación
+  vendedor: z.string().min(1, "El nombre del vendedor es requerido"),
+  pago: z.string().min(1, "El monto del pago es requerido"),
+  tipotarjeta: z.string().min(1, "El tipo de tarjeta/pago es requerido"),
+
+  // F. Datos Bancarios y de Identificación
+  banco: z.string().optional(),
+  ultimos_4_digitos: z.string().max(4, "Máximo 4 dígitos").optional(),
+  tipo_identificacion: z.string().optional(),
+  numero_identificacion: z.string().optional(),
 });
 
 export type ContractFormValues = z.infer<typeof contractSchema>;

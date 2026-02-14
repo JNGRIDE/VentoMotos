@@ -45,6 +45,8 @@ export function ContractForm() {
       año: new Date().getFullYear().toString(),
       nombre_comprador: "",
       rfc: "",
+      regimen_fiscal: "",
+      uso_cfdi: "",
       email: "",
       celular: "",
       calle: "",
@@ -64,6 +66,7 @@ export function ContractForm() {
       vendedor: "",
       pago: "",
       tipotarjeta: "",
+      nombre_tarjetahabiente: "",
       banco: "",
       ultimos_4_digitos: "",
       tipo_identificacion: "",
@@ -71,6 +74,7 @@ export function ContractForm() {
       solicitud: "",
       enganche: "",
       financiera: "",
+      financiamiento: "",
     },
   });
 
@@ -83,18 +87,35 @@ export function ContractForm() {
 
       // Sanitize data: Replace undefined or null values with empty strings
       // to prevent "undefined" appearing in the document.
-      const sanitizedData = Object.fromEntries(
+      const rawSanitizedData = Object.fromEntries(
         Object.entries(data).map(([key, value]) => [key, value ?? ""])
-      ) as ContractFormValues;
+      );
+
+      // Map fields to specific template keys required by the user
+      const templateData = {
+        ...rawSanitizedData,
+        "régimen_fiscal": data.regimen_fiscal,
+        "CFDI": data.uso_cfdi,
+        "TID": data.tipo_identificacion,
+        "No_ID": data.numero_identificacion,
+        "n_solicitud": data.solicitud,
+        "código_postal": data.codigo_postal,
+        "año_modelo": data.año_modelo,
+        "últimos_4_digitos": data.ultimos_4_digitos,
+        // Ensure specific casing if templates rely on it, though standardizing on the schema keys is best if templates match.
+        // User provided specific placeholders like {régimen_fiscal}, {CFDI}, {TID}, {No_ID}.
+        // The rest match the schema keys or are simple variants.
+      };
 
       const templates = [
         { url: "/templates/contrato-profeco.docx", name: `Contrato-${data.nombre_comprador || "Cliente"}.docx` },
-        { url: "/templates/CARTA DE ACEPTACION AGENCIAS Y CALL CENTER NUEVO pagina.docx", name: `Aceptacion-${data.nombre_comprador || "Cliente"}.docx` },
+        { url: "/templates/carta-autorizacion.docx", name: `Autorizacion-${data.nombre_comprador || "Cliente"}.docx` },
+        { url: "/templates/formato-venta.docx", name: `Venta-${data.nombre_comprador || "Cliente"}.docx` },
       ];
 
-      await Promise.all(templates.map(t => generateDocument(t.url, sanitizedData, t.name)));
+      await Promise.all(templates.map(t => generateDocument(t.url, templateData, t.name)));
     } catch (error: any) {
-      // Just alert the error, but some documents might have been downloaded already.
+      console.error("Error generating documents:", error);
       alert(error.message || "Ocurrió un error al generar los documentos.");
     } finally {
       setIsLoading(false);
@@ -104,9 +125,9 @@ export function ContractForm() {
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Generar Contrato PROFECO</CardTitle>
+        <CardTitle>Generar Documentación de Venta</CardTitle>
         <CardDescription>
-          Llena el formulario para generar los documentos (Contrato, Aceptación, Tarjeta) en formato Word.
+          Llena el formulario para generar los 3 documentos: Contrato PROFECO, Carta de Autorización y Formato de Venta.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -115,7 +136,7 @@ export function ContractForm() {
 
             {/* A. Información del Contrato */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Información del Contrato</h3>
+              <h3 className="text-lg font-medium border-b pb-2">Información del Contrato</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
@@ -159,16 +180,16 @@ export function ContractForm() {
               </div>
             </div>
 
-            {/* B. Datos del Comprador */}
+            {/* B. Datos del Comprador y Facturación */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Datos del Comprador</h3>
+              <h3 className="text-lg font-medium border-b pb-2">Datos del Comprador y Facturación</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="nombre_comprador"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nombre Completo</FormLabel>
+                      <FormLabel>Nombre Completo / Razón Social</FormLabel>
                       <FormControl>
                         <Input placeholder="Nombre Apellido" {...field} />
                       </FormControl>
@@ -185,6 +206,55 @@ export function ContractForm() {
                       <FormControl>
                         <Input placeholder="RFC" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="regimen_fiscal"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Régimen Fiscal</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccione Régimen" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="601 General de Ley Personas Morales">601 General de Ley Personas Morales</SelectItem>
+                          <SelectItem value="605 Sueldos y Salarios">605 Sueldos y Salarios</SelectItem>
+                          <SelectItem value="612 Personas Físicas con Actividades Empresariales">612 Personas Físicas con Actividades Empresariales</SelectItem>
+                          <SelectItem value="621 Incorporación Fiscal">621 Incorporación Fiscal</SelectItem>
+                          <SelectItem value="626 Régimen Simplificado de Confianza">626 Régimen Simplificado de Confianza</SelectItem>
+                          <SelectItem value="606 Arrendamiento">606 Arrendamiento</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="uso_cfdi"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Uso de CFDI</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccione Uso CFDI" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="G01 Adquisición de mercancías">G01 Adquisición de mercancías</SelectItem>
+                          <SelectItem value="G03 Gastos en general">G03 Gastos en general</SelectItem>
+                          <SelectItem value="I01 Construcciones">I01 Construcciones</SelectItem>
+                          <SelectItem value="P01 Por definir">P01 Por definir</SelectItem>
+                          <SelectItem value="D01 Honorarios médicos">D01 Honorarios médicos</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -220,7 +290,7 @@ export function ContractForm() {
 
             {/* Dirección */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Dirección</h3>
+              <h3 className="text-lg font-medium border-b pb-2">Dirección</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -307,7 +377,7 @@ export function ContractForm() {
 
             {/* C. Datos de la Motocicleta */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Datos de la Motocicleta</h3>
+              <h3 className="text-lg font-medium border-b pb-2">Datos de la Motocicleta</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -366,7 +436,7 @@ export function ContractForm() {
 
             {/* D. Detalles de Pago */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Detalles de Pago</h3>
+              <h3 className="text-lg font-medium border-b pb-2">Detalles de Pago</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -427,7 +497,7 @@ export function ContractForm() {
 
              {/* E. Datos del Vendedor y Operación */}
              <div className="space-y-4">
-              <h3 className="text-lg font-medium">Datos del Vendedor y Operación</h3>
+              <h3 className="text-lg font-medium border-b pb-2">Datos del Vendedor y Operación</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <FormField
                   control={form.control}
@@ -479,12 +549,25 @@ export function ContractForm() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="nombre_tarjetahabiente"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre Tarjetahabiente</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nombre en la tarjeta" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 
             {/* F. Datos Bancarios y Identificación */}
              <div className="space-y-4">
-              <h3 className="text-lg font-medium">Datos Bancarios y de Identificación</h3>
+              <h3 className="text-lg font-medium border-b pb-2">Datos Bancarios y de Identificación</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <FormField
                   control={form.control}
@@ -517,7 +600,7 @@ export function ContractForm() {
                   name="tipo_identificacion"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tipo de Identificación</FormLabel>
+                      <FormLabel>Tipo de Identificación (TID)</FormLabel>
                       <FormControl>
                         <Input placeholder="INE / Pasaporte" {...field} />
                       </FormControl>
@@ -530,7 +613,7 @@ export function ContractForm() {
                   name="numero_identificacion"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Número de Identificación</FormLabel>
+                      <FormLabel>Número de Identificación (No_ID)</FormLabel>
                       <FormControl>
                         <Input placeholder="Clave de Elector / Num Pasaporte" {...field} />
                       </FormControl>
@@ -543,8 +626,8 @@ export function ContractForm() {
 
             {/* G. Datos Adicionales */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Datos Adicionales</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h3 className="text-lg font-medium border-b pb-2">Datos Adicionales</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="solicitud"
@@ -584,12 +667,25 @@ export function ContractForm() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="financiamiento"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo Financiamiento</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ej. Crédito Directo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? "Generando Documentos..." : "Generar Documentos"}
+              {isLoading ? "Generando 3 Documentos..." : "Generar Documentos"}
             </Button>
           </form>
         </Form>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { format } from "date-fns";
-import { Edit, LoaderCircle, AlertTriangle, CheckCircle } from "lucide-react";
+import { Edit, LoaderCircle, AlertTriangle, CheckCircle, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,18 +24,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { EditSaleDialog } from "@/components/sales/edit-sale-dialog";
 import { useFirestore } from "@/firebase";
-import { getAllSales, updateSale, batchUpdateSales, getUserProfiles } from "@/firebase/services";
+import { getAllSales, updateSale, batchUpdateSales, getUserProfiles, getUserProfile } from "@/firebase/services";
 import { useUser } from "@/firebase/auth/use-user";
 import type { Sale, NewSale, UserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 
 export default function SalesPage() {
   const db = useFirestore();
-  const { user } = useUser(); // We need this for EditSaleDialog currentUserProfile
+  const { user } = useUser();
   const { toast } = useToast();
 
   const [sales, setSales] = useState<Sale[]>([]);
   const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Edit Dialog State
@@ -47,20 +48,21 @@ export default function SalesPage() {
   const [vatFixCandidates, setVatFixCandidates] = useState<Sale[]>([]);
   const [isFixingVat, setIsFixingVat] = useState(false);
 
-  // Current user profile for Edit Dialog (permissions)
-  const currentUserProfile = useMemo(() => {
-      return userProfiles.find(p => p.uid === user?.uid);
-  }, [userProfiles, user]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
-      const [fetchedSales, fetchedProfiles] = await Promise.all([
-        getAllSales(db),
-        getUserProfiles(db)
-      ]);
-      setSales(fetchedSales);
-      setUserProfiles(fetchedProfiles);
+        const profile = await getUserProfile(db, user.uid);
+        setCurrentUserProfile(profile);
+
+        if (profile?.role === 'Manager') {
+            const [fetchedSales, fetchedProfiles] = await Promise.all([
+              getAllSales(db),
+              getUserProfiles(db)
+            ]);
+            setSales(fetchedSales);
+            setUserProfiles(fetchedProfiles);
+        }
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -71,11 +73,11 @@ export default function SalesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [db, user, toast]);
 
   useEffect(() => {
     fetchData();
-  }, [db]);
+  }, [fetchData]);
 
   const handleEditClick = (sale: Sale) => {
     setEditingSale(sale);
@@ -132,6 +134,16 @@ export default function SalesPage() {
         <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if (currentUserProfile?.role !== 'Manager') {
+    return (
+       <div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.32))]">
+          <ShieldAlert className="h-10 w-10 text-destructive" />
+          <h2 className="mt-4 text-xl font-semibold">Access Denied</h2>
+          <p className="text-muted-foreground mt-2">Only managers can access this page.</p>
+      </div>
+    )
   }
 
   return (

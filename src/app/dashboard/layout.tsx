@@ -29,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { UserNav } from "@/components/user-nav";
+import { ModeToggle } from "@/components/mode-toggle";
 import { useUser } from "@/firebase/auth/use-user";
 
 const navItems = [
@@ -135,6 +136,7 @@ export default function DashboardLayout({
           <div className="relative ml-auto flex-1 md:grow-0">
             {/* Could be a global search bar */}
           </div>
+          <ModeToggle />
           <UserNav user={user} />
         </header>
           <main className="flex-1 p-4 sm:px-6 sm:py-0 print:p-0">{children}</main>

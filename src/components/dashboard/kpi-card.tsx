@@ -16,7 +16,7 @@ export function KpiCard({ title, value, description, icon: Icon, iconColor, valu
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className={cn("h-5 w-5 text-muted-foreground", iconColor)} />
+        <Icon className={cn("h-5 w-5 text-muted-foreground", iconColor)} aria-hidden="true" />
       </CardHeader>
       <CardContent>
         <div className={cn("text-2xl font-bold font-headline", valueClassName)}>{value}</div>

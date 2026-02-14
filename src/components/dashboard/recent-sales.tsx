@@ -37,7 +37,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { MoreHorizontal, Pencil, Trash2, LoaderCircle } from "lucide-react"
 
 import type { Sale, UserProfile, NewSale } from "@/lib/data"
 import { useMemo, useState } from "react"
@@ -55,6 +55,7 @@ interface RecentSalesProps {
 export function RecentSales({ sales, userProfiles, onDeleteSale, onUpdateSale, currentUserProfile }: RecentSalesProps) {
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [deletingSale, setDeletingSale] = useState<Sale | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const userProfilesMap = useMemo(() => {
     return userProfiles.reduce((map, sp) => {
@@ -63,10 +64,16 @@ export function RecentSales({ sales, userProfiles, onDeleteSale, onUpdateSale, c
     }, {} as Record<string, UserProfile>);
   }, [userProfiles]);
 
-  const handleDelete = async () => {
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
     if (deletingSale && onDeleteSale) {
-      await onDeleteSale(deletingSale);
-      setDeletingSale(null);
+      setIsDeleting(true);
+      try {
+        await onDeleteSale(deletingSale);
+        setDeletingSale(null);
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -175,8 +182,9 @@ export function RecentSales({ sales, userProfiles, onDeleteSale, onUpdateSale, c
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isDeleting}>
+              {isDeleting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

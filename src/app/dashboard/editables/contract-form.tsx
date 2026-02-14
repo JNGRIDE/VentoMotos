@@ -4,11 +4,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import PizZip from "pizzip";
-import Docxtemplater from "docxtemplater";
-// @ts-ignore
-import JSZipUtils from "jszip-utils";
-import { saveAs } from "file-saver";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -79,75 +74,24 @@ export function ContractForm() {
     },
   });
 
-  const loadFile = (url: string, callback: (err: Error | null, data: string | null) => void) => {
-    JSZipUtils.getBinaryContent(url, callback);
-  };
-
-  const generateDocument = (templateUrl: string, data: ContractFormValues, outputName: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      loadFile(templateUrl, function (error: Error | null, content: string | null) {
-        if (error) {
-          console.error(`Error loading template ${templateUrl}:`, error);
-          reject(new Error(`Error al cargar la plantilla ${templateUrl}: ${error.message}`));
-          return;
-        }
-
-        if (!content) {
-          reject(new Error(`Error: El contenido de la plantilla ${templateUrl} está vacío.`));
-          return;
-        }
-
-        try {
-          const zip = new PizZip(content);
-          const doc = new Docxtemplater(zip, {
-            paragraphLoop: true,
-            linebreaks: true,
-          });
-
-          // Render the document
-          doc.render(data);
-
-          const out = doc.getZip().generate({
-            type: "blob",
-            mimeType:
-              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          });
-
-          // Output the document using Data-URI
-          saveAs(out, outputName);
-          resolve();
-        } catch (error: any) {
-          console.error(`Error generating document ${outputName}:`, error);
-           if (error.properties && error.properties.errors instanceof Array) {
-            const errorMessages = error.properties.errors
-              .map(function (error: any) {
-                return error.properties.explanation;
-              })
-              .join("\n");
-             reject(new Error(`Error al generar el documento ${outputName}:\n${errorMessages}`));
-          } else {
-            reject(new Error(`Error al generar el documento ${outputName}: ${error}`));
-          }
-        }
-      });
-    });
-  };
-
   const onSubmit = async (data: ContractFormValues) => {
     setIsLoading(true);
 
-    // Sanitize data: Replace undefined or null values with empty strings
-    // to prevent "undefined" appearing in the document.
-    const sanitizedData = Object.fromEntries(
-      Object.entries(data).map(([key, value]) => [key, value ?? ""])
-    ) as ContractFormValues;
-
-    const templates = [
-      { url: "/templates/contrato-profeco.docx", name: `Contrato-${data.nombre_comprador || "Cliente"}.docx` },
-      { url: "/templates/CARTA DE ACEPTACION AGENCIAS Y CALL CENTER NUEVO pagina.docx", name: `Aceptacion-${data.nombre_comprador || "Cliente"}.docx` },
-    ];
-
     try {
+      // Dynamic import for document generation logic to reduce initial bundle size
+      const { generateDocument } = await import("@/lib/document-generator");
+
+      // Sanitize data: Replace undefined or null values with empty strings
+      // to prevent "undefined" appearing in the document.
+      const sanitizedData = Object.fromEntries(
+        Object.entries(data).map(([key, value]) => [key, value ?? ""])
+      ) as ContractFormValues;
+
+      const templates = [
+        { url: "/templates/contrato-profeco.docx", name: `Contrato-${data.nombre_comprador || "Cliente"}.docx` },
+        { url: "/templates/CARTA DE ACEPTACION AGENCIAS Y CALL CENTER NUEVO pagina.docx", name: `Aceptacion-${data.nombre_comprador || "Cliente"}.docx` },
+      ];
+
       await Promise.all(templates.map(t => generateDocument(t.url, sanitizedData, t.name)));
     } catch (error: any) {
       // Just alert the error, but some documents might have been downloaded already.

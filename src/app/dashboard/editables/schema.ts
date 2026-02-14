@@ -9,6 +9,8 @@ export const contractSchema = z.object({
   // B. Datos del Comprador
   nombre_comprador: z.string().min(1, "El nombre completo es requerido"),
   rfc: z.string().min(10, "El RFC debe ser válido").optional().or(z.literal("")),
+  regimen_fiscal: z.string().optional(), // Nuevo: Régimen Fiscal
+  uso_cfdi: z.string().optional(), // Nuevo: Uso de CFDI
   email: z.string().email("Correo electrónico inválido"),
   celular: z.string().min(10, "El número de celular debe tener 10 dígitos"),
 
@@ -36,6 +38,7 @@ export const contractSchema = z.object({
   vendedor: z.string().min(1, "El nombre del vendedor es requerido"),
   pago: z.string().min(1, "El monto del pago es requerido"),
   tipotarjeta: z.string().min(1, "El tipo de tarjeta/pago es requerido"),
+  nombre_tarjetahabiente: z.string().optional(), // Nuevo: Nombre del Tarjetahabiente
 
   // F. Datos Bancarios y de Identificación
   banco: z.string().optional(),
@@ -47,6 +50,7 @@ export const contractSchema = z.object({
   solicitud: z.string().optional(),
   enganche: z.string().optional(),
   financiera: z.string().optional(),
+  financiamiento: z.string().optional(), // Nuevo: Tipo de financiamiento
 });
 
 export type ContractFormValues = z.infer<typeof contractSchema>;

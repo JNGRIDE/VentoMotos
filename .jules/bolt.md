@@ -5,3 +5,7 @@
 ## 2026-02-17 - [Lifted Dialog State in Kanban]
 **Learning:** Rendering Dialog components inside list items (even if hidden) creates significant memory overhead and DOM node count. Lifting them to the parent component and controlling them via state drastically reduces the footprint.
 **Action:** When designing lists with actions that open dialogs, always place the Dialog component in the parent and pass handlers to the children.
+
+## 2025-06-03 - [Code Splitting for Document Generation]
+**Learning:** Large libraries like `docxtemplater` and `pizzip` can significantly increase bundle size. If they are only needed for a specific user action (like clicking a button), dynamic imports (`await import()`) should be used to load them on demand.
+**Action:** Move heavy, event-specific logic to separate utility files and import them dynamically inside event handlers.

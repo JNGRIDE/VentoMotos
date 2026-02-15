@@ -178,13 +178,20 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
       if (prospect.stage === newStage) return; // No change
 
       const originalStage = prospect.stage;
-      const updatedProspect = { ...prospect, stage: newStage };
+      const updatedProspect = {
+          ...prospect,
+          stage: newStage,
+          stageUpdatedAt: new Date().toISOString()
+      };
 
       // Optimistic update
       onOptimisticUpdate(updatedProspect);
 
       try {
-          await updateProspect(db, prospectId, { stage: newStage });
+          await updateProspect(db, prospectId, {
+              stage: newStage,
+              stageUpdatedAt: new Date().toISOString()
+          });
           toast({
               title: "Stage Updated",
               description: `Moved to ${newStage}`,

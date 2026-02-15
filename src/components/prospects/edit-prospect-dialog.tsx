@@ -27,6 +27,8 @@ const prospectSchema = z.object({
   rfc: z.string().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
+  occupation: z.string().optional(),
+  motorcycleInterest: z.string().optional(),
 });
 
 type ProspectFormValues = z.infer<typeof prospectSchema>;
@@ -56,7 +58,9 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
       email: prospect.email || "",
       rfc: prospect.rfc || "",
       address: prospect.address || "",
-      notes: prospect.notes || "",
+      notes: "",
+      occupation: prospect.occupation || "",
+      motorcycleInterest: prospect.motorcycleInterest || "",
     },
   });
 
@@ -72,7 +76,9 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
             email: prospect.email || "",
             rfc: prospect.rfc || "",
             address: prospect.address || "",
-            notes: prospect.notes || "",
+            notes: "", // Reset to empty to allow adding new note
+            occupation: prospect.occupation || "",
+            motorcycleInterest: prospect.motorcycleInterest || "",
         });
 
         if (currentUserProfile?.role === 'Manager') {
@@ -84,7 +90,44 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
   const onSubmit = async (data: ProspectFormValues) => {
     setIsSaving(true);
     try {
-      await updateProspect(db, prospect.id, data);
+      const updates: Partial<Prospect> = { ...data };
+
+      // Update stageUpdatedAt if stage changed
+      if (data.stage !== prospect.stage) {
+          updates.stageUpdatedAt = new Date().toISOString();
+      }
+
+      // Handle notes and migration
+      let currentNotesList = prospect.notesList || [];
+
+      // Migration: If we have a legacy note but no list, move it to list before adding new one
+      if (prospect.notes && currentNotesList.length === 0) {
+           currentNotesList = [{
+              content: prospect.notes,
+              date: prospect.lastContact || new Date().toISOString(),
+              author: "Legacy Note",
+           }];
+      }
+
+      if (data.notes && data.notes.trim().length > 0) {
+          const newNoteObj = {
+              content: data.notes,
+              date: new Date().toISOString(),
+              author: currentUserProfile?.name || "Unknown",
+          };
+          updates.notesList = [...currentNotesList, newNoteObj];
+      } else {
+          // Don't overwrite existing notes field with empty string
+          delete updates.notes;
+          // If we didn't add a new note, but we performed a migration in memory,
+          // we might want to save it if we were doing a rigorous migration,
+          // but for now let's only save if other things changed or if we want to enforce migration.
+          // To be safe and simple: only update notesList if we added a new note.
+          // If we didn't add a new note, we don't save the migrated list,
+          // so the UI will continue to show the "Legacy Note" from prospect.notes (via the check in render).
+      }
+
+      await updateProspect(db, prospect.id, updates);
       toast({
         title: "Prospect Updated",
         description: "The prospect details have been saved.",
@@ -185,12 +228,64 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                 />
                  <FormField
                     control={form.control}
+                    name="occupation"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Occupation</FormLabel>
+                            <FormControl>
+                                <Input {...field} placeholder="Employee, Business Owner..." />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="motorcycleInterest"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Interest</FormLabel>
+                            <FormControl>
+                                <Input {...field} placeholder="Rocketman 250..." />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <div className="space-y-2">
+                    <FormLabel>Notes History</FormLabel>
+                    <div className="bg-muted/50 rounded-md p-3 max-h-[150px] overflow-y-auto text-sm space-y-2">
+                        {(!prospect.notesList || prospect.notesList.length === 0) && !prospect.notes && (
+                            <p className="text-muted-foreground italic">No notes yet.</p>
+                        )}
+                         {/* Show legacy note if it exists and not in list (simplistic check) */}
+                        {prospect.notes && (!prospect.notesList || prospect.notesList.length === 0) && (
+                            <div className="bg-background p-2 rounded border">
+                                <p>{prospect.notes}</p>
+                                <p className="text-xs text-muted-foreground mt-1 text-right">Legacy Note</p>
+                            </div>
+                        )}
+                        {prospect.notesList?.map((note, i) => (
+                            <div key={i} className="bg-background p-2 rounded border">
+                                <p>{note.content}</p>
+                                <div className="flex justify-between items-center mt-1">
+                                    <span className="text-xs text-muted-foreground font-medium">{note.author}</span>
+                                    <span className="text-xs text-muted-foreground">{new Date(note.date).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                 <FormField
+                    control={form.control}
                     name="notes"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Notes</FormLabel>
+                            <FormLabel>Add New Note</FormLabel>
                             <FormControl>
-                                <Textarea {...field} className="min-h-[60px]" />
+                                <Textarea {...field} className="min-h-[60px]" placeholder="Type a new note here..." />
                             </FormControl>
                             <FormMessage />
                         </FormItem>

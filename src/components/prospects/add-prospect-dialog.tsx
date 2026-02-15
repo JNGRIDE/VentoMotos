@@ -26,6 +26,8 @@ const addProspectSchema = z.object({
   rfc: z.string().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
+  occupation: z.string().optional(),
+  motorcycleInterest: z.string().optional(),
 });
 
 type AddProspectFormValues = z.infer<typeof addProspectSchema>;
@@ -54,6 +56,8 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
       rfc: "",
       address: "",
       notes: "",
+      occupation: "",
+      motorcycleInterest: "",
     },
   });
 
@@ -70,6 +74,8 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
              rfc: "",
              address: "",
              notes: "",
+             occupation: "",
+             motorcycleInterest: "",
         });
 
         if (role === 'Manager') {
@@ -88,11 +94,15 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
       salespersonId: data.salespersonId,
       stage: "Potential",
       lastContact: new Date().toISOString(),
+      stageUpdatedAt: new Date().toISOString(),
       phone: data.phone,
       email: data.email,
       rfc: data.rfc,
       address: data.address,
       notes: data.notes,
+      occupation: data.occupation,
+      motorcycleInterest: data.motorcycleInterest,
+      notesList: data.notes ? [{ content: data.notes, date: new Date().toISOString(), author: currentUserProfile.name }] : [],
     };
 
     try {
@@ -146,6 +156,36 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                             <div className="col-span-3">
                                 <FormControl>
                                     <Input {...field} autoComplete="name" />
+                                </FormControl>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="occupation"
+                    render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                            <FormLabel className="text-right">Occupation</FormLabel>
+                            <div className="col-span-3">
+                                <FormControl>
+                                    <Input {...field} placeholder="Employee, Business Owner..." />
+                                </FormControl>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="motorcycleInterest"
+                    render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                            <FormLabel className="text-right">Interest</FormLabel>
+                            <div className="col-span-3">
+                                <FormControl>
+                                    <Input {...field} placeholder="Rocketman 250..." />
                                 </FormControl>
                                 <FormMessage />
                             </div>

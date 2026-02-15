@@ -16,9 +16,9 @@ interface KanbanColumnProps {
   prospects: Prospect[];
   userProfilesMap: Record<string, UserProfile>;
   currentUserProfile: UserProfile | null;
-  onRefresh: () => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, prospectId: string) => void;
   onDrop: (e: React.DragEvent<HTMLDivElement>, newStage: Prospect["stage"]) => void;
+  onMoveStage: (prospectId: string, newStage: Prospect["stage"]) => Promise<void>;
   onEdit: (prospect: Prospect) => void;
   onDelete: (prospect: Prospect) => void;
 }
@@ -40,9 +40,9 @@ function areKanbanColumnPropsEqual(prev: KanbanColumnProps, next: KanbanColumnPr
     prev.stageValue === next.stageValue &&
     prev.userProfilesMap === next.userProfilesMap &&
     prev.currentUserProfile === next.currentUserProfile &&
-    prev.onRefresh === next.onRefresh &&
     prev.onDragStart === next.onDragStart &&
     prev.onDrop === next.onDrop &&
+    prev.onMoveStage === next.onMoveStage &&
     prev.onEdit === next.onEdit &&
     prev.onDelete === next.onDelete &&
     (prev.prospects === next.prospects || areArraysOfFlatObjectsEqual(prev.prospects, next.prospects))
@@ -56,9 +56,9 @@ const KanbanColumn = memo(function KanbanColumn({
   prospects,
   userProfilesMap,
   currentUserProfile,
-  onRefresh,
   onDragStart,
   onDrop,
+  onMoveStage,
   onEdit,
   onDelete
 }: KanbanColumnProps) {
@@ -112,8 +112,8 @@ const KanbanColumn = memo(function KanbanColumn({
               prospect={prospect}
               userProfile={userProfilesMap[prospect.salespersonId]}
               currentUserProfile={currentUserProfile}
-              onUpdate={onRefresh}
               onDragStart={onDragStart}
+              onMoveStage={onMoveStage}
               onEdit={onEdit}
               onDelete={onDelete}
             />
@@ -129,9 +129,10 @@ interface KanbanBoardProps {
   userProfiles: UserProfile[];
   currentUserProfile: UserProfile | null;
   onRefresh: () => void;
+  onOptimisticUpdate: (prospect: Prospect) => void;
 }
 
-export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRefresh }: KanbanBoardProps) {
+export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRefresh, onOptimisticUpdate }: KanbanBoardProps) {
   const db = useFirestore();
   const { toast } = useToast();
   
@@ -170,16 +171,18 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
     e.dataTransfer.setData("prospectId", prospectId);
   }, []);
 
-  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>, newStage: Prospect["stage"]) => {
-      const prospectId = e.dataTransfer.getData("prospectId");
-      if (!prospectId) return;
-
+  const handleMoveStage = useCallback(async (prospectId: string, newStage: Prospect["stage"]) => {
       const prospect = prospectsRef.current.find(p => p.id === prospectId);
       if (!prospect) return;
 
       if (prospect.stage === newStage) return; // No change
 
-      // Optimistic update could happen here, but for now we'll just wait for firestore
+      const originalStage = prospect.stage;
+      const updatedProspect = { ...prospect, stage: newStage };
+
+      // Optimistic update
+      onOptimisticUpdate(updatedProspect);
+
       try {
           await updateProspect(db, prospectId, { stage: newStage });
           toast({
@@ -194,8 +197,16 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
               title: "Error",
               description: "Could not move prospect.",
           });
+          // Revert optimistic update
+          onOptimisticUpdate({ ...prospect, stage: originalStage });
       }
-  }, [db, toast, onRefresh]);
+  }, [db, toast, onRefresh, onOptimisticUpdate]);
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>, newStage: Prospect["stage"]) => {
+      const prospectId = e.dataTransfer.getData("prospectId");
+      if (!prospectId) return;
+      handleMoveStage(prospectId, newStage);
+  }, [handleMoveStage]);
 
   const handleEdit = useCallback((prospect: Prospect) => {
     setEditingProspect(prospect);
@@ -217,9 +228,9 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
               prospects={prospectsByStage[stage] || EMPTY_PROSPECTS}
               userProfilesMap={userProfilesMap}
               currentUserProfile={currentUserProfile}
-              onRefresh={onRefresh}
               onDragStart={handleDragStart}
               onDrop={handleDrop}
+              onMoveStage={handleMoveStage}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />

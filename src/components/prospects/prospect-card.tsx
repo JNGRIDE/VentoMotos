@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, memo } from "react";
-import { MoreHorizontal, Pencil, Trash, Phone, Mail, ArrowRight, LoaderCircle } from "lucide-react";
+import { memo } from "react";
+import { MoreHorizontal, Pencil, Trash, Phone, Mail, ArrowRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,16 +23,13 @@ import {
 } from "@/components/ui/tooltip";
 import { cn, areFlatObjectsEqual } from "@/lib/utils";
 import { type Prospect, type UserProfile, PROSPECT_STAGES } from "@/lib/data";
-import { useFirestore } from "@/firebase";
-import { updateProspect } from "@/firebase/services";
-import { useToast } from "@/hooks/use-toast";
 
 interface ProspectCardProps {
   prospect: Prospect;
   userProfile?: UserProfile; // The assigned salesperson
   currentUserProfile: UserProfile | null; // The logged-in user
-  onUpdate: () => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, prospectId: string) => void;
+  onMoveStage: (prospectId: string, newStage: Prospect["stage"]) => Promise<void>;
   onEdit: (prospect: Prospect) => void;
   onDelete: (prospect: Prospect) => void;
 }
@@ -43,8 +40,8 @@ function arePropsEqual(prevProps: ProspectCardProps, nextProps: ProspectCardProp
   return (
     prevProps.userProfile === nextProps.userProfile &&
     prevProps.currentUserProfile === nextProps.currentUserProfile &&
-    prevProps.onUpdate === nextProps.onUpdate &&
     prevProps.onDragStart === nextProps.onDragStart &&
+    prevProps.onMoveStage === nextProps.onMoveStage &&
     prevProps.onEdit === nextProps.onEdit &&
     prevProps.onDelete === nextProps.onDelete &&
     (prevProps.prospect === nextProps.prospect || areFlatObjectsEqual(prevProps.prospect, nextProps.prospect))
@@ -52,32 +49,7 @@ function arePropsEqual(prevProps: ProspectCardProps, nextProps: ProspectCardProp
 }
 
 // Optimization: Memoize ProspectCard to prevent re-renders when parent re-renders but props (like prospect data) are stable
-export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, currentUserProfile, onUpdate, onDragStart, onEdit, onDelete }: ProspectCardProps) {
-  const [isMoving, setIsMoving] = useState(false);
-  const db = useFirestore();
-  const { toast } = useToast();
-
-  const handleMoveStage = async (newStage: Prospect["stage"]) => {
-    setIsMoving(true);
-    try {
-      await updateProspect(db, prospect.id, { stage: newStage });
-      toast({
-        title: "Stage Updated",
-        description: `Moved to ${newStage}`,
-      });
-      onUpdate();
-    } catch (error) {
-      console.error("Failed to move prospect", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Could not move prospect.",
-      });
-    } finally {
-      setIsMoving(false);
-    }
-  };
-
+export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, currentUserProfile, onDragStart, onMoveStage, onEdit, onDelete }: ProspectCardProps) {
   const sourceColor =
     prospect.source === "Advertising" ? "bg-accent/20 text-accent-foreground" : "bg-primary/20 text-primary-foreground";
 
@@ -110,15 +82,13 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                     <DropdownMenuSubTrigger>
                       <ArrowRight className="mr-2 h-4 w-4" />
                       Move to
-                      {isMoving && <LoaderCircle className="ml-2 h-3 w-3 animate-spin" />}
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                       <DropdownMenuSubContent>
                         {PROSPECT_STAGES.filter((stage) => stage !== prospect.stage).map((stage) => (
                           <DropdownMenuItem
                             key={stage}
-                            onSelect={() => handleMoveStage(stage)}
-                            disabled={isMoving}
+                            onSelect={() => onMoveStage(prospect.id, stage)}
                           >
                             {stage}
                           </DropdownMenuItem>

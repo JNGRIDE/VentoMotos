@@ -91,6 +91,12 @@ export default function ProspectsPage() {
     fetchProspects(true);
   }, [fetchProspects]);
 
+  const handleOptimisticUpdate = useCallback((updatedProspect: Prospect) => {
+    setProspects((prev) =>
+      prev.map((p) => (p.id === updatedProspect.id ? updatedProspect : p))
+    );
+  }, []);
+
   if (isInitialLoading) {
     return (
         <div className="flex items-center justify-center h-[calc(100vh-theme(spacing.32))]">
@@ -153,6 +159,7 @@ export default function ProspectsPage() {
             userProfiles={userProfiles}
             currentUserProfile={currentUserProfile}
             onRefresh={handleRefresh}
+            onOptimisticUpdate={handleOptimisticUpdate}
         />
       </div>
     </div>

@@ -53,6 +53,12 @@ export type Prospect = {
   rfc?: string;
   address?: string;
   notes?: string;
+
+  // Enriched fields
+  occupation?: string;
+  motorcycleInterest?: string;
+  stageUpdatedAt?: string;
+  notesList?: { content: string; date: string; author?: string }[];
 };
 
 export const PROSPECT_STAGES: Prospect["stage"][] = ["Potential", "Appointment", "Credit", "Closed"];

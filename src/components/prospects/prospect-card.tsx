@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { MoreHorizontal, Pencil, Trash, Phone, Mail, ArrowRight } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash, Phone, Mail, ArrowRight, MessageCircle, Clock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,9 +53,21 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
   const sourceColor =
     prospect.source === "Advertising" ? "bg-accent/20 text-accent-foreground" : "bg-primary/20 text-primary-foreground";
 
+  // Visual prioritization: Colored border based on source
+  const borderColor = prospect.source === "Advertising" ? "border-l-4 border-l-blue-500" : "border-l-4 border-l-green-500";
+
+  // Time in stage
+  const daysInStage = prospect.stageUpdatedAt
+      ? Math.floor((new Date().getTime() - new Date(prospect.stageUpdatedAt).getTime()) / (1000 * 3600 * 24))
+      : null;
+
+  // Quick Actions Links
+  const whatsappLink = prospect.phone ? `https://wa.me/52${prospect.phone.replace(/\D/g, '')}` : null;
+  const phoneLink = prospect.phone ? `tel:${prospect.phone}` : null;
+
   return (
     <Card
-      className="mb-4 shadow-sm hover:shadow-md transition-shadow duration-200 group relative cursor-move"
+      className={cn("mb-4 shadow-sm hover:shadow-md transition-shadow duration-200 group relative cursor-move", borderColor)}
       draggable
       onDragStart={(e) => onDragStart(e, prospect.id)}
     >
@@ -64,7 +76,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
             <CardTitle className="text-base font-semibold truncate max-w-[150px]">{prospect.name}</CardTitle>
             <div className="flex items-center gap-1">
                <Badge className={cn("text-xs mr-1", sourceColor)} variant="outline">
-                  {prospect.source}
+                  {prospect.source.substring(0, 3)}
                </Badge>
                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -106,37 +118,56 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-0 space-y-2">
-         {/* Quick Info Icons */}
-         {(prospect.phone || prospect.email) && (
-            <div className="flex gap-2 text-muted-foreground">
-                {prospect.phone && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="cursor-help focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm" aria-label={`Phone: ${prospect.phone}`}>
-                        <Phone className="h-3 w-3" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{prospect.phone}</p>
-                    </TooltipContent>
-                  </Tooltip>
+         {/* Quick Actions & Info */}
+         <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+                {phoneLink && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild>
+                                <a href={phoneLink} aria-label="Call">
+                                    <Phone className="h-3.5 w-3.5" />
+                                </a>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>{prospect.phone}</p></TooltipContent>
+                    </Tooltip>
+                )}
+                {whatsappLink && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-green-600" asChild>
+                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                                    <MessageCircle className="h-3.5 w-3.5" />
+                                </a>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>WhatsApp</p></TooltipContent>
+                    </Tooltip>
                 )}
                 {prospect.email && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="cursor-help focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm" aria-label={`Email: ${prospect.email}`}>
-                        <Mail className="h-3 w-3" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{prospect.email}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild>
+                                <a href={`mailto:${prospect.email}`} aria-label={`Email: ${prospect.email}`}>
+                                    <Mail className="h-3.5 w-3.5" />
+                                </a>
+                             </Button>
+                        </TooltipTrigger>
+                         <TooltipContent><p>{prospect.email}</p></TooltipContent>
+                    </Tooltip>
                 )}
             </div>
-         )}
 
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
+            {daysInStage !== null && (
+                 <div className={cn("flex items-center text-xs", daysInStage > 7 ? "text-destructive font-medium" : "text-muted-foreground")}>
+                    <Clock className="h-3 w-3 mr-1" />
+                    <span>{daysInStage}d</span>
+                 </div>
+            )}
+         </div>
+
+        <div className="flex items-center justify-between text-sm text-muted-foreground pt-1 border-t">
           <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
               <AvatarImage src={userProfile?.avatarUrl} />

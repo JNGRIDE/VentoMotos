@@ -9,6 +9,7 @@ import { areArraysOfFlatObjectsEqual } from "@/lib/utils";
 import { ProspectCard } from "./prospect-card";
 import { EditProspectDialog } from "./edit-prospect-dialog";
 import { DeleteProspectDialog } from "./delete-prospect-dialog";
+import { ProspectAIInsightsDialog } from "./prospect-ai-dialog";
 
 interface KanbanColumnProps {
   title: string;
@@ -21,6 +22,7 @@ interface KanbanColumnProps {
   onMoveStage: (prospectId: string, newStage: Prospect["stage"]) => Promise<void>;
   onEdit: (prospect: Prospect) => void;
   onDelete: (prospect: Prospect) => void;
+  onAIInsights: (prospect: Prospect) => void;
 }
 
 const EMPTY_PROSPECTS: Prospect[] = [];
@@ -45,6 +47,7 @@ function areKanbanColumnPropsEqual(prev: KanbanColumnProps, next: KanbanColumnPr
     prev.onMoveStage === next.onMoveStage &&
     prev.onEdit === next.onEdit &&
     prev.onDelete === next.onDelete &&
+    prev.onAIInsights === next.onAIInsights &&
     (prev.prospects === next.prospects || areArraysOfFlatObjectsEqual(prev.prospects, next.prospects))
   );
 }
@@ -60,7 +63,8 @@ const KanbanColumn = memo(function KanbanColumn({
   onDrop,
   onMoveStage,
   onEdit,
-  onDelete
+  onDelete,
+  onAIInsights
 }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -116,6 +120,7 @@ const KanbanColumn = memo(function KanbanColumn({
               onMoveStage={onMoveStage}
               onEdit={onEdit}
               onDelete={onDelete}
+              onAIInsights={onAIInsights}
             />
           ))
         )}
@@ -138,6 +143,7 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
   
   const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
   const [deletingProspect, setDeletingProspect] = useState<Prospect | null>(null);
+  const [aiProspect, setAIProspect] = useState<Prospect | null>(null);
 
   const userProfilesMap = useMemo(() => {
     return userProfiles.reduce((map, sp) => {
@@ -223,6 +229,10 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
     setDeletingProspect(prospect);
   }, []);
 
+  const handleAIInsights = useCallback((prospect: Prospect) => {
+    setAIProspect(prospect);
+  }, []);
+
   return (
     <>
       <ScrollArea className="w-full">
@@ -240,6 +250,7 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
               onMoveStage={handleMoveStage}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onAIInsights={handleAIInsights}
             />
           ))}
         </div>
@@ -263,6 +274,15 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
           open={!!deletingProspect}
           onOpenChange={(open) => !open && setDeletingProspect(null)}
           onProspectDeleted={onRefresh}
+        />
+      )}
+
+      {aiProspect && (
+        <ProspectAIInsightsDialog
+          prospect={aiProspect}
+          userProfile={userProfilesMap[aiProspect.salespersonId]}
+          open={!!aiProspect}
+          onOpenChange={(open) => !open && setAIProspect(null)}
         />
       )}
     </>

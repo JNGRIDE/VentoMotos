@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { MoreHorizontal, Pencil, Trash, Phone, Mail, ArrowRight, MessageCircle, Clock } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash, Phone, Mail, ArrowRight, MessageCircle, Clock, Sparkles } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ interface ProspectCardProps {
   onMoveStage: (prospectId: string, newStage: Prospect["stage"]) => Promise<void>;
   onEdit: (prospect: Prospect) => void;
   onDelete: (prospect: Prospect) => void;
+  onAIInsights: (prospect: Prospect) => void;
 }
 
 // Custom comparison function for React.memo to prevent unnecessary re-renders
@@ -44,12 +45,13 @@ function arePropsEqual(prevProps: ProspectCardProps, nextProps: ProspectCardProp
     prevProps.onMoveStage === nextProps.onMoveStage &&
     prevProps.onEdit === nextProps.onEdit &&
     prevProps.onDelete === nextProps.onDelete &&
+    prevProps.onAIInsights === nextProps.onAIInsights &&
     (prevProps.prospect === nextProps.prospect || areFlatObjectsEqual(prevProps.prospect, nextProps.prospect))
   );
 }
 
 // Optimization: Memoize ProspectCard to prevent re-renders when parent re-renders but props (like prospect data) are stable
-export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, currentUserProfile, onDragStart, onMoveStage, onEdit, onDelete }: ProspectCardProps) {
+export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, currentUserProfile, onDragStart, onMoveStage, onEdit, onDelete, onAIInsights }: ProspectCardProps) {
   const sourceColor =
     prospect.source === "Advertising" ? "bg-accent/20 text-accent-foreground" : "bg-primary/20 text-primary-foreground";
 
@@ -90,6 +92,10 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                     <Pencil className="mr-2 h-4 w-4" />
                     Edit
                   </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onAIInsights(prospect); }} className="text-yellow-600 focus:text-yellow-700 font-medium">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    AI Insights
+                  </DropdownMenuItem>
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                       <ArrowRight className="mr-2 h-4 w-4" />
@@ -121,6 +127,14 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
          {/* Quick Actions & Info */}
          <div className="flex items-center justify-between">
             <div className="flex gap-2">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                         <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-yellow-500" onClick={() => onAIInsights(prospect)} aria-label="AI Insights">
+                            <Sparkles className="h-3.5 w-3.5" />
+                         </Button>
+                    </TooltipTrigger>
+                     <TooltipContent><p>AI Insights</p></TooltipContent>
+                </Tooltip>
                 {phoneLink && (
                     <Tooltip>
                         <TooltipTrigger asChild>

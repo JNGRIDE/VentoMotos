@@ -152,17 +152,39 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
     }, {} as Record<string, UserProfile>);
   }, [userProfiles]);
 
-  // Optimization: Pre-calculate prospects by stage to avoid filtering on every render
-  // This ensures that KanbanColumn receives stable arrays unless prospects actually change
+  // Ref to store the previous result of grouped prospects for comparison
+  const prevProspectsByStageRef = useRef<Record<string, Prospect[]>>({});
+
+  // Optimization: Pre-calculate prospects by stage to avoid filtering on every render.
+  // We compare new groups with previous ones to maintain stable array references for unchanged stages.
+  // This prevents unnecessary re-renders of KanbanColumn components which rely on prop equality.
   const prospectsByStage = useMemo(() => {
     const grouped: Record<string, Prospect[]> = {};
+    // First, group everything as usual
     for (const p of prospects) {
       if (!grouped[p.stage]) {
         grouped[p.stage] = [];
       }
       grouped[p.stage].push(p);
     }
-    return grouped;
+
+    // Now stabilize references by reusing old arrays if content is identical
+    const result: Record<string, Prospect[]> = {};
+    const prev = prevProspectsByStageRef.current;
+
+    for (const stage of PROSPECT_STAGES) {
+      const newArr = grouped[stage] || EMPTY_PROSPECTS;
+      const oldArr = prev[stage];
+
+      if (oldArr && areArraysOfFlatObjectsEqual(oldArr, newArr)) {
+        result[stage] = oldArr;
+      } else {
+        result[stage] = newArr;
+      }
+    }
+
+    prevProspectsByStageRef.current = result;
+    return result;
   }, [prospects]);
 
   // Keep a ref to prospects to avoid re-creating handleDrop when prospects change.

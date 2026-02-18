@@ -69,9 +69,19 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
 
   return (
     <Card
-      className={cn("mb-4 shadow-sm hover:shadow-md transition-shadow duration-200 group relative cursor-move", borderColor)}
+      className={cn("mb-4 shadow-sm hover:shadow-md transition-shadow duration-200 group relative cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", borderColor)}
       draggable
       onDragStart={(e) => onDragStart(e, prospect.id)}
+      onClick={() => onEdit(prospect)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onEdit(prospect);
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`View details for ${prospect.name}`}
     >
       <CardHeader className="p-4">
         <div className="flex items-center justify-between">
@@ -82,7 +92,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                </Badge>
                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100 transition-opacity">
+                  <Button variant="ghost" className="h-8 w-8 p-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                     <span className="sr-only">Open menu</span>
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
@@ -129,7 +139,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
             <div className="flex gap-2">
                 <Tooltip>
                     <TooltipTrigger asChild>
-                         <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-yellow-500" onClick={() => onAIInsights(prospect)} aria-label="AI Insights">
+                         <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-yellow-500" onClick={(e) => { e.stopPropagation(); onAIInsights(prospect); }} aria-label="AI Insights">
                             <Sparkles className="h-3.5 w-3.5" />
                          </Button>
                     </TooltipTrigger>
@@ -138,7 +148,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                 {phoneLink && (
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild>
+                            <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild onClick={(e) => e.stopPropagation()}>
                                 <a href={phoneLink} aria-label="Call">
                                     <Phone className="h-3.5 w-3.5" />
                                 </a>
@@ -150,7 +160,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                 {whatsappLink && (
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-green-600" asChild>
+                            <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-green-600" asChild onClick={(e) => e.stopPropagation()}>
                                 <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
                                     <MessageCircle className="h-3.5 w-3.5" />
                                 </a>
@@ -162,7 +172,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                 {prospect.email && (
                     <Tooltip>
                         <TooltipTrigger asChild>
-                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild>
+                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild onClick={(e) => e.stopPropagation()}>
                                 <a href={`mailto:${prospect.email}`} aria-label={`Email: ${prospect.email}`}>
                                     <Mail className="h-3.5 w-3.5" />
                                 </a>

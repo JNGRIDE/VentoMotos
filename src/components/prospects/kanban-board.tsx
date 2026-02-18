@@ -286,6 +286,7 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
           onOpenChange={(open) => !open && setEditingProspect(null)}
           onProspectUpdated={onRefresh}
           currentUserProfile={currentUserProfile}
+          userProfiles={userProfiles}
         />
       )}
 

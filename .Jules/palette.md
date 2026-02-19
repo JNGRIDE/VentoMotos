@@ -13,3 +13,6 @@
 ## 2024-05-23 - [Clickable Cards in Drag-and-Drop Lists]
 **Learning:** Users expect cards in a Kanban board to be clickable for details, not just draggable. Adding `onClick` to a `draggable` element works in most modern browsers because the drag operation suppresses the click event, but one must ensure inner interactive elements (buttons/links) stop propagation to avoid conflicts.
 **Action:** When implementing card lists, always consider making the entire card the primary action trigger (view/edit), and carefully manage event propagation for secondary actions.
+## 2024-05-25 - Mobile Drawer Navigation
+**Learning:** In Single Page Applications (SPA) like Next.js, `Link` components inside a mobile navigation drawer (Sheet/Dialog) do not automatically close the drawer upon navigation because the page doesn't fully reload. This forces users to manually close the menu after clicking a link.
+**Action:** Wrap navigation links inside the drawer with `<SheetClose asChild>` (or the equivalent Dialog Close primitive) to ensure the overlay is dismissed immediately upon user interaction.

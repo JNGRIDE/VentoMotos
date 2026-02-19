@@ -21,7 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn, areFlatObjectsEqual } from "@/lib/utils";
+import { cn, areDeepEqual } from "@/lib/utils";
 import { type Prospect, type UserProfile, PROSPECT_STAGES } from "@/lib/data";
 
 interface ProspectCardProps {
@@ -46,7 +46,7 @@ function arePropsEqual(prevProps: ProspectCardProps, nextProps: ProspectCardProp
     prevProps.onEdit === nextProps.onEdit &&
     prevProps.onDelete === nextProps.onDelete &&
     prevProps.onAIInsights === nextProps.onAIInsights &&
-    (prevProps.prospect === nextProps.prospect || areFlatObjectsEqual(prevProps.prospect, nextProps.prospect))
+    (prevProps.prospect === nextProps.prospect || areDeepEqual(prevProps.prospect, nextProps.prospect))
   );
 }
 

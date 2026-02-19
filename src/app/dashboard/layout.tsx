@@ -21,6 +21,7 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetClose,
 } from "@/components/ui/sheet";
 import {
   Tooltip,
@@ -109,26 +110,29 @@ export default function DashboardLayout({
             </SheetTrigger>
             <SheetContent side="left" className="sm:max-w-xs">
               <nav className="grid gap-6 text-lg font-medium">
-                <Link
-                  href="#"
-                  className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
-                >
-                  <Bike className="h-5 w-5 transition-all group-hover:scale-110" />
-                  <span className="sr-only">MotoSales CRM</span>
-                </Link>
-                {navItems.map((item) => (
+                <SheetClose asChild>
                   <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`flex items-center gap-4 px-2.5 ${
-                        pathname === item.href
-                          ? "text-foreground"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
+                    href="#"
+                    className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
                   >
-                    <item.icon className="h-5 w-5" />
-                    {item.label}
+                    <Bike className="h-5 w-5 transition-all group-hover:scale-110" />
+                    <span className="sr-only">MotoSales CRM</span>
                   </Link>
+                </SheetClose>
+                {navItems.map((item) => (
+                  <SheetClose asChild key={item.label}>
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-4 px-2.5 ${
+                          pathname === item.href
+                            ? "text-foreground"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {item.label}
+                    </Link>
+                  </SheetClose>
                 ))}
               </nav>
             </SheetContent>

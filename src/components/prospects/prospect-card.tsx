@@ -87,8 +87,9 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
         <div className="flex items-center justify-between">
             <CardTitle className="text-base font-semibold truncate max-w-[150px]">{prospect.name}</CardTitle>
             <div className="flex items-center gap-1">
-               <Badge className={cn("text-xs mr-1", sourceColor)} variant="outline">
-                  {prospect.source.substring(0, 3)}
+               <Badge className={cn("text-xs mr-1", sourceColor)} variant="outline" title={prospect.source}>
+                  <span aria-hidden="true">{prospect.source.substring(0, 3)}</span>
+                  <span className="sr-only">{prospect.source}</span>
                </Badge>
                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -149,7 +150,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild onClick={(e) => e.stopPropagation()}>
-                                <a href={phoneLink} aria-label="Call">
+                                <a href={phoneLink} aria-label={`Call ${prospect.phone}`}>
                                     <Phone className="h-3.5 w-3.5" />
                                 </a>
                             </Button>
@@ -161,7 +162,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-green-600" asChild onClick={(e) => e.stopPropagation()}>
-                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${prospect.phone}`}>
                                     <MessageCircle className="h-3.5 w-3.5" />
                                 </a>
                             </Button>
@@ -184,9 +185,10 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
             </div>
 
             {daysInStage !== null && (
-                 <div className={cn("flex items-center text-xs", daysInStage > 7 ? "text-destructive font-medium" : "text-muted-foreground")}>
-                    <Clock className="h-3 w-3 mr-1" />
-                    <span>{daysInStage}d</span>
+                 <div className={cn("flex items-center text-xs", daysInStage > 7 ? "text-destructive font-medium" : "text-muted-foreground")} title={`${daysInStage} days in current stage`}>
+                    <Clock className="h-3 w-3 mr-1" aria-hidden="true" />
+                    <span aria-hidden="true">{daysInStage}d</span>
+                    <span className="sr-only">{daysInStage} days in stage</span>
                  </div>
             )}
          </div>

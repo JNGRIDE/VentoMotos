@@ -16,3 +16,7 @@
 ## 2024-05-25 - Mobile Drawer Navigation
 **Learning:** In Single Page Applications (SPA) like Next.js, `Link` components inside a mobile navigation drawer (Sheet/Dialog) do not automatically close the drawer upon navigation because the page doesn't fully reload. This forces users to manually close the menu after clicking a link.
 **Action:** Wrap navigation links inside the drawer with `<SheetClose asChild>` (or the equivalent Dialog Close primitive) to ensure the overlay is dismissed immediately upon user interaction.
+
+## 2024-05-26 - Accessible Abbreviated Badges
+**Learning:** Visual abbreviations in Badges (e.g., "Org" for "Organic") are confusing for screen readers. Using `aria-hidden` on the visual text and a separate `sr-only` span for the full text ensures accessibility without compromising the UI design.
+**Action:** Always pair abbreviated visual indicators with full context `sr-only` text and `title` attributes for tooltips.

@@ -9,3 +9,7 @@
 ## 2024-05-24 - Touch Device Accessibility
 **Learning:** Elements hidden by default (`opacity-0`) and revealed on hover (`group-hover:opacity-100`) are inaccessible on touch devices because they lack a reliable hover state. This creates "mystery meat navigation".
 **Action:** Use responsive utility classes (e.g., `opacity-100 lg:opacity-0 lg:group-hover:opacity-100`) to ensure interactive elements are always visible on touch devices (mobile/tablet) while maintaining the cleaner hover-reveal behavior on desktop. Also, ensure touch targets are at least 32px (preferably 44px).
+
+## 2024-05-25 - Mobile Drawer Navigation
+**Learning:** In Single Page Applications (SPA) like Next.js, `Link` components inside a mobile navigation drawer (Sheet/Dialog) do not automatically close the drawer upon navigation because the page doesn't fully reload. This forces users to manually close the menu after clicking a link.
+**Action:** Wrap navigation links inside the drawer with `<SheetClose asChild>` (or the equivalent Dialog Close primitive) to ensure the overlay is dismissed immediately upon user interaction.

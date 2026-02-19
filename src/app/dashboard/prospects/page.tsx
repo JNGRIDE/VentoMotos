@@ -145,6 +145,7 @@ export default function ProspectsPage() {
               sprint={selectedSprint}
               currentUserProfile={currentUserProfile}
               onProspectAdded={handleRefresh}
+              userProfiles={userProfiles}
             />
         </div>
       </div>

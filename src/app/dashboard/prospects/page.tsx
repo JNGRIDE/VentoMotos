@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { LoaderCircle, ShieldAlert } from "lucide-react";
+import { LoaderCircle, ShieldAlert, FileDown } from "lucide-react";
+import { saveAs } from "file-saver";
 import { KanbanBoard } from "@/components/prospects/kanban-board";
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
@@ -9,6 +10,7 @@ import { getProspects, getUserProfiles, getUserProfile } from "@/firebase/servic
 import type { Prospect, UserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { generateSprints, getCurrentSprintValue, type Sprint } from '@/lib/sprints';
 import { AddProspectDialog } from "@/components/prospects/add-prospect-dialog";
 
@@ -97,6 +99,22 @@ export default function ProspectsPage() {
     );
   }, []);
 
+  const handleExport = useCallback(() => {
+    if (!prospects.length) return;
+
+    const headers = ["Nombre", "Email", "Telefono"];
+    const rows = prospects.map((p) => [
+      `"${p.name.replace(/"/g, '""')}"`,
+      `"${(p.email || "").replace(/"/g, '""')}"`,
+      `"${(p.phone || "").replace(/"/g, '""')}"`,
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    saveAs(blob, `prospectos_${selectedSprint}.csv`);
+  }, [prospects, selectedSprint]);
+
   if (isInitialLoading) {
     return (
         <div className="flex items-center justify-center h-[calc(100vh-theme(spacing.32))]">
@@ -129,6 +147,18 @@ export default function ProspectsPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1"
+              onClick={handleExport}
+              disabled={!prospects.length}
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Export
+              </span>
+            </Button>
             <Select value={selectedSprint} onValueChange={setSelectedSprint}>
                 <SelectTrigger className="w-[180px] h-8">
                     <SelectValue placeholder="Select a sprint" />

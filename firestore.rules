@@ -53,5 +53,12 @@ service cloud.firestore {
       // Only a manager can delete a sprint
       allow delete: if isManager();
     }
+
+    match /settings/{settingId} {
+      // Any authenticated user can read settings (e.g. financiers list)
+      allow read: if request.auth != null;
+      // Only a manager can change settings
+      allow write: if isManager();
+    }
   }
 }

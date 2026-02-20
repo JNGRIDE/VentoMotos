@@ -11,55 +11,80 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Manager';
     }
 
+    // --- Users ---
+    // Prevent privilege escalation: users cannot make themselves Managers.
     match /users/{userId} {
-      // Any authenticated user can read profiles (to see names, avatars, etc.)
       allow read: if request.auth != null;
-      // Only the user themselves or a manager can edit a profile.
-      allow write: if isOwner(userId) || isManager();
-    }
 
-    match /sales/{saleId} {
-      // A manager can read any sale. A salesperson can only read their own.
-      allow read: if isManager() || request.auth.uid == resource.data.salespersonId;
-      // A manager can create a sale for anyone. A salesperson only for themselves.
-      allow create: if isManager() || request.auth.uid == request.resource.data.salespersonId;
-      // A manager can update any sale. A salesperson can only modify their own.
-      allow update: if isManager() || request.auth.uid == resource.data.salespersonId;
-      // A manager can delete any sale. A salesperson can only delete their own.
-      allow delete: if isManager() || isOwner(resource.data.salespersonId);
-    }
+      // Allow create if (owner and role is 'Salesperson') OR manager.
+      // Owner check is first to avoid calling isManager() (which reads the user doc)
+      // when the user doc doesn't exist yet (self-registration).
+      allow create: if (isOwner(userId) && request.resource.data.role == 'Salesperson') || isManager();
 
-    match /prospects/{prospectId} {
-      // A manager can read any prospect. A salesperson only their own.
-      allow read: if isManager() || request.auth.uid == resource.data.salespersonId;
-      // A manager can write to any prospect. A salesperson can only write to their own.
-      allow write: if isManager() || request.auth.uid == request.resource.data.salespersonId;
-    }
+      // Allow update if (owner and role is NOT changed) OR manager.
+      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isManager();
 
-    match /inventory/{motorcycleId} {
-      // Any authenticated user can read the inventory (to see available models)
-      allow read: if request.auth != null;
-      // Any authenticated user can UPDATE inventory (to decrement stock during a sale)
-      allow update: if request.auth != null;
-      // Only a manager can CREATE or DELETE inventory items
-      allow create, delete: if isManager();
-    }
-
-    match /sprints/{sprintId} {
-      // Any authenticated user can read sprints (to populate dropdowns, etc.)
-      allow read: if request.auth != null;
-      // Any authenticated user can create a sprint document (for ensureCurrentSprint)
-      allow create: if request.auth != null;
-      // Only a manager can update a sprint (e.g., to close it)
-      allow update: if isManager();
-      // Only a manager can delete a sprint
+      // Only manager can delete users
       allow delete: if isManager();
     }
 
-    match /settings/{settingId} {
-      // Any authenticated user can read settings (e.g. financiers list)
+    // --- Sales ---
+    // Enforce ownership throughout lifecycle.
+    match /sales/{saleId} {
+      allow read: if isManager() || request.auth.uid == resource.data.salespersonId;
+
+      // Create: New sale must belong to auth user (unless manager)
+      allow create: if isManager() || request.auth.uid == request.resource.data.salespersonId;
+
+      // Update: Existing sale must belong to auth user AND new sale must belong to auth user (no transfer)
+      allow update: if isManager() || (request.auth.uid == resource.data.salespersonId && request.auth.uid == request.resource.data.salespersonId);
+
+      // Delete: Existing sale must belong to auth user
+      allow delete: if isManager() || request.auth.uid == resource.data.salespersonId;
+    }
+
+    // --- Prospects ---
+    // Split write into granular permissions.
+    match /prospects/{prospectId} {
+      allow read: if isManager() || request.auth.uid == resource.data.salespersonId;
+
+      // Create: New prospect belongs to auth user
+      allow create: if isManager() || request.auth.uid == request.resource.data.salespersonId;
+
+      // Update: Existing prospect belongs to auth user AND new prospect belongs to auth user (no transfer)
+      allow update: if isManager() || (request.auth.uid == resource.data.salespersonId && request.auth.uid == request.resource.data.salespersonId);
+
+      // Delete: Existing prospect belongs to auth user
+      allow delete: if isManager() || request.auth.uid == resource.data.salespersonId;
+    }
+
+    // --- Inventory ---
+    // Restrict what users can modify.
+    match /inventory/{motorcycleId} {
       allow read: if request.auth != null;
-      // Only a manager can change settings
+
+      // Update: Manager can update anything.
+      // Users can only update 'stock' and 'skus' (decrementing stock/removing sku).
+      // We check that only 'stock' and 'skus' are in the affected keys.
+      allow update: if isManager() || (
+        request.auth != null &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock', 'skus'])
+      );
+
+      allow create, delete: if isManager();
+    }
+
+    // --- Sprints ---
+    // Keep as is, assume logic is correct for app needs.
+    match /sprints/{sprintId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if isManager();
+    }
+
+    // --- Settings ---
+    match /settings/{settingId} {
+      allow read: if request.auth != null;
       allow write: if isManager();
     }
   }

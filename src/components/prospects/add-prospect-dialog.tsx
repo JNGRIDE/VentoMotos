@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
-import { addProspect, getUserProfiles } from "@/firebase/services";
+import { addProspect } from "@/firebase/services";
 import type { NewProspect, UserProfile } from "@/lib/data";
 
 const addProspectSchema = z.object({
@@ -36,13 +36,13 @@ interface AddProspectDialogProps {
   sprint: string;
   currentUserProfile: UserProfile;
   onProspectAdded: () => void;
+  userProfiles: UserProfile[];
 }
 
-export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded }: AddProspectDialogProps) {
+export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded, userProfiles }: AddProspectDialogProps) {
   const db = useFirestore();
   const [open, setOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const { toast } = useToast();
 
   const form = useForm<AddProspectFormValues>({
@@ -78,9 +78,6 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
              motorcycleInterest: "",
         });
 
-        if (role === 'Manager') {
-            getUserProfiles(db).then(setUserProfiles);
-        }
     }
   }, [open, db, uid, role, form]);
 

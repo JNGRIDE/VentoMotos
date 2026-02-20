@@ -9,3 +9,7 @@
 ## 2025-06-03 - [Code Splitting for Document Generation]
 **Learning:** Large libraries like `docxtemplater` and `pizzip` can significantly increase bundle size. If they are only needed for a specific user action (like clicking a button), dynamic imports (`await import()`) should be used to load them on demand.
 **Action:** Move heavy, event-specific logic to separate utility files and import them dynamically inside event handlers.
+
+## 2026-06-04 - [Stabilizing Derived State Arrays]
+**Learning:** When derived state (like grouped lists) is recalculated in `useMemo`, new array references are created even if content is identical, breaking `React.memo` optimization in child components.
+**Action:** Use `useRef` within `useMemo` to compare new results with previous ones (e.g. via `areArraysOfFlatObjectsEqual`) and return the stable previous reference if content is unchanged.

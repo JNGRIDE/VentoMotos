@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
-import { updateProspect, getUserProfiles } from "@/firebase/services";
+import { updateProspect } from "@/firebase/services";
 import type { Prospect, UserProfile } from "@/lib/data";
 
 const prospectSchema = z.object({
@@ -39,13 +39,13 @@ interface EditProspectDialogProps {
   onOpenChange: (open: boolean) => void;
   onProspectUpdated: () => void;
   currentUserProfile: UserProfile | null;
+  userProfiles: UserProfile[];
 }
 
-export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpdated, currentUserProfile }: EditProspectDialogProps) {
+export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpdated, currentUserProfile, userProfiles }: EditProspectDialogProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
 
   const form = useForm<ProspectFormValues>({
     resolver: zodResolver(prospectSchema),
@@ -81,9 +81,6 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
             motorcycleInterest: prospect.motorcycleInterest || "",
         });
 
-        if (currentUserProfile?.role === 'Manager') {
-            getUserProfiles(db).then(setUserProfiles);
-        }
     }
   }, [open, db, currentUserProfile, form, prospect]); // prospect in dep array is fine now that parent doesn't unmount
 

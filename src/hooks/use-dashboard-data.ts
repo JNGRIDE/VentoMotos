@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
 import {
@@ -49,6 +49,9 @@ export function useDashboardData(): UseDashboardDataResult {
   const [sprints, setSprints] = useState<SprintDoc[]>([]);
   const [selectedSprint, setSelectedSprint] = useState<string>('');
 
+  // Track if we just fetched the profile via fetchData to avoid redundant sales fetch
+  const justFetchedProfileRef = useRef(false);
+
   // Initialize Sprints from DB
   useEffect(() => {
     const initSprints = async () => {
@@ -82,6 +85,24 @@ export function useDashboardData(): UseDashboardDataResult {
     initSprints();
   }, [db]); // Run once on mount (and when db is ready)
 
+  // Optimized fetch function that only refreshes sales data, skipping redundant profile fetches.
+  const fetchSalesOnly = useCallback(async (profile: UserProfile, sprint: string, showLoading = true) => {
+    if (showLoading) setIsLoading(true);
+    setError(null);
+    try {
+      const salesData = await getSales(db, profile, sprint);
+      setSales(salesData);
+    } catch (err: unknown) {
+      console.error("Failed to fetch sales:", err);
+      setError({
+        title: "Error loading sales",
+        description: "Could not refresh sales data.",
+      });
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
+  }, [db]);
+
   const fetchData = useCallback(async () => {
     if (!user || !selectedSprint) return;
     setIsLoading(true);
@@ -92,6 +113,8 @@ export function useDashboardData(): UseDashboardDataResult {
         setIsLoading(false);
         return;
       }
+      // Set flag to skip redundant sales fetch in useEffect
+      justFetchedProfileRef.current = true;
       setCurrentUserProfile(profile);
 
       const [salesData, profilesData] = await Promise.all([
@@ -119,11 +142,22 @@ export function useDashboardData(): UseDashboardDataResult {
     }
   }, [db, user, selectedSprint]);
 
+  // Optimization: When sprint changes or profile is loaded, fetch sales.
+  // Avoids re-fetching user profiles (heavy operation) when only sales need update.
   useEffect(() => {
     if (selectedSprint) {
-      fetchData();
+      if (currentUserProfile) {
+        // If fetchData just ran, it already fetched sales. Skip this effect.
+        if (justFetchedProfileRef.current) {
+          justFetchedProfileRef.current = false;
+          return;
+        }
+        fetchSalesOnly(currentUserProfile, selectedSprint, true);
+      } else {
+        fetchData();
+      }
     }
-  }, [fetchData, selectedSprint]);
+  }, [fetchData, fetchSalesOnly, selectedSprint, currentUserProfile]);
 
   const createAdminProfile = async () => {
     if (!user || user.uid !== ADMIN_UID) return;
@@ -151,7 +185,11 @@ export function useDashboardData(): UseDashboardDataResult {
   const recordSale = async (newSaleData: NewSale) => {
     try {
       await addSale(db, newSaleData);
-      await fetchData();
+      if (currentUserProfile && selectedSprint) {
+        await fetchSalesOnly(currentUserProfile, selectedSprint, false);
+      } else {
+        await fetchData();
+      }
     } catch (err: unknown) {
       const errorObj = err as { message?: string };
       console.error("Failed to add sale:", err);
@@ -162,7 +200,11 @@ export function useDashboardData(): UseDashboardDataResult {
   const handleDeleteSale = async (sale: Sale) => {
     try {
         await deleteSale(db, sale);
-        await fetchData();
+        if (currentUserProfile && selectedSprint) {
+          await fetchSalesOnly(currentUserProfile, selectedSprint, false);
+        } else {
+          await fetchData();
+        }
     } catch (err: unknown) {
         const errorObj = err as { message?: string };
         console.error("Failed to delete sale:", err);
@@ -173,7 +215,11 @@ export function useDashboardData(): UseDashboardDataResult {
   const handleUpdateSale = async (saleId: string, oldSale: Sale, newSale: NewSale) => {
       try {
           await updateSale(db, saleId, oldSale, newSale);
-          await fetchData();
+          if (currentUserProfile && selectedSprint) {
+            await fetchSalesOnly(currentUserProfile, selectedSprint, false);
+          } else {
+            await fetchData();
+          }
       } catch (err: unknown) {
           const errorObj = err as { message?: string };
           console.error("Failed to update sale:", err);

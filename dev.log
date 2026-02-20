@@ -10,34 +10,11 @@
      · serverActions
 
  ✓ Starting...
-Attention: Next.js now collects completely anonymous telemetry regarding usage.
-This information is used to shape Next.js' roadmap and prioritize features.
-You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
-https://nextjs.org/telemetry
-
- ✓ Ready in 2.1s
- ○ Compiling /test-export ...
- ✓ Compiled /test-export in 12.2s (972 modules)
- GET /test-export 200 in 14165ms
- ✓ Compiled in 1952ms (353 modules)
- ✓ Compiled in 2.7s (289 modules)
- ✓ Compiled in 266ms (289 modules)
-[Error: ENOENT: no such file or directory, stat '/app/.next/cache/webpack/client-development/1.pack.gz'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'stat',
-  path: '/app/.next/cache/webpack/client-development/1.pack.gz'
-}
- ⨯ unhandledRejection: [Error: ENOENT: no such file or directory, stat '/app/.next/cache/webpack/client-development/1.pack.gz'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'stat',
-  path: '/app/.next/cache/webpack/client-development/1.pack.gz'
-}
- ⨯ unhandledRejection:  [Error: ENOENT: no such file or directory, stat '/app/.next/cache/webpack/client-development/1.pack.gz'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'stat',
-  path: '/app/.next/cache/webpack/client-development/1.pack.gz'
-}
-<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/app/.next/cache/webpack/client-development/1.pack.gz'
+ ✓ Ready in 2.2s
+ ○ Compiling /test-prospect-card ...
+ ✓ Compiled /test-prospect-card in 14.1s (1012 modules)
+ GET /test-prospect-card 200 in 16476ms
+ ✓ Compiled in 2.3s (373 modules)
+ GET /test-prospect-card 200 in 162ms
+ ✓ Compiled in 3.6s (289 modules)
+[?25h

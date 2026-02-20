@@ -16,3 +16,11 @@
 ## 2024-05-25 - Mobile Drawer Navigation
 **Learning:** In Single Page Applications (SPA) like Next.js, `Link` components inside a mobile navigation drawer (Sheet/Dialog) do not automatically close the drawer upon navigation because the page doesn't fully reload. This forces users to manually close the menu after clicking a link.
 **Action:** Wrap navigation links inside the drawer with `<SheetClose asChild>` (or the equivalent Dialog Close primitive) to ensure the overlay is dismissed immediately upon user interaction.
+
+## 2024-05-23 - [Abbreviated Visual Labels]
+**Learning:** Using `aria-label` on non-interactive elements (like a `Badge`) is often ignored by screen readers, making abbreviations like "Org" confusing.
+**Action:** Render the visible abbreviation with `aria-hidden="true"` and provide the full text in a sibling `span` with the `sr-only` class.
+
+## 2024-05-23 - [Ref Forwarding in Shared Components]
+**Learning:** When using components like `Badge` as children of Radix UI primitives (e.g., `TooltipTrigger asChild`), the component MUST use `React.forwardRef`. Otherwise, the trigger will fail to attach event listeners or positioning logic.
+**Action:** Ensure all atomic UI components (Buttons, Badges, Cards) that might be used compositionally support ref forwarding.

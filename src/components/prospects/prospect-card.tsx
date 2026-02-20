@@ -87,9 +87,17 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
         <div className="flex items-center justify-between">
             <CardTitle className="text-base font-semibold truncate max-w-[150px]">{prospect.name}</CardTitle>
             <div className="flex items-center gap-1">
-               <Badge className={cn("text-xs mr-1", sourceColor)} variant="outline">
-                  {prospect.source.substring(0, 3)}
-               </Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge className={cn("text-xs mr-1 cursor-help", sourceColor)} variant="outline">
+                    <span aria-hidden="true">{prospect.source.substring(0, 3)}</span>
+                    <span className="sr-only">{prospect.source}</span>
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{prospect.source}</p>
+                </TooltipContent>
+              </Tooltip>
                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-8 w-8 p-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
@@ -194,7 +202,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
         <div className="flex items-center justify-between text-sm text-muted-foreground pt-1 border-t">
           <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
-              <AvatarImage src={userProfile?.avatarUrl} />
+              <AvatarImage src={userProfile?.avatarUrl} alt={userProfile?.name || "User Avatar"} />
               <AvatarFallback>{userProfile?.name?.charAt(0)}</AvatarFallback>
             </Avatar>
             <span className="truncate max-w-[80px]">{userProfile?.name || "Unassigned"}</span>

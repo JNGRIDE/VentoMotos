@@ -79,12 +79,15 @@ export default function DashboardPage() {
 
     const isUnlocked = salesProgress >= GOALS.SALES_PROGRESS_THRESHOLD;
 
+    const targetAmount = salesGoal * (GOALS.SALES_PROGRESS_THRESHOLD / 100);
+    const remainingAmount = Math.max(0, targetAmount - totalSales);
+
     const description = !isUnlocked
-        ? `Pending - ${(GOALS.SALES_PROGRESS_THRESHOLD - salesProgress).toFixed(1)}% more to unlock`
+        ? `Pending - ${(GOALS.SALES_PROGRESS_THRESHOLD - salesProgress).toFixed(1)}% ($${remainingAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}) more to unlock`
         : "Active - Commission Unlocked";
 
     return { earned, description, isUnlocked };
-  }, [isManager, salesProgress, totalSales]);
+  }, [isManager, salesProgress, totalSales, salesGoal]);
 
   const creditBonus = ventoCredits >= 5 ? (ventoCredits - 4) * 200 : 0;
 

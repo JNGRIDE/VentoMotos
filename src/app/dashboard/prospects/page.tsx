@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generateSprints, getCurrentSprintValue, type Sprint } from '@/lib/sprints';
 import { AddProspectDialog } from "@/components/prospects/add-prospect-dialog";
+import { ExportProspectsButton } from "@/components/prospects/export-prospects-button";
 
 export default function ProspectsPage() {
   const db = useFirestore();
@@ -141,6 +142,7 @@ export default function ProspectsPage() {
                     ))}
                 </SelectContent>
             </Select>
+            <ExportProspectsButton prospects={prospects} />
             <AddProspectDialog
               sprint={selectedSprint}
               currentUserProfile={currentUserProfile}

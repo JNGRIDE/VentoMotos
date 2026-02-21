@@ -9,3 +9,7 @@
 ## 2024-05-24 - Touch Device Accessibility
 **Learning:** Elements hidden by default (`opacity-0`) and revealed on hover (`group-hover:opacity-100`) are inaccessible on touch devices because they lack a reliable hover state. This creates "mystery meat navigation".
 **Action:** Use responsive utility classes (e.g., `opacity-100 lg:opacity-0 lg:group-hover:opacity-100`) to ensure interactive elements are always visible on touch devices (mobile/tablet) while maintaining the cleaner hover-reveal behavior on desktop. Also, ensure touch targets are at least 32px (preferably 44px).
+
+## 2024-05-25 - Abbreviated Badges
+**Learning:** Visual abbreviations in `Badge` components (e.g., "Adv" for "Advertising") are unclear to screen readers and can be confusing.
+**Action:** Use a combination of `<span aria-hidden="true">` for the visual abbreviation and `<span className="sr-only">` for the full text to ensure clarity for all users.

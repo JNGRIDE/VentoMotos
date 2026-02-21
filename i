@@ -23,8 +23,8 @@ service cloud.firestore {
       allow read: if isManager() || request.auth.uid == resource.data.salespersonId;
       // A manager can create a sale for anyone. A salesperson only for themselves.
       allow create: if isManager() || request.auth.uid == request.resource.data.salespersonId;
-      // Only a manager can update or delete a sale record.
-      allow update, delete: if isManager();
+      // A manager can update/delete any sale. A salesperson can only modify their own.
+      allow update, delete: if isManager() || request.auth.uid == resource.data.salespersonId;
     }
 
     match /prospects/{prospectId} {
@@ -53,13 +53,6 @@ service cloud.firestore {
       // Only a manager can delete a sprint
       allow delete: if isManager();
     }
-
-    // --- REGLA AÑADIDA ---
-    match /settings/{settingId} {
-      // Any authenticated user can read settings (like financiers list)
-      allow read: if request.auth != null;
-      // Only a manager can write settings
-      allow write: if isManager();
-    }
   }
 }
+

@@ -1,0 +1,8 @@
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "northamerica-south1",
+    "rules": "i",
+    "indexes": "firestore.indexes.json"
+  }
+}

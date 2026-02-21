@@ -37,14 +37,38 @@ export function SalesProgressChart({ data }: SalesProgressChartProps) {
             <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
             <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
             <Tooltip
+              formatter={(value: number, name: string) => {
+                if (name === "Current Credits" || name === "Credits Goal") {
+                  // Un-scale the credit values for display
+                  return [Math.round(value / 10000), name];
+                }
+                if (typeof value === 'number') {
+                  const formattedValue = new Intl.NumberFormat('es-MX', {
+                    style: 'currency',
+                    currency: 'MXN',
+                    maximumFractionDigits: 0,
+                  }).format(value);
+                  return [formattedValue, name];
+                }
+                return [value, name];
+              }}
               contentStyle={{
                 backgroundColor: 'hsl(var(--background))',
                 borderColor: 'hsl(var(--border))',
                 borderRadius: 'var(--radius)',
+                padding: '0.5rem 1rem',
+                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
               }}
               labelStyle={{
-                color: 'hsl(var(--foreground))'
+                color: 'hsl(var(--foreground))',
+                fontWeight: 'bold',
+                marginBottom: '0.5rem',
               }}
+              itemStyle={{
+                  color: 'hsl(var(--foreground))',
+                  paddingBottom: '0.25rem'
+              }}
+              cursor={{ fill: 'hsl(var(--accent) / 0.2)' }}
             />
             <Legend iconSize={10} />
             <Bar dataKey="Sales Goal" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />

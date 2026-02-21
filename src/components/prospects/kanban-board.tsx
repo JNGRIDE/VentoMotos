@@ -4,8 +4,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { updateProspect } from "@/firebase/services";
-import { type Prospect, type UserProfile, PROSPECT_STAGES } from "@/lib/data";
-import { areArraysOfFlatObjectsEqual } from "@/lib/utils";
+import { type Prospect, type UserProfile, PROSPECT_STAGES, areProspectsVisualEqual } from "@/lib/data";
 import { ProspectCard } from "./prospect-card";
 import { EditProspectDialog } from "./edit-prospect-dialog";
 import { DeleteProspectDialog } from "./delete-prospect-dialog";
@@ -19,8 +18,17 @@ interface KanbanColumnProps {
   onDragStart: (e: React.DragEvent<HTMLDivElement>, prospectId: string) => void;
   onDrop: (e: React.DragEvent<HTMLDivElement>, newStage: Prospect["stage"]) => void;
   onMoveStage: (prospectId: string, newStage: Prospect["stage"]) => Promise<void>;
-  onEdit: (prospect: Prospect) => void;
-  onDelete: (prospect: Prospect) => void;
+  onEdit: (prospectId: string) => void;
+  onDelete: (prospectId: string) => void;
+}
+
+function areProspectArraysVisualEqual(arr1: Prospect[], arr2: Prospect[]) {
+    if (arr1 === arr2) return true;
+    if (arr1.length !== arr2.length) return false;
+    for (let i = 0; i < arr1.length; i++) {
+        if (!areProspectsVisualEqual(arr1[i], arr2[i])) return false;
+    }
+    return true;
 }
 
 const EMPTY_PROSPECTS: Prospect[] = [];
@@ -45,7 +53,7 @@ function areKanbanColumnPropsEqual(prev: KanbanColumnProps, next: KanbanColumnPr
     prev.onMoveStage === next.onMoveStage &&
     prev.onEdit === next.onEdit &&
     prev.onDelete === next.onDelete &&
-    (prev.prospects === next.prospects || areArraysOfFlatObjectsEqual(prev.prospects, next.prospects))
+    (prev.prospects === next.prospects || areProspectArraysVisualEqual(prev.prospects, next.prospects))
   );
 }
 
@@ -215,12 +223,14 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
       handleMoveStage(prospectId, newStage);
   }, [handleMoveStage]);
 
-  const handleEdit = useCallback((prospect: Prospect) => {
-    setEditingProspect(prospect);
+  const handleEdit = useCallback((prospectId: string) => {
+    const prospect = prospectsRef.current.find(p => p.id === prospectId);
+    if (prospect) setEditingProspect(prospect);
   }, []);
 
-  const handleDelete = useCallback((prospect: Prospect) => {
-    setDeletingProspect(prospect);
+  const handleDelete = useCallback((prospectId: string) => {
+    const prospect = prospectsRef.current.find(p => p.id === prospectId);
+    if (prospect) setDeletingProspect(prospect);
   }, []);
 
   return (

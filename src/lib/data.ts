@@ -68,3 +68,18 @@ export type NewProspect = Omit<Prospect, "id">;
 // This function will be used by components to filter data already fetched from Firestore.
 export const getSalesByUser = (uid: string, salesList: Sale[]) => salesList.filter(s => s.salespersonId === uid);
 export const getProspectsByUser = (uid: string, prospectsList: Prospect[]) => prospectsList.filter(p => p.salespersonId === uid);
+
+export function areProspectsVisualEqual(p1: Prospect, p2: Prospect): boolean {
+  if (p1 === p2) return true;
+  return (
+    p1.id === p2.id &&
+    p1.name === p2.name &&
+    p1.stage === p2.stage &&
+    p1.source === p2.source &&
+    p1.salespersonId === p2.salespersonId &&
+    p1.lastContact === p2.lastContact &&
+    p1.phone === p2.phone &&
+    p1.email === p2.email &&
+    p1.stageUpdatedAt === p2.stageUpdatedAt
+  );
+}

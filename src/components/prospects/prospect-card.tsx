@@ -21,8 +21,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn, areFlatObjectsEqual } from "@/lib/utils";
-import { type Prospect, type UserProfile, PROSPECT_STAGES } from "@/lib/data";
+import { cn } from "@/lib/utils";
+import { type Prospect, type UserProfile, PROSPECT_STAGES, areProspectsVisualEqual } from "@/lib/data";
 
 interface ProspectCardProps {
   prospect: Prospect;
@@ -30,8 +30,8 @@ interface ProspectCardProps {
   currentUserProfile: UserProfile | null; // The logged-in user
   onDragStart: (e: React.DragEvent<HTMLDivElement>, prospectId: string) => void;
   onMoveStage: (prospectId: string, newStage: Prospect["stage"]) => Promise<void>;
-  onEdit: (prospect: Prospect) => void;
-  onDelete: (prospect: Prospect) => void;
+  onEdit: (prospectId: string) => void;
+  onDelete: (prospectId: string) => void;
 }
 
 // Custom comparison function for React.memo to prevent unnecessary re-renders
@@ -44,7 +44,7 @@ function arePropsEqual(prevProps: ProspectCardProps, nextProps: ProspectCardProp
     prevProps.onMoveStage === nextProps.onMoveStage &&
     prevProps.onEdit === nextProps.onEdit &&
     prevProps.onDelete === nextProps.onDelete &&
-    (prevProps.prospect === nextProps.prospect || areFlatObjectsEqual(prevProps.prospect, nextProps.prospect))
+    (prevProps.prospect === nextProps.prospect || areProspectsVisualEqual(prevProps.prospect, nextProps.prospect))
   );
 }
 
@@ -86,7 +86,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onEdit(prospect); }}>
+                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onEdit(prospect.id); }}>
                     <Pencil className="mr-2 h-4 w-4" />
                     Edit
                   </DropdownMenuItem>
@@ -108,7 +108,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                       </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                   </DropdownMenuSub>
-                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDelete(prospect); }} className="text-destructive focus:text-destructive">
+                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDelete(prospect.id); }} className="text-destructive focus:text-destructive">
                     <Trash className="mr-2 h-4 w-4" />
                     Delete
                   </DropdownMenuItem>

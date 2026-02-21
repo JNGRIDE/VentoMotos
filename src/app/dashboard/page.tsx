@@ -79,12 +79,30 @@ export default function DashboardPage() {
 
     const isUnlocked = salesProgress >= GOALS.SALES_PROGRESS_THRESHOLD;
 
-    const description = !isUnlocked
-        ? `Pending - ${(GOALS.SALES_PROGRESS_THRESHOLD - salesProgress).toFixed(1)}% more to unlock`
-        : "Active - Commission Unlocked";
+    let description = "";
+    let iconColor = "text-gray-400";
+    let valueClassName = "text-gray-400";
+    let descriptionClassName = "";
 
-    return { earned, description, isUnlocked };
-  }, [isManager, salesProgress, totalSales]);
+    if (salesProgress < GOALS.SALES_PROGRESS_THRESHOLD) {
+       const amountToUnlock = (salesGoal * (GOALS.SALES_PROGRESS_THRESHOLD / 100)) - totalSales;
+       description = `Pending - $${Math.max(0, amountToUnlock).toLocaleString()} to unlock (${GOALS.SALES_PROGRESS_THRESHOLD}%)`;
+       // default colors
+    } else if (salesProgress < 100) {
+       const amountToGoal = salesGoal - totalSales;
+       description = `Active - $${Math.max(0, amountToGoal).toLocaleString()} to reach goal (100%)`;
+       iconColor = "text-green-500";
+       valueClassName = "text-green-600";
+    } else {
+       // >= 100%
+       description = `${salesProgress.toFixed(0)}% of Goal!`; // Using toFixed(0) for clean 101%, 102%
+       iconColor = "text-yellow-500";
+       valueClassName = "text-yellow-600";
+       descriptionClassName = "text-yellow-600 font-medium";
+    }
+
+    return { earned, description, iconColor, valueClassName, descriptionClassName };
+  }, [isManager, salesProgress, totalSales, salesGoal]);
 
   const creditBonus = ventoCredits >= 5 ? (ventoCredits - 4) * 200 : 0;
 
@@ -254,7 +272,7 @@ export default function DashboardPage() {
         <KpiCard
           title="Total Sales"
           value={`$${totalSales.toLocaleString()}`}
-          description={`${salesProgress.toFixed(1)}% of goal ($${salesGoal.toLocaleString()})`}
+          description={`${salesProgress.toFixed(1)}% of goal ($${salesGoal.toLocaleString()}). Missing: $${Math.max(0, salesGoal - totalSales).toLocaleString()}`}
           icon={DollarSign}
         />
         <KpiCard
@@ -268,8 +286,9 @@ export default function DashboardPage() {
           value={`$${commissionData.earned.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
           description={commissionData.description}
           icon={TrendingUp}
-          iconColor={commissionData.isUnlocked ? 'text-green-500' : 'text-gray-400'}
-          valueClassName={commissionData.isUnlocked ? 'text-green-600' : 'text-gray-400'}
+          iconColor={commissionData.iconColor}
+          valueClassName={commissionData.valueClassName}
+          descriptionClassName={commissionData.descriptionClassName}
         />
         <KpiCard
           title="Vento Bonus"

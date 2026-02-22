@@ -76,7 +76,8 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
             <CardTitle className="text-base font-semibold truncate max-w-[150px]">{prospect.name}</CardTitle>
             <div className="flex items-center gap-1">
                <Badge className={cn("text-xs mr-1", sourceColor)} variant="outline">
-                  {prospect.source.substring(0, 3)}
+                  <span aria-hidden="true">{prospect.source.substring(0, 3)}</span>
+                  <span className="sr-only">{prospect.source}</span>
                </Badge>
                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -125,24 +126,24 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild>
-                                <a href={phoneLink} aria-label="Call">
+                                <a href={phoneLink} aria-label={`Call ${prospect.phone}`}>
                                     <Phone className="h-3.5 w-3.5" />
                                 </a>
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>{prospect.phone}</p></TooltipContent>
+                        <TooltipContent><p>Call: {prospect.phone}</p></TooltipContent>
                     </Tooltip>
                 )}
                 {whatsappLink && (
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-green-600" asChild>
-                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label={`Message ${prospect.phone} on WhatsApp`}>
                                     <MessageCircle className="h-3.5 w-3.5" />
                                 </a>
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>WhatsApp</p></TooltipContent>
+                        <TooltipContent><p>WhatsApp: {prospect.phone}</p></TooltipContent>
                     </Tooltip>
                 )}
                 {prospect.email && (
@@ -154,7 +155,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                                 </a>
                              </Button>
                         </TooltipTrigger>
-                         <TooltipContent><p>{prospect.email}</p></TooltipContent>
+                         <TooltipContent><p>Email: {prospect.email}</p></TooltipContent>
                     </Tooltip>
                 )}
             </div>

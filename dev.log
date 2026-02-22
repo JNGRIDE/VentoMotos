@@ -1,0 +1,36 @@
+
+> nextn@0.1.0 dev
+> next dev -p 9002
+
+   ▲ Next.js 15.5.9
+   - Local:        http://localhost:9002
+   - Network:      http://192.168.0.2:9002
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · serverActions
+
+ ✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Ready in 2.1s
+ ○ Compiling /test-kanban ...
+ ✓ Compiled /test-kanban in 17.2s (2293 modules)
+ ⨯ Error: `Tooltip` must be used within `TooltipProvider`
+    at Tooltip (../src/tooltip.tsx:162:27)
+  160 |     delayDuration: delayDurationProp,
+  161 |   } = props;
+> 162 |   const providerContext = useTooltipProviderContext(TOOLTIP_NAME, props.__scopeTooltip);
+      |                           ^
+  163 |   const popperScope = usePopperScope(__scopeTooltip);
+  164 |   const [trigger, setTrigger] = React.useState<HTMLButtonElement | null>(null);
+  165 |   const contentId = useId(); {
+  digest: '2517759174'
+}
+ GET /test-kanban 500 in 19920ms
+ ✓ Compiled in 2.8s (1010 modules)
+ ✓ Compiled in 1074ms (2293 modules)
+ GET /test-kanban 200 in 817ms
+ ✓ Compiled in 2.8s (282 modules)

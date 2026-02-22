@@ -16,7 +16,7 @@ import {
 } from "@/firebase/services";
 import { generateSprints, getCurrentSprintValue, type SprintDoc } from '@/lib/sprints';
 import type { Sale, UserProfile, NewSale } from '@/lib/data';
-import { ADMIN_UID } from '@/lib/constants';
+import { ADMIN_UID, COMMISSION_RATES } from '@/lib/constants';
 
 interface UseDashboardDataResult {
   currentUserProfile: UserProfile | null;
@@ -151,6 +151,27 @@ export function useDashboardData(): UseDashboardDataResult {
   const recordSale = async (newSaleData: NewSale) => {
     try {
       await addSale(db, newSaleData);
+
+      // Notification Logic
+      const salespersonProfile = userProfiles.find(p => p.uid === newSaleData.salespersonId);
+      if (salespersonProfile) {
+          const isManager = salespersonProfile.role === 'Manager';
+          const rate = isManager ? COMMISSION_RATES.MANAGER : COMMISSION_RATES.SALESPERSON;
+          const commission = newSaleData.amount * rate;
+
+          // Fire and forget notification
+          fetch('/api/telegram/notify-sale', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  salesperson: salespersonProfile.name,
+                  model: newSaleData.motorcycleModel,
+                  amount: newSaleData.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}),
+                  commission: commission.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})
+              })
+          }).catch(err => console.error("Failed to send telegram notification", err));
+      }
+
       await fetchData();
     } catch (err: unknown) {
       const errorObj = err as { message?: string };

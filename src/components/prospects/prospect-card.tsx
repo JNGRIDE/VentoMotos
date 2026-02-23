@@ -125,7 +125,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild>
-                                <a href={phoneLink} aria-label="Call">
+                                <a href={phoneLink} aria-label={`Call ${prospect.phone}`}>
                                     <Phone className="h-3.5 w-3.5" />
                                 </a>
                             </Button>
@@ -137,19 +137,19 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-green-600" asChild>
-                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label="Open WhatsApp Chat">
                                     <MessageCircle className="h-3.5 w-3.5" />
                                 </a>
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>WhatsApp</p></TooltipContent>
+                        <TooltipContent><p>Open WhatsApp Chat</p></TooltipContent>
                     </Tooltip>
                 )}
                 {prospect.email && (
                     <Tooltip>
                         <TooltipTrigger asChild>
                              <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild>
-                                <a href={`mailto:${prospect.email}`} aria-label={`Email: ${prospect.email}`}>
+                                <a href={`mailto:${prospect.email}`} aria-label={`Email ${prospect.email}`}>
                                     <Mail className="h-3.5 w-3.5" />
                                 </a>
                              </Button>

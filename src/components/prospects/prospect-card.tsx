@@ -81,7 +81,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-8 w-8 p-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100 transition-opacity">
-                    <span className="sr-only">Open menu</span>
+                    <span className="sr-only">Open actions menu for {prospect.name}</span>
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -125,36 +125,36 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild>
-                                <a href={phoneLink} aria-label="Call">
+                                <a href={phoneLink} aria-label={`Call ${prospect.name}`}>
                                     <Phone className="h-3.5 w-3.5" />
                                 </a>
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>{prospect.phone}</p></TooltipContent>
+                        <TooltipContent><p>Call: {prospect.phone}</p></TooltipContent>
                     </Tooltip>
                 )}
                 {whatsappLink && (
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-green-600" asChild>
-                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${prospect.name}`}>
                                     <MessageCircle className="h-3.5 w-3.5" />
                                 </a>
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>WhatsApp</p></TooltipContent>
+                        <TooltipContent><p>WhatsApp: {prospect.phone}</p></TooltipContent>
                     </Tooltip>
                 )}
                 {prospect.email && (
                     <Tooltip>
                         <TooltipTrigger asChild>
                              <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild>
-                                <a href={`mailto:${prospect.email}`} aria-label={`Email: ${prospect.email}`}>
+                                <a href={`mailto:${prospect.email}`} aria-label={`Email ${prospect.name}`}>
                                     <Mail className="h-3.5 w-3.5" />
                                 </a>
                              </Button>
                         </TooltipTrigger>
-                         <TooltipContent><p>{prospect.email}</p></TooltipContent>
+                         <TooltipContent><p>Email: {prospect.email}</p></TooltipContent>
                     </Tooltip>
                 )}
             </div>

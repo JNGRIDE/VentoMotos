@@ -82,27 +82,44 @@ export function useDashboardData(): UseDashboardDataResult {
     initSprints();
   }, [db]); // Run once on mount (and when db is ready)
 
-  const fetchData = useCallback(async () => {
-    if (!user || !selectedSprint) return;
+  // Fetch static-ish user data (Profiles) - Run once on user load
+  const fetchProfiles = useCallback(async () => {
+    if (!user) return;
+    try {
+      const [profile, profilesData] = await Promise.all([
+        getUserProfile(db, user.uid),
+        getUserProfiles(db)
+      ]);
+
+      if (profile) {
+        setCurrentUserProfile(profile);
+      } else {
+        setIsLoading(false);
+      }
+      setUserProfiles(profilesData);
+    } catch (err) {
+      console.error("Failed to fetch profiles", err);
+      setError({ title: "Error", description: "Failed to load user profiles." });
+      setIsLoading(false);
+    }
+  }, [db, user]);
+
+  useEffect(() => {
+    fetchProfiles();
+  }, [fetchProfiles]);
+
+  // Fetch dynamic sales data - Run when sprint or current user changes
+  const fetchSales = useCallback(async () => {
+    if (!currentUserProfile || !selectedSprint) return;
+
     setIsLoading(true);
     setError(null);
     try {
-      const profile = await getUserProfile(db, user.uid);
-      if (!profile) {
-        setIsLoading(false);
-        return;
-      }
-      setCurrentUserProfile(profile);
-
-      const [salesData, profilesData] = await Promise.all([
-        getSales(db, profile, selectedSprint),
-        getUserProfiles(db),
-      ]);
+      const salesData = await getSales(db, currentUserProfile, selectedSprint);
       setSales(salesData);
-      setUserProfiles(profilesData);
     } catch (err: unknown) {
-      console.error("Failed to fetch data:", err);
-      let description = "An unexpected error occurred while fetching data.";
+      console.error("Failed to fetch sales:", err);
+      let description = "An unexpected error occurred while fetching sales data.";
       const errorObj = err as { code?: string, message?: string };
 
       if (errorObj.code === 'failed-precondition') {
@@ -111,19 +128,22 @@ export function useDashboardData(): UseDashboardDataResult {
           description = "You do not have permission to view this data. Contact your administrator.";
       }
       setError({
-        title: "Error loading dashboard",
+        title: "Error loading sales",
         description,
       });
     } finally {
       setIsLoading(false);
     }
-  }, [db, user, selectedSprint]);
+  }, [db, currentUserProfile, selectedSprint]);
 
   useEffect(() => {
-    if (selectedSprint) {
-      fetchData();
-    }
-  }, [fetchData, selectedSprint]);
+    fetchSales();
+  }, [fetchSales]);
+
+  // Combined refresh for manual triggering (backward compatibility and full refresh)
+  const refreshData = useCallback(async () => {
+    await Promise.all([fetchProfiles(), fetchSales()]);
+  }, [fetchProfiles, fetchSales]);
 
   const createAdminProfile = async () => {
     if (!user || user.uid !== ADMIN_UID) return;
@@ -140,7 +160,7 @@ export function useDashboardData(): UseDashboardDataResult {
 
     try {
         await setUserProfile(db, adminProfile);
-        await fetchData();
+        await refreshData();
     } catch (err: unknown) {
         const errorObj = err as { message?: string };
         console.error("Failed to create admin profile:", err);
@@ -172,7 +192,7 @@ export function useDashboardData(): UseDashboardDataResult {
           }).catch(err => console.error("Failed to send telegram notification", err));
       }
 
-      await fetchData();
+      await fetchSales();
     } catch (err: unknown) {
       const errorObj = err as { message?: string };
       console.error("Failed to add sale:", err);
@@ -183,7 +203,7 @@ export function useDashboardData(): UseDashboardDataResult {
   const handleDeleteSale = async (sale: Sale) => {
     try {
         await deleteSale(db, sale);
-        await fetchData();
+        await fetchSales();
     } catch (err: unknown) {
         const errorObj = err as { message?: string };
         console.error("Failed to delete sale:", err);
@@ -194,7 +214,7 @@ export function useDashboardData(): UseDashboardDataResult {
   const handleUpdateSale = async (saleId: string, oldSale: Sale, newSale: NewSale) => {
       try {
           await updateSale(db, saleId, oldSale, newSale);
-          await fetchData();
+          await fetchSales();
       } catch (err: unknown) {
           const errorObj = err as { message?: string };
           console.error("Failed to update sale:", err);
@@ -208,6 +228,8 @@ export function useDashboardData(): UseDashboardDataResult {
           // Refresh sprints list
           const sprintList = await getSprints(db);
           setSprints(sprintList);
+          // Refresh sales to reflect any server-side changes
+          await fetchSales();
           toastSuccess("Sprint closed successfully.");
       } catch (err) {
           console.error("Failed to close sprint", err);
@@ -243,7 +265,7 @@ export function useDashboardData(): UseDashboardDataResult {
     sprints,
     selectedSprint,
     setSelectedSprint,
-    refreshData: fetchData,
+    refreshData,
     createAdminProfile,
     recordSale,
     deleteSale: handleDeleteSale,

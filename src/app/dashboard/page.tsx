@@ -268,46 +268,48 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <KpiCard
-          title="Total Sales"
-          value={`$${totalSales.toLocaleString()}`}
-          description={`${salesProgress.toFixed(1)}% of goal ($${salesGoal.toLocaleString()}). Missing: $${Math.max(0, salesGoal - totalSales).toLocaleString()}`}
-          icon={DollarSign}
-        />
-        <KpiCard
-          title="Credits Issued"
-          value={`${totalCredits}`}
-          description={`${ventoCredits} Vento Credits of ${creditsGoal} goal`}
-          icon={CreditCard}
-        />
-        <KpiCard
-          title="Commission"
-          value={`$${commissionData.earned.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
-          description={commissionData.description}
-          icon={TrendingUp}
-          iconColor={commissionData.iconColor}
-          valueClassName={commissionData.valueClassName}
-          descriptionClassName={commissionData.descriptionClassName}
-        />
-        <KpiCard
-          title="Vento Bonus"
-          value={`$${creditBonus.toLocaleString()}`}
-          description={ventoCredits < 5 ? `${5 - ventoCredits} more for bonus` : "$200 per credit after 4"}
-          icon={Award}
-          iconColor={ventoCredits >= 5 ? 'text-blue-500' : ''}
-        />
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col gap-8">
+          <SalesProgressChart data={teamChartData} />
+          <RecentSales
+            sales={sales}
+            userProfiles={userProfiles}
+            onDeleteSale={currentSprintStatus === 'active' ? handleDeleteSale : undefined}
+            onUpdateSale={currentSprintStatus === 'active' ? updateSale : undefined}
+            currentUserProfile={currentUserProfile}
+          />
+        </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <SalesProgressChart data={teamChartData} />
-        <RecentSales
-          sales={sales}
-          userProfiles={userProfiles}
-          onDeleteSale={currentSprintStatus === 'active' ? handleDeleteSale : undefined}
-          onUpdateSale={currentSprintStatus === 'active' ? updateSale : undefined}
-          currentUserProfile={currentUserProfile}
-        />
+        <div className="col-span-1 flex flex-col gap-8">
+          <KpiCard
+            title="Total Sales"
+            value={`$${totalSales.toLocaleString()}`}
+            description={`${salesProgress.toFixed(1)}% of goal ($${salesGoal.toLocaleString()}). Missing: $${Math.max(0, salesGoal - totalSales).toLocaleString()}`}
+            icon={DollarSign}
+          />
+          <KpiCard
+            title="Credits Issued"
+            value={`${totalCredits}`}
+            description={`${ventoCredits} Vento Credits of ${creditsGoal} goal`}
+            icon={CreditCard}
+          />
+          <KpiCard
+            title="Commission"
+            value={`$${commissionData.earned.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
+            description={commissionData.description}
+            icon={TrendingUp}
+            iconColor={commissionData.iconColor}
+            valueClassName={commissionData.valueClassName}
+            descriptionClassName={commissionData.descriptionClassName}
+          />
+          <KpiCard
+            title="Vento Bonus"
+            value={`$${creditBonus.toLocaleString()}`}
+            description={ventoCredits < 5 ? `${5 - ventoCredits} more for bonus` : "$200 per credit after 4"}
+            icon={Award}
+            iconColor={ventoCredits >= 5 ? 'text-blue-500' : ''}
+          />
+        </div>
       </div>
     </div>
   );

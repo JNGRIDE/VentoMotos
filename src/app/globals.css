@@ -8,9 +8,9 @@ body {
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    --background: 240 5% 98%;
     --foreground: 224 71.4% 4.1%;
-    --card: 207 100% 94%;
+    --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
     --popover: 210 40% 98%;
     --popover-foreground: 224 71.4% 4.1%;
@@ -32,7 +32,7 @@ body {
     --chart-3: 173 58% 39%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --radius: 1.5rem;
     --sidebar-background: 224 71.4% 4.1%;
     --sidebar-foreground: 210 20% 98%;
     --sidebar-primary: 195 100% 50%;

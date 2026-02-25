@@ -25,7 +25,7 @@ export function SalesProgressChart({ data }: SalesProgressChartProps) {
   }));
   
   return (
-    <Card className="col-span-1 lg:col-span-3">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="font-headline">Monthly Sprint Progress</CardTitle>
         <CardDescription>Sales and credit goals performance by salesperson.</CardDescription>

@@ -73,7 +73,14 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
     >
       <CardHeader className="p-4">
         <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold truncate max-w-[150px]">{prospect.name}</CardTitle>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <CardTitle className="text-base font-semibold truncate max-w-[150px] cursor-help outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0}>{prospect.name}</CardTitle>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{prospect.name}</p>
+              </TooltipContent>
+            </Tooltip>
             <div className="flex items-center gap-1">
                <Badge className={cn("text-xs mr-1", sourceColor)} variant="outline">
                   {prospect.source.substring(0, 3)}
@@ -125,45 +132,52 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild>
-                                <a href={phoneLink} aria-label="Call">
+                                <a href={phoneLink} aria-label={`Call ${prospect.name}`}>
                                     <Phone className="h-3.5 w-3.5" />
                                 </a>
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>{prospect.phone}</p></TooltipContent>
+                        <TooltipContent><p>Call: {prospect.phone}</p></TooltipContent>
                     </Tooltip>
                 )}
                 {whatsappLink && (
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-green-600" asChild>
-                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${prospect.name}`}>
                                     <MessageCircle className="h-3.5 w-3.5" />
                                 </a>
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>WhatsApp</p></TooltipContent>
+                        <TooltipContent><p>WhatsApp: {prospect.phone}</p></TooltipContent>
                     </Tooltip>
                 )}
                 {prospect.email && (
                     <Tooltip>
                         <TooltipTrigger asChild>
                              <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild>
-                                <a href={`mailto:${prospect.email}`} aria-label={`Email: ${prospect.email}`}>
+                                <a href={`mailto:${prospect.email}`} aria-label={`Email ${prospect.name}`}>
                                     <Mail className="h-3.5 w-3.5" />
                                 </a>
                              </Button>
                         </TooltipTrigger>
-                         <TooltipContent><p>{prospect.email}</p></TooltipContent>
+                         <TooltipContent><p>Email: {prospect.email}</p></TooltipContent>
                     </Tooltip>
                 )}
             </div>
 
             {daysInStage !== null && (
-                 <div className={cn("flex items-center text-xs", daysInStage > 7 ? "text-destructive font-medium" : "text-muted-foreground")}>
-                    <Clock className="h-3 w-3 mr-1" />
-                    <span>{daysInStage}d</span>
-                 </div>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className={cn("flex items-center text-xs cursor-help outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm", daysInStage > 7 ? "text-destructive font-medium" : "text-muted-foreground")} tabIndex={0}>
+                            <Clock className="h-3 w-3 mr-1" />
+                            <span>{daysInStage}d</span>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Days in current stage</p>
+                    </TooltipContent>
+                </Tooltip>
             )}
          </div>
 

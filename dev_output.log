@@ -1,0 +1,20 @@
+
+> nextn@0.1.0 dev
+> next dev -p 9002
+
+   ▲ Next.js 15.5.9
+   - Local:        http://localhost:9002
+   - Network:      http://192.168.0.2:9002
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · serverActions
+
+ ✓ Starting...
+ ✓ Ready in 2.4s
+ ○ Compiling /design-preview ...
+ ✓ Compiled /design-preview in 14.6s (3313 modules)
+ GET /design-preview 200 in 17002ms
+ ✓ Compiled in 2.7s (1520 modules)
+ ✓ Compiled in 1652ms (3313 modules)
+ GET /design-preview 200 in 932ms
+ ✓ Compiled in 2.9s (282 modules)

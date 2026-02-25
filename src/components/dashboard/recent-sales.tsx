@@ -81,7 +81,7 @@ export function RecentSales({ sales, userProfiles, onDeleteSale, onUpdateSale, c
 
   return (
     <>
-      <Card className="col-span-1 lg:col-span-2">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="font-headline">Recent Sales</CardTitle>
           <CardDescription>

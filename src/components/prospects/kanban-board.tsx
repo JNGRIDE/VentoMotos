@@ -146,17 +146,49 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
     }, {} as Record<string, UserProfile>);
   }, [userProfiles]);
 
-  // Optimization: Pre-calculate prospects by stage to avoid filtering on every render
-  // This ensures that KanbanColumn receives stable arrays unless prospects actually change
+  const lastProspectsByStage = useRef<Record<string, Prospect[]>>({});
+
+  // Optimization: Pre-calculate prospects by stage.
+  // Uses a ref to store previous grouped arrays and only returns new array references if the content (shallow reference) has changed.
+  // This prevents unnecessary re-renders of KanbanColumn components for stages that weren't affected by an update.
   const prospectsByStage = useMemo(() => {
-    const grouped: Record<string, Prospect[]> = {};
+    const newGrouped: Record<string, Prospect[]> = {};
+
+    // Initialize groups for known stages
+    PROSPECT_STAGES.forEach(stage => {
+        newGrouped[stage] = [];
+    });
+
     for (const p of prospects) {
-      if (!grouped[p.stage]) {
-        grouped[p.stage] = [];
+      if (!newGrouped[p.stage]) {
+        newGrouped[p.stage] = [];
       }
-      grouped[p.stage].push(p);
+      newGrouped[p.stage].push(p);
     }
-    return grouped;
+
+    const finalGrouped: Record<string, Prospect[]> = {};
+    const stages = new Set([...Object.keys(newGrouped), ...Object.keys(lastProspectsByStage.current)]);
+
+    stages.forEach(stage => {
+        const newArr = newGrouped[stage] || EMPTY_PROSPECTS;
+        const oldArr = lastProspectsByStage.current[stage] || EMPTY_PROSPECTS;
+
+        let isSame = false;
+        if (newArr.length === oldArr.length) {
+            isSame = true;
+            for (let i = 0; i < newArr.length; i++) {
+                if (newArr[i] !== oldArr[i]) {
+                    isSame = false;
+                    break;
+                }
+            }
+        }
+
+        finalGrouped[stage] = isSame ? oldArr : newArr;
+    });
+
+    lastProspectsByStage.current = finalGrouped;
+    return finalGrouped;
   }, [prospects]);
 
   // Keep a ref to prospects to avoid re-creating handleDrop when prospects change.

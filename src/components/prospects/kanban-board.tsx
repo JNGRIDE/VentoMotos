@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { updateProspect } from "@/firebase/services";
 import { type Prospect, type UserProfile, PROSPECT_STAGES } from "@/lib/data";
-import { areArraysOfFlatObjectsEqual } from "@/lib/utils";
+import { areDeepEqual } from "@/lib/utils";
 import { ProspectCard } from "./prospect-card";
 import { EditProspectDialog } from "./edit-prospect-dialog";
 import { DeleteProspectDialog } from "./delete-prospect-dialog";
@@ -33,7 +33,7 @@ const EMPTY_STATE_CONFIG: Record<Prospect["stage"], { icon: React.ElementType, t
 };
 
 // Custom comparison function for KanbanColumn to prevent unnecessary re-renders.
-// Uses shallow comparison for the prospects array to handle new array references with identical content efficiently.
+// Uses deep comparison for the prospects array to handle new array references with identical content efficiently.
 function areKanbanColumnPropsEqual(prev: KanbanColumnProps, next: KanbanColumnProps) {
   return (
     prev.title === next.title &&
@@ -45,7 +45,7 @@ function areKanbanColumnPropsEqual(prev: KanbanColumnProps, next: KanbanColumnPr
     prev.onMoveStage === next.onMoveStage &&
     prev.onEdit === next.onEdit &&
     prev.onDelete === next.onDelete &&
-    (prev.prospects === next.prospects || areArraysOfFlatObjectsEqual(prev.prospects, next.prospects))
+    (prev.prospects === next.prospects || areDeepEqual(prev.prospects, next.prospects))
   );
 }
 

@@ -83,9 +83,9 @@ export default function DashboardPage() {
 
     if (salesProgress < GOALS.SALES_PROGRESS_THRESHOLD) {
        const amountToUnlock = (salesGoal * (GOALS.SALES_PROGRESS_THRESHOLD / 100)) - totalSales;
-       description = `Faltan $${Math.max(0, amountToUnlock).toLocaleString()} para desbloquear el 80%`;
+       description = `Faltan $${Math.max(0, amountToUnlock).toLocaleString()} para liberar el 80%`;
     } else if (salesProgress < 100) {
-       description = `¡Comisión desbloqueada! (80% alcanzado)`;
+       description = `¡Comisión liberada! (80% alcanzado)`;
        iconColor = "text-primary";
        valueClassName = "text-primary";
     } else {
@@ -134,21 +134,21 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-6 md:gap-10">
       {/* Header Section style Apple */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-4xl font-bold tracking-tight">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
             Hola, {currentUserProfile.name.split(' ')[0]}!
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-base md:text-lg">
             Explora la actividad y el rendimiento de tu sucursal.
           </p>
         </div>
         
-        <div className="flex items-center gap-2 bg-card/50 backdrop-blur-md p-1.5 rounded-3xl shadow-soft border border-border/20">
+        <div className="flex items-center gap-2 bg-card/50 backdrop-blur-md p-1.5 rounded-3xl shadow-soft border border-border/20 self-start md:self-auto">
           <Select value={selectedSprint} onValueChange={setSelectedSprint}>
-            <SelectTrigger className="w-[180px] border-none bg-transparent h-10 rounded-2xl focus:ring-0 shadow-none hover:bg-secondary/40">
+            <SelectTrigger className="w-[140px] md:w-[180px] border-none bg-transparent h-9 md:h-10 rounded-2xl focus:ring-0 shadow-none hover:bg-secondary/40">
               <SelectValue placeholder="Sprint" />
             </SelectTrigger>
             <SelectContent>
@@ -162,12 +162,12 @@ export default function DashboardPage() {
 
           {isManager && (
             <div className="flex gap-1 border-l border-border/40 pl-1">
-                <Button onClick={startNextSprint} variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-secondary/60">
-                    <CalendarPlus className="h-5 w-5 text-primary" />
+                <Button onClick={startNextSprint} variant="ghost" size="icon" className="h-9 w-9 md:h-10 md:w-10 rounded-2xl hover:bg-secondary/60">
+                    <CalendarPlus className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                 </Button>
                 {currentSprintStatus === 'active' && (
-                    <Button onClick={finishSprint} variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-destructive/10">
-                        <CalendarOff className="h-5 w-5 text-destructive" />
+                    <Button onClick={finishSprint} variant="ghost" size="icon" className="h-9 w-9 md:h-10 md:w-10 rounded-2xl hover:bg-destructive/10">
+                        <CalendarOff className="h-4 w-4 md:h-5 md:w-5 text-destructive" />
                     </Button>
                 )}
             </div>
@@ -182,18 +182,18 @@ export default function DashboardPage() {
       </div>
       
       {/* KPIs Grid style Tile */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <KpiCard
             title="Ventas Totales"
             value={`$${totalSales.toLocaleString()}`}
-            description={`${salesProgress.toFixed(1)}% de la meta de $${salesGoal.toLocaleString()}`}
+            description={`${salesProgress.toFixed(1)}% de la meta ($${salesGoal.toLocaleString()})`}
             icon={DollarSign}
             iconColor="text-primary"
           />
           <KpiCard
             title="Número de Ventas"
             value={`${sales.length}`}
-            description={`${totalCredits} ventas financiadas`}
+            description={`${totalCredits} créditos colocados este mes`}
             icon={TrendingUp}
             iconColor="text-orange-500"
           />
@@ -215,15 +215,15 @@ export default function DashboardPage() {
           />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
         {/* Main Content Area */}
-        <div className="lg:col-span-2 space-y-10">
+        <div className="lg:col-span-2 space-y-6 md:space-y-10">
           <SalesProgressChart data={teamChartData} />
           
           <div className="space-y-4">
             <div className="flex items-center justify-between px-2">
-              <h3 className="text-2xl font-bold tracking-tight">Actividad Reciente</h3>
-              <Button variant="link" className="text-primary font-semibold flex items-center gap-1 group">
+              <h3 className="text-xl md:text-2xl font-bold tracking-tight">Actividad Reciente</h3>
+              <Button variant="link" className="text-primary font-semibold flex items-center gap-1 group p-0 h-auto">
                 Ver Todo <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </div>
@@ -238,17 +238,17 @@ export default function DashboardPage() {
         </div>
 
         {/* Sidebar inside dashboard */}
-        <div className="space-y-8">
-           <Card className="border-none bg-gradient-to-br from-primary to-accent text-primary-foreground p-8 rounded-[32px] shadow-premium relative overflow-hidden group">
+        <div className="space-y-6 md:space-y-8">
+           <Card className="border-none bg-gradient-to-br from-primary to-accent text-primary-foreground p-6 md:p-8 rounded-[32px] shadow-premium relative overflow-hidden group">
               <div className="relative z-10 space-y-4">
-                <div className="h-12 w-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
-                  <Award className="h-6 w-6 text-white" />
+                <div className="h-10 w-10 md:h-12 md:w-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
+                  <Award className="h-5 w-5 md:h-6 md:w-6 text-white" />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-xl font-bold">Desafío Mensual</h4>
-                  <p className="text-white/80 text-sm">Alcanza el 100% de tu meta para desbloquear el nivel de bono élite.</p>
+                  <h4 className="text-lg md:text-xl font-bold">Desafío Mensual</h4>
+                  <p className="text-white/80 text-xs md:text-sm">Alcanza el 100% de tu meta para desbloquear el nivel de bono élite.</p>
                 </div>
-                <div className="pt-4">
+                <div className="pt-2 md:pt-4">
                   <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
                     <div className="h-full bg-white transition-all duration-1000" style={{ width: `${Math.min(100, salesProgress)}%` }}></div>
                   </div>
@@ -262,14 +262,14 @@ export default function DashboardPage() {
            <div className="space-y-4">
               <h4 className="text-lg font-bold px-2">Acciones Rápidas</h4>
               <div className="grid grid-cols-2 gap-4">
-                <Button onClick={() => exportSalesToCSV(sales, `sales-${selectedSprint}`)} variant="outline" className="h-auto py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50">
-                  <Download className="h-6 w-6 text-primary" />
-                  <span className="font-semibold text-sm">Exportar CSV</span>
+                <Button onClick={() => exportSalesToCSV(sales, `sales-${selectedSprint}`)} variant="outline" className="h-auto py-4 md:py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50">
+                  <Download className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                  <span className="font-semibold text-xs md:text-sm text-center">Exportar CSV</span>
                 </Button>
                 {user?.uid === ADMIN_UID && !adminProfileExists && (
-                  <Button onClick={createAdminProfile} variant="outline" className="h-auto py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50">
-                    <UserPlus className="h-6 w-6 text-accent" />
-                    <span className="font-semibold text-sm">Perfil Admin</span>
+                  <Button onClick={createAdminProfile} variant="outline" className="h-auto py-4 md:py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50">
+                    <UserPlus className="h-5 w-5 md:h-6 md:w-6 text-accent" />
+                    <span className="font-semibold text-xs md:text-sm text-center">Perfil Admin</span>
                   </Button>
                 )}
               </div>

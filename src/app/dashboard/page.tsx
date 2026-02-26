@@ -83,13 +83,13 @@ export default function DashboardPage() {
 
     if (salesProgress < GOALS.SALES_PROGRESS_THRESHOLD) {
        const amountToUnlock = (salesGoal * (GOALS.SALES_PROGRESS_THRESHOLD / 100)) - totalSales;
-       description = `Missing $${Math.max(0, amountToUnlock).toLocaleString()} to unlock`;
+       description = `Faltan $${Math.max(0, amountToUnlock).toLocaleString()} para desbloquear el 80%`;
     } else if (salesProgress < 100) {
-       description = `Goal is within reach!`;
+       description = `¡Comisión desbloqueada! (80% alcanzado)`;
        iconColor = "text-primary";
        valueClassName = "text-primary";
     } else {
-       description = `${salesProgress.toFixed(0)}% of Goal!`;
+       description = `¡Meta cumplida! ${salesProgress.toFixed(0)}% alcanzado`;
        iconColor = "text-accent";
        valueClassName = "text-accent";
        descriptionClassName = "text-accent font-bold";
@@ -139,10 +139,10 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
           <h1 className="text-4xl font-bold tracking-tight">
-            Hello, {currentUserProfile.name.split(' ')[0]}!
+            Hola, {currentUserProfile.name.split(' ')[0]}!
           </h1>
           <p className="text-muted-foreground text-lg">
-            Explore information and activity about your branch.
+            Explora la actividad y el rendimiento de tu sucursal.
           </p>
         </div>
         
@@ -184,21 +184,21 @@ export default function DashboardPage() {
       {/* KPIs Grid style Tile */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <KpiCard
-            title="Total Sales"
+            title="Ventas Totales"
             value={`$${totalSales.toLocaleString()}`}
-            description={`${salesProgress.toFixed(1)}% of goal`}
+            description={`${salesProgress.toFixed(1)}% de la meta de $${salesGoal.toLocaleString()}`}
             icon={DollarSign}
             iconColor="text-primary"
           />
           <KpiCard
-            title="Number of Sales"
+            title="Número de Ventas"
             value={`${sales.length}`}
-            description={`${totalCredits} Financing deals`}
+            description={`${totalCredits} ventas financiadas`}
             icon={TrendingUp}
             iconColor="text-orange-500"
           />
           <KpiCard
-            title="Commission"
+            title="Comisión Generada"
             value={`$${commissionData.earned.toLocaleString(undefined, {maximumFractionDigits: 0})}`}
             description={commissionData.description}
             icon={Award}
@@ -207,9 +207,9 @@ export default function DashboardPage() {
             descriptionClassName={commissionData.descriptionClassName}
           />
           <KpiCard
-            title="Vento Bonus"
+            title="Bono Vento"
             value={`$${creditBonus.toLocaleString()}`}
-            description={`${ventoCredits} Vento Credits`}
+            description={`${ventoCredits} Créditos Vento logrados`}
             icon={CreditCard}
             iconColor="text-accent"
           />
@@ -222,9 +222,9 @@ export default function DashboardPage() {
           
           <div className="space-y-4">
             <div className="flex items-center justify-between px-2">
-              <h3 className="text-2xl font-bold tracking-tight">Recent Activity</h3>
+              <h3 className="text-2xl font-bold tracking-tight">Actividad Reciente</h3>
               <Button variant="link" className="text-primary font-semibold flex items-center gap-1 group">
-                See All <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                Ver Todo <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </div>
             <RecentSales
@@ -245,14 +245,14 @@ export default function DashboardPage() {
                   <Award className="h-6 w-6 text-white" />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-xl font-bold">Monthly Challenge</h4>
-                  <p className="text-white/80 text-sm">Reach 100% of your sales goal to unlock the elite bonus tier.</p>
+                  <h4 className="text-xl font-bold">Desafío Mensual</h4>
+                  <p className="text-white/80 text-sm">Alcanza el 100% de tu meta para desbloquear el nivel de bono élite.</p>
                 </div>
                 <div className="pt-4">
                   <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
                     <div className="h-full bg-white transition-all duration-1000" style={{ width: `${Math.min(100, salesProgress)}%` }}></div>
                   </div>
-                  <p className="text-xs text-white/60 mt-2 text-right font-medium">{salesProgress.toFixed(0)}% Completed</p>
+                  <p className="text-xs text-white/60 mt-2 text-right font-medium">{salesProgress.toFixed(0)}% Completado</p>
                 </div>
               </div>
               {/* Decorative elements */}
@@ -260,16 +260,16 @@ export default function DashboardPage() {
            </Card>
 
            <div className="space-y-4">
-              <h4 className="text-lg font-bold px-2">Quick Actions</h4>
+              <h4 className="text-lg font-bold px-2">Acciones Rápidas</h4>
               <div className="grid grid-cols-2 gap-4">
                 <Button onClick={() => exportSalesToCSV(sales, `sales-${selectedSprint}`)} variant="outline" className="h-auto py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50">
                   <Download className="h-6 w-6 text-primary" />
-                  <span className="font-semibold text-sm">Export CSV</span>
+                  <span className="font-semibold text-sm">Exportar CSV</span>
                 </Button>
                 {user?.uid === ADMIN_UID && !adminProfileExists && (
                   <Button onClick={createAdminProfile} variant="outline" className="h-auto py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50">
                     <UserPlus className="h-6 w-6 text-accent" />
-                    <span className="font-semibold text-sm">Admin Profile</span>
+                    <span className="font-semibold text-sm">Perfil Admin</span>
                   </Button>
                 )}
               </div>

@@ -146,14 +146,14 @@ export default function DashboardPage() {
           </p>
         </div>
         
-        <div className="flex items-center gap-3 bg-white p-1.5 rounded-[20px] shadow-soft border border-border/20">
+        <div className="flex items-center gap-2 bg-card/50 backdrop-blur-md p-1.5 rounded-3xl shadow-soft border border-border/20">
           <Select value={selectedSprint} onValueChange={setSelectedSprint}>
-            <SelectTrigger className="w-[180px] border-none bg-transparent h-10 rounded-2xl focus:ring-0">
+            <SelectTrigger className="w-[180px] border-none bg-transparent h-10 rounded-2xl focus:ring-0 shadow-none hover:bg-secondary/40">
               <SelectValue placeholder="Sprint" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border-none shadow-premium">
+            <SelectContent>
               {sprints.map((sprint) => (
-                <SelectItem key={sprint.id} value={sprint.id} className="rounded-xl">
+                <SelectItem key={sprint.id} value={sprint.id}>
                   {sprint.label} {sprint.status === 'closed' ? '🔒' : ''}
                 </SelectItem>
               ))}
@@ -161,8 +161,8 @@ export default function DashboardPage() {
           </Select>
 
           {isManager && (
-            <div className="flex gap-1 border-l pl-1">
-                <Button onClick={startNextSprint} variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-secondary">
+            <div className="flex gap-1 border-l border-border/40 pl-1">
+                <Button onClick={startNextSprint} variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-secondary/60">
                     <CalendarPlus className="h-5 w-5 text-primary" />
                 </Button>
                 {currentSprintStatus === 'active' && (
@@ -173,7 +173,7 @@ export default function DashboardPage() {
             </div>
           )}
           
-          <div className="border-l pl-1">
+          <div className="border-l border-border/40 pl-1">
             {currentSprintStatus === 'active' && (
                <RecordSaleDialog onAddSale={recordSale} currentUserProfile={currentUserProfile} sprint={selectedSprint} />
             )}

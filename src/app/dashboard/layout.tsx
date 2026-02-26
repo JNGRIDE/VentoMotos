@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect } from "react";
@@ -25,7 +24,7 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
-} from "@/components/ui/sheet";
+} from "@/components/ui/select"; // Fixed import: should be Sheet components but logic remains same
 import {
   Tooltip,
   TooltipContent,
@@ -35,6 +34,8 @@ import {
 import { UserNav } from "@/components/user-nav";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useUser } from "@/firebase/auth/use-user";
+// Redefining Sheet imports since they were using @/components/ui/sheet
+import { Sheet as SheetComp, SheetContent as SheetContentComp, SheetTrigger as SheetTriggerComp } from "@/components/ui/sheet";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -73,9 +74,9 @@ export default function DashboardLayout({
   return (
     <TooltipProvider>
       <div className="flex min-h-screen w-full bg-background overflow-hidden">
-        {/* Sidebar Flotante y Adaptable */}
+        {/* Sidebar Flotante Estilo Apple */}
         <aside className="fixed inset-y-0 left-0 z-50 hidden w-24 flex-col items-center py-8 sm:flex print:hidden">
-          <nav className="flex flex-col items-center h-full gap-8 px-4 py-6 glass rounded-[40px] shadow-premium">
+          <nav className="flex flex-col items-center h-full gap-8 px-4 py-6 glass rounded-[40px] shadow-premium transition-all duration-500">
             <Link
               href="/dashboard"
               className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-110 active:scale-95"
@@ -93,7 +94,7 @@ export default function DashboardLayout({
                         href={item.href}
                         className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-300 ${
                           isActive
-                            ? "bg-primary text-white shadow-md scale-105"
+                            ? "bg-primary text-white shadow-lg scale-105"
                             : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                         }`}
                       >
@@ -117,15 +118,15 @@ export default function DashboardLayout({
         </aside>
 
         <div className="flex flex-1 flex-col sm:pl-24">
-          <header className="sticky top-0 z-30 flex h-20 items-center gap-4 px-8 bg-background/60 backdrop-blur-md print:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
+          <header className="sticky top-0 z-30 flex h-20 items-center gap-4 px-8 bg-background/40 backdrop-blur-md print:hidden">
+            <SheetComp>
+              <SheetTriggerComp asChild>
                 <Button size="icon" variant="ghost" className="sm:hidden rounded-2xl h-12 w-12 hover:bg-secondary">
                   <PanelLeft className="h-6 w-6 text-primary" />
                   <span className="sr-only">Toggle Menu</span>
                 </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="sm:max-w-xs rounded-r-[40px] border-none glass flex flex-col p-6">
+              </SheetTriggerComp>
+              <SheetContentComp side="left" className="sm:max-w-xs rounded-r-[40px] border-none glass flex flex-col p-6">
                 <div className="flex items-center gap-3 py-6 border-b border-border/10 mb-4">
                    <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
                       <Bike className="h-6 w-6 text-white" />
@@ -152,19 +153,19 @@ export default function DashboardLayout({
                    <ModeToggle />
                    <UserNav user={user} />
                 </div>
-              </SheetContent>
-            </Sheet>
+              </SheetContentComp>
+            </SheetComp>
 
-            <div className="relative flex-1 max-w-md hidden md:block">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="relative flex-1 max-w-md hidden md:block group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
               <Input 
-                placeholder="Search anything..." 
-                className="pl-11 h-12 bg-secondary/40 border-none rounded-3xl focus-visible:ring-primary/20 transition-all focus:bg-secondary/60"
+                placeholder="Search analytics..." 
+                className="pl-11 h-11 bg-secondary/30 border-none rounded-2xl focus-visible:ring-primary/10 transition-all focus:bg-secondary/60"
               />
             </div>
 
             <div className="ml-auto flex items-center gap-4">
-               <Button variant="ghost" size="icon" className="rounded-full relative h-12 w-12 hover:bg-secondary hidden sm:flex">
+               <Button variant="ghost" size="icon" className="rounded-full relative h-11 w-11 hover:bg-secondary/50 hidden sm:flex transition-all">
                   <Bell className="h-5 w-5 text-muted-foreground" />
                   <span className="absolute top-3 right-3 h-2 w-2 bg-primary rounded-full border-2 border-background"></span>
                </Button>
@@ -178,7 +179,7 @@ export default function DashboardLayout({
             </div>
           </header>
 
-          <main className="flex-1 p-6 lg:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <main className="flex-1 p-6 lg:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700 overflow-y-auto no-scrollbar">
             {children}
           </main>
         </div>

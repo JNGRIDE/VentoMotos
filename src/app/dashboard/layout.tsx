@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -21,11 +21,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/select"; // Fixed import: should be Sheet components but logic remains same
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -34,6 +29,10 @@ import {
 import { UserNav } from "@/components/user-nav";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useUser } from "@/firebase/auth/use-user";
+import { useFirestore } from "@/firebase";
+import { getUserProfile } from "@/firebase/services";
+import type { UserProfile } from "@/lib/data";
+
 // Redefining Sheet imports since they were using @/components/ui/sheet
 import { Sheet as SheetComp, SheetContent as SheetContentComp, SheetTrigger as SheetTriggerComp } from "@/components/ui/sheet";
 
@@ -55,12 +54,20 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading } = useUser();
+  const db = useFirestore();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace("/");
     }
   }, [isLoading, user, router]);
+
+  useEffect(() => {
+    if (user) {
+      getUserProfile(db, user.uid).then(setProfile);
+    }
+  }, [user, db]);
 
   if (isLoading || !user) {
     return (
@@ -171,7 +178,9 @@ export default function DashboardLayout({
                </Button>
                <div className="hidden lg:flex flex-col items-end mr-2">
                   <span className="text-sm font-bold leading-none">{user.displayName}</span>
-                  <span className="text-[10px] uppercase tracking-wider text-primary font-bold mt-1">Admin Access</span>
+                  <span className="text-[10px] uppercase tracking-wider text-primary font-bold mt-1">
+                    {profile?.role || "Cargando..."}
+                  </span>
                </div>
                <div className="sm:hidden">
                   <UserNav user={user} />

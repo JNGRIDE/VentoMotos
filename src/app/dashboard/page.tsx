@@ -4,6 +4,7 @@ import React, { useMemo, useEffect } from 'react';
 import { DollarSign, CreditCard, Award, TrendingUp, UserPlus, ShieldAlert, Download, CalendarOff, CalendarPlus, ChevronRight } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { SalesProgressChart } from '@/components/dashboard/sales-progress-chart';
 import { RecentSales } from '@/components/dashboard/recent-sales';

@@ -83,7 +83,8 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
             </Tooltip>
             <div className="flex items-center gap-1">
                <Badge className={cn("text-xs mr-1", sourceColor)} variant="outline">
-                  {prospect.source.substring(0, 3)}
+                  <span aria-hidden="true">{prospect.source.substring(0, 3)}</span>
+                  <span className="sr-only">{prospect.source}</span>
                </Badge>
                <DropdownMenu>
                 <DropdownMenuTrigger asChild>

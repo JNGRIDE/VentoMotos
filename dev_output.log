@@ -5,16 +5,19 @@
    ▲ Next.js 15.5.9
    - Local:        http://localhost:9002
    - Network:      http://192.168.0.2:9002
-   - Environments: .env.local
    - Experiments (use with caution):
      · serverActions
 
  ✓ Starting...
- ✓ Ready in 2.4s
- ○ Compiling /design-preview ...
- ✓ Compiled /design-preview in 14.6s (3313 modules)
- GET /design-preview 200 in 17002ms
- ✓ Compiled in 2.7s (1520 modules)
- ✓ Compiled in 1652ms (3313 modules)
- GET /design-preview 200 in 932ms
- ✓ Compiled in 2.9s (282 modules)
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Ready in 2s
+   Reload env: .env.local
+ ○ Compiling /test-badge ...
+ ✓ Compiled /test-badge in 15.6s (1011 modules)
+ GET /test-badge 200 in 18286ms
+ ✓ Compiled in 2.8s (369 modules)
+ ✓ Compiled in 457ms (268 modules)

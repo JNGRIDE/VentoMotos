@@ -72,48 +72,51 @@ export default function DashboardLayout({
   return (
     <TooltipProvider>
       <div className="flex min-h-screen w-full bg-background overflow-hidden">
-        {/* Modern Sidebar estilo Apple */}
-        <aside className="fixed inset-y-0 left-0 z-50 hidden w-20 flex-col items-center border-r border-border/40 bg-white/80 backdrop-blur-xl sm:flex print:hidden">
-          <nav className="flex flex-col items-center gap-6 px-2 py-8">
+        {/* Sidebar Flotante y Adaptable */}
+        <aside className="fixed inset-y-0 left-0 z-50 hidden w-24 flex-col items-center py-8 sm:flex print:hidden">
+          <nav className="flex flex-col items-center gap-8 px-4 py-6 glass rounded-[40px] shadow-premium">
             <Link
               href="/dashboard"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105"
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-110 active:scale-95"
             >
-              <Bike className="h-6 w-6" />
+              <Bike className="h-7 w-7" />
             </Link>
             
-            <div className="flex flex-col gap-4 pt-4">
-              {navItems.map((item) => (
-                <Tooltip key={item.label}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      href={item.href}
-                      className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-300 ${
-                        pathname === item.href
-                          ? "bg-secondary text-primary shadow-sm"
-                          : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
-                      }`}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span className="sr-only">{item.label}</span>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="rounded-xl border-none shadow-premium bg-foreground text-background">
-                    {item.label}
-                  </TooltipContent>
-                </Tooltip>
-              ))}
+            <div className="flex flex-col gap-4">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Tooltip key={item.label}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={item.href}
+                        className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-300 ${
+                          isActive
+                            ? "bg-primary text-white shadow-md scale-105"
+                            : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+                        }`}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span className="sr-only">{item.label}</span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="rounded-xl border-none shadow-premium bg-foreground text-background">
+                      {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 flex flex-col items-center gap-4 pt-4 border-t border-border/10">
+               <ModeToggle />
+               <UserNav user={user} />
             </div>
           </nav>
-          
-          <div className="mt-auto pb-8 flex flex-col items-center gap-4">
-             <ModeToggle />
-             <UserNav user={user} />
-          </div>
         </aside>
 
-        <div className="flex flex-1 flex-col sm:pl-20">
-          <header className="sticky top-0 z-30 flex h-20 items-center gap-4 px-6 bg-background/80 backdrop-blur-md border-b border-border/10 print:hidden">
+        <div className="flex flex-1 flex-col sm:pl-24">
+          <header className="sticky top-0 z-30 flex h-20 items-center gap-4 px-8 bg-background/60 backdrop-blur-md print:hidden">
             <Sheet>
               <SheetTrigger asChild>
                 <Button size="icon" variant="ghost" className="sm:hidden rounded-2xl">
@@ -121,15 +124,15 @@ export default function DashboardLayout({
                   <span className="sr-only">Toggle Menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="sm:max-w-xs rounded-r-3xl">
+              <SheetContent side="left" className="sm:max-w-xs rounded-r-3xl border-none glass">
                 <nav className="grid gap-6 text-lg font-medium pt-8">
                   {navItems.map((item) => (
                     <Link
                       key={item.label}
                       href={item.href}
-                      className={`flex items-center gap-4 px-4 py-2 rounded-2xl transition-colors ${
+                      className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-colors ${
                           pathname === item.href
-                            ? "bg-secondary text-primary"
+                            ? "bg-primary text-white"
                             : "text-muted-foreground hover:bg-secondary/50"
                         }`}
                     >
@@ -142,26 +145,26 @@ export default function DashboardLayout({
             </Sheet>
 
             <div className="relative flex-1 max-w-md hidden md:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
                 placeholder="Search anything..." 
-                className="pl-10 h-11 bg-secondary/50 border-none rounded-2xl focus-visible:ring-primary/20"
+                className="pl-11 h-12 bg-secondary/40 border-none rounded-3xl focus-visible:ring-primary/20 transition-all focus:bg-secondary/60"
               />
             </div>
 
             <div className="ml-auto flex items-center gap-4">
-               <Button variant="ghost" size="icon" className="rounded-full relative">
+               <Button variant="ghost" size="icon" className="rounded-full relative hover:bg-secondary">
                   <Bell className="h-5 w-5 text-muted-foreground" />
-                  <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full border-2 border-background"></span>
+                  <span className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full border-2 border-background"></span>
                </Button>
-               <div className="hidden sm:flex flex-col items-end mr-2">
-                  <span className="text-sm font-semibold leading-none">{user.displayName}</span>
-                  <span className="text-xs text-muted-foreground">Admin Access</span>
+               <div className="hidden lg:flex flex-col items-end">
+                  <span className="text-sm font-bold leading-none">{user.displayName}</span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mt-1">Admin Access</span>
                </div>
             </div>
           </header>
 
-          <main className="flex-1 p-6 sm:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <main className="flex-1 p-8 lg:p-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {children}
           </main>
         </div>

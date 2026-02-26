@@ -14,28 +14,30 @@ interface KpiCardProps {
 
 export function KpiCard({ title, value, description, icon: Icon, iconColor, valueClassName, descriptionClassName }: KpiCardProps) {
   return (
-    <Card className="overflow-hidden border-none animate-in fade-in zoom-in duration-500">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
+    <Card className="overflow-hidden border-none shadow-soft hover:shadow-premium transition-all duration-500 group animate-in fade-in zoom-in duration-700">
+      <CardContent className="p-8">
+        <div className="flex items-center justify-between mb-6">
           <div className={cn(
-            "p-3 rounded-2xl",
-            iconColor?.includes('text-') ? iconColor.replace('text-', 'bg-') + '/10' : 'bg-primary/10'
+            "p-4 rounded-3xl transition-all duration-500 group-hover:scale-110",
+            iconColor?.includes('text-primary') ? 'bg-primary/10' : 
+            iconColor?.includes('text-orange') ? 'bg-orange-500/10' : 
+            iconColor?.includes('text-accent') ? 'bg-primary/10' : 'bg-muted'
           )}>
-            <Icon className={cn("h-6 w-6", iconColor || "text-primary")} aria-hidden="true" />
+            <Icon className={cn("h-7 w-7", iconColor || "text-primary")} aria-hidden="true" />
           </div>
-          <div className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-muted/50 cursor-pointer transition-colors">
+          <button className="h-10 w-10 rounded-full flex items-center justify-center hover:bg-secondary transition-colors">
              <span className="text-muted-foreground font-bold">···</span>
-          </div>
+          </button>
         </div>
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <div className={cn("text-3xl font-bold font-headline tracking-tight", valueClassName)}>
+        <div className="space-y-2">
+          <p className="text-sm font-bold text-muted-foreground/70 uppercase tracking-wider">{title}</p>
+          <div className={cn("text-4xl font-bold font-headline tracking-tighter text-foreground/90", valueClassName)}>
             {value}
           </div>
           {description && (
-            <p className={cn("text-xs flex items-center gap-1", descriptionClassName || "text-muted-foreground")}>
+            <p className={cn("text-xs flex items-center gap-1.5 font-medium", descriptionClassName || "text-muted-foreground")}>
               {description.includes('%') && (
-                <span className="text-green-500 font-bold">↗</span>
+                <span className="text-green-500 font-bold bg-green-500/10 px-1.5 py-0.5 rounded-lg">↗</span>
               )}
               {description}
             </p>

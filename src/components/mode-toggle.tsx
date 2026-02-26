@@ -18,9 +18,9 @@ export function ModeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="rounded-2xl h-12 w-12 opacity-0">
-        <Sun className="h-5 w-5" />
-      </Button>
+      <div className="h-12 w-12 flex items-center justify-center">
+        <div className="h-5 w-5 rounded-full bg-muted animate-pulse" />
+      </div>
     )
   }
 
@@ -33,14 +33,14 @@ export function ModeToggle() {
       variant="ghost" 
       size="icon" 
       onClick={toggleTheme}
-      className="rounded-2xl h-12 w-12 transition-all hover:bg-secondary/80 active:scale-90 group"
+      className="rounded-2xl h-12 w-12 transition-all duration-500 hover:bg-primary/10 active:scale-90 group relative overflow-hidden"
       aria-label="Cambiar tema"
     >
-      {theme === "dark" ? (
-        <Sun className="h-5 w-5 text-primary transition-all animate-in zoom-in spin-in-90 duration-500 group-hover:rotate-45" />
-      ) : (
-        <Moon className="h-5 w-5 text-slate-700 transition-all animate-in zoom-in duration-500 group-hover:-rotate-12" />
-      )}
+      <Sun className="h-5 w-5 text-primary rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 duration-500" />
+      <Moon className="absolute h-5 w-5 text-primary rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 duration-500" />
+      
+      {/* Indicador de estado sutil */}
+      <span className="sr-only">Toggle theme</span>
     </Button>
   )
 }

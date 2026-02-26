@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect } from "react";
@@ -74,7 +75,7 @@ export default function DashboardLayout({
       <div className="flex min-h-screen w-full bg-background overflow-hidden">
         {/* Sidebar Flotante y Adaptable */}
         <aside className="fixed inset-y-0 left-0 z-50 hidden w-24 flex-col items-center py-8 sm:flex print:hidden">
-          <nav className="flex flex-col items-center gap-8 px-4 py-6 glass rounded-[40px] shadow-premium">
+          <nav className="flex flex-col items-center h-full gap-8 px-4 py-6 glass rounded-[40px] shadow-premium">
             <Link
               href="/dashboard"
               className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-110 active:scale-95"
@@ -82,7 +83,7 @@ export default function DashboardLayout({
               <Bike className="h-7 w-7" />
             </Link>
             
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 overflow-y-auto no-scrollbar py-2">
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
                 return (
@@ -108,7 +109,7 @@ export default function DashboardLayout({
               })}
             </div>
 
-            <div className="mt-4 flex flex-col items-center gap-4 pt-4 border-t border-border/10">
+            <div className="mt-auto flex flex-col items-center gap-4 pt-4 border-t border-border/10">
                <ModeToggle />
                <UserNav user={user} />
             </div>
@@ -119,28 +120,38 @@ export default function DashboardLayout({
           <header className="sticky top-0 z-30 flex h-20 items-center gap-4 px-8 bg-background/60 backdrop-blur-md print:hidden">
             <Sheet>
               <SheetTrigger asChild>
-                <Button size="icon" variant="ghost" className="sm:hidden rounded-2xl">
-                  <PanelLeft className="h-5 w-5" />
+                <Button size="icon" variant="ghost" className="sm:hidden rounded-2xl h-12 w-12 hover:bg-secondary">
+                  <PanelLeft className="h-6 w-6 text-primary" />
                   <span className="sr-only">Toggle Menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="sm:max-w-xs rounded-r-3xl border-none glass">
-                <nav className="grid gap-6 text-lg font-medium pt-8">
+              <SheetContent side="left" className="sm:max-w-xs rounded-r-[40px] border-none glass flex flex-col p-6">
+                <div className="flex items-center gap-3 py-6 border-b border-border/10 mb-4">
+                   <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                      <Bike className="h-6 w-6 text-white" />
+                   </div>
+                   <span className="text-xl font-bold font-headline">MotoSales</span>
+                </div>
+                <nav className="flex-1 space-y-2 py-4">
                   {navItems.map((item) => (
                     <Link
                       key={item.label}
                       href={item.href}
-                      className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-colors ${
+                      className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${
                           pathname === item.href
-                            ? "bg-primary text-white"
-                            : "text-muted-foreground hover:bg-secondary/50"
+                            ? "bg-primary text-white shadow-lg shadow-primary/20 translate-x-2"
+                            : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                         }`}
                     >
                       <item.icon className="h-5 w-5" />
-                      {item.label}
+                      <span className="font-semibold">{item.label}</span>
                     </Link>
                   ))}
                 </nav>
+                <div className="mt-auto pt-6 border-t border-border/10 flex items-center justify-between">
+                   <ModeToggle />
+                   <UserNav user={user} />
+                </div>
               </SheetContent>
             </Sheet>
 
@@ -153,18 +164,21 @@ export default function DashboardLayout({
             </div>
 
             <div className="ml-auto flex items-center gap-4">
-               <Button variant="ghost" size="icon" className="rounded-full relative hover:bg-secondary">
+               <Button variant="ghost" size="icon" className="rounded-full relative h-12 w-12 hover:bg-secondary hidden sm:flex">
                   <Bell className="h-5 w-5 text-muted-foreground" />
-                  <span className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full border-2 border-background"></span>
+                  <span className="absolute top-3 right-3 h-2 w-2 bg-primary rounded-full border-2 border-background"></span>
                </Button>
-               <div className="hidden lg:flex flex-col items-end">
+               <div className="hidden lg:flex flex-col items-end mr-2">
                   <span className="text-sm font-bold leading-none">{user.displayName}</span>
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mt-1">Admin Access</span>
+                  <span className="text-[10px] uppercase tracking-wider text-primary font-bold mt-1">Admin Access</span>
+               </div>
+               <div className="sm:hidden">
+                  <UserNav user={user} />
                </div>
             </div>
           </header>
 
-          <main className="flex-1 p-8 lg:p-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <main className="flex-1 p-6 lg:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {children}
           </main>
         </div>

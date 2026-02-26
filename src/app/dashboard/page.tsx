@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useEffect } from 'react';
-import { DollarSign, CreditCard, Award, TrendingUp, UserPlus, ShieldAlert, Download, CalendarOff, CalendarPlus } from 'lucide-react';
+import { DollarSign, CreditCard, Award, TrendingUp, UserPlus, ShieldAlert, Download, CalendarOff, CalendarPlus, ChevronRight } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { KpiCard } from '@/components/dashboard/kpi-card';
@@ -38,7 +38,6 @@ export default function DashboardPage() {
     error
   } = useDashboardData();
 
-  // Show error toast if error occurs in hook
   useEffect(() => {
     if (error) {
       toast({
@@ -69,36 +68,30 @@ export default function DashboardPage() {
     return currentUserProfile?.creditsGoal || 0;
   }, [userProfiles, currentUserProfile]);
 
-
   const salesProgress = salesGoal > 0 ? (totalSales / salesGoal) * 100 : 0;
   
   const commissionData = useMemo(() => {
     const commissionRate = isManager ? COMMISSION_RATES.MANAGER : COMMISSION_RATES.SALESPERSON;
-    // Calculate commission immediately on net sales (totalSales is stored as net)
     const earned = totalSales * commissionRate;
-
     const isUnlocked = salesProgress >= GOALS.SALES_PROGRESS_THRESHOLD;
 
     let description = "";
-    let iconColor = "text-gray-400";
-    let valueClassName = "text-gray-400";
+    let iconColor = "text-muted-foreground";
+    let valueClassName = "text-muted-foreground opacity-50";
     let descriptionClassName = "";
 
     if (salesProgress < GOALS.SALES_PROGRESS_THRESHOLD) {
        const amountToUnlock = (salesGoal * (GOALS.SALES_PROGRESS_THRESHOLD / 100)) - totalSales;
-       description = `Pending - $${Math.max(0, amountToUnlock).toLocaleString()} to unlock (${GOALS.SALES_PROGRESS_THRESHOLD}%)`;
-       // default colors
+       description = `Missing $${Math.max(0, amountToUnlock).toLocaleString()} to unlock`;
     } else if (salesProgress < 100) {
-       const amountToGoal = salesGoal - totalSales;
-       description = `Active - $${Math.max(0, amountToGoal).toLocaleString()} to reach goal (100%)`;
-       iconColor = "text-green-500";
-       valueClassName = "text-green-600";
+       description = `Goal is within reach!`;
+       iconColor = "text-primary";
+       valueClassName = "text-primary";
     } else {
-       // >= 100%
-       description = `${salesProgress.toFixed(0)}% of Goal!`; // Using toFixed(0) for clean 101%, 102%
-       iconColor = "text-yellow-500";
-       valueClassName = "text-yellow-600";
-       descriptionClassName = "text-yellow-600 font-medium";
+       description = `${salesProgress.toFixed(0)}% of Goal!`;
+       iconColor = "text-accent";
+       valueClassName = "text-accent";
+       descriptionClassName = "text-accent font-bold";
     }
 
     return { earned, description, iconColor, valueClassName, descriptionClassName };
@@ -125,179 +118,89 @@ export default function DashboardPage() {
      return s ? s.status : 'closed';
   }, [sprints, selectedSprint]);
 
-  const handleCreateAdminProfile = async () => {
-    try {
-        await createAdminProfile();
-        toast({
-          title: "Admin Profile Created!",
-          description: "The salesperson profile for the admin has been created.",
-        });
-    } catch (err: unknown) {
-        const errorObj = err as { message?: string };
-        toast({
-            variant: "destructive",
-            title: "Uh oh! Something went wrong.",
-            description: errorObj.message || "An unexpected error occurred.",
-        });
-    }
-  };
-
-  const handleAddSale = async (newSaleData: NewSale) => {
-    try {
-      await recordSale(newSaleData);
-      toast({
-        title: "Sale Recorded!",
-        description: "The sale has been successfully added.",
-      });
-    } catch (err: unknown) {
-      const errorObj = err as { message?: string };
-      toast({
-          variant: "destructive",
-          title: "Uh oh! Could not record sale.",
-          description: errorObj.message || "An unexpected error occurred.",
-      });
-      throw err;
-    }
-  };
-
-  const handleDeleteSale = async (sale: Sale) => {
-      try {
-          await deleteSale(sale);
-          toast({ title: "Sale Deleted", description: "The sale has been removed and inventory restored." });
-      } catch (err: unknown) {
-          const errorObj = err as { message?: string };
-          toast({ variant: "destructive", title: "Error", description: errorObj.message || "Failed to delete sale." });
-      }
-  }
-  
-  const handleFinishSprint = async () => {
-      if (confirm("Are you sure you want to close this sprint? This action cannot be undone.")) {
-          try {
-              await finishSprint(selectedSprint);
-              toast({ title: "Sprint Closed", description: "The sprint has been successfully closed." });
-          } catch (e) {
-              toast({ variant: "destructive", title: "Error", description: "Failed to close sprint." });
-          }
-      }
-  };
-
-  const handleStartNextSprint = async () => {
-    try {
-        await startNextSprint();
-        toast({ title: "New Sprint Started", description: "The next month's sprint has been created and selected." });
-    } catch (e) {
-        toast({ variant: "destructive", title: "Error", description: "Failed to start new sprint." });
-    }
-  };
-
   if (isLoading) {
     return <DashboardSkeleton />;
   }
 
   if (!currentUserProfile) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.32))]">
-          <ShieldAlert className="h-10 w-10 text-destructive" />
-          <h2 className="mt-4 text-xl font-semibold">Profile Not Found</h2>
-          <p className="text-muted-foreground mt-2">We couldn't find a user profile for you.</p>
-          <p className="text-muted-foreground text-sm">Please contact an administrator to get set up.</p>
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.32))] animate-in fade-in">
+          <ShieldAlert className="h-16 w-16 text-destructive/20" />
+          <h2 className="mt-4 text-2xl font-bold">Profile Not Found</h2>
+          <p className="text-muted-foreground mt-2">Please contact an administrator to get set up.</p>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline">
-            {isManager ? 'Manager Dashboard' : 'My Dashboard'}
+    <div className="flex flex-col gap-10">
+      {/* Header Section style Apple */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-4xl font-bold tracking-tight">
+            Hello, {currentUserProfile.name.split(' ')[0]}!
           </h1>
-          <p className="text-muted-foreground">
-            {isManager ? "Here's a summary of your team's sales performance." : "Here's a summary of your sales performance."}
+          <p className="text-muted-foreground text-lg">
+            Explore information and activity about your branch.
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        
+        <div className="flex items-center gap-3 bg-white p-1.5 rounded-[20px] shadow-soft border border-border/20">
           <Select value={selectedSprint} onValueChange={setSelectedSprint}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select a sprint" />
+            <SelectTrigger className="w-[180px] border-none bg-transparent h-10 rounded-2xl focus:ring-0">
+              <SelectValue placeholder="Sprint" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-2xl border-none shadow-premium">
               {sprints.map((sprint) => (
-                <SelectItem key={sprint.id} value={sprint.id}>
-                  {sprint.label} {sprint.status === 'closed' ? '(Closed)' : ''}
+                <SelectItem key={sprint.id} value={sprint.id} className="rounded-xl">
+                  {sprint.label} {sprint.status === 'closed' ? '🔒' : ''}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
           {isManager && (
-            <>
-                <Button onClick={handleStartNextSprint} variant="outline" size="sm" className="h-8 gap-1">
-                    <CalendarPlus className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">New Sprint</span>
+            <div className="flex gap-1 border-l pl-1">
+                <Button onClick={startNextSprint} variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-secondary">
+                    <CalendarPlus className="h-5 w-5 text-primary" />
                 </Button>
-
                 {currentSprintStatus === 'active' && (
-                    <Button onClick={handleFinishSprint} variant="destructive" size="sm" className="h-8 gap-1">
-                        <CalendarOff className="h-3.5 w-3.5" />
-                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">End Sprint</span>
+                    <Button onClick={finishSprint} variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-destructive/10">
+                        <CalendarOff className="h-5 w-5 text-destructive" />
                     </Button>
                 )}
-            </>
+            </div>
           )}
-
-          {user && user.uid === ADMIN_UID && !adminProfileExists && (
-            <Button onClick={handleCreateAdminProfile} variant="outline" size="sm" className="h-8 gap-1">
-              <UserPlus className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Create Admin Profile
-              </span>
-            </Button>
-          )}
-          {sales.length > 0 && (
-            <Button onClick={() => exportSalesToCSV(sales, `sales-${selectedSprint}`)} variant="outline" size="sm" className="h-8 gap-1">
-              <Download className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Export
-              </span>
-            </Button>
-          )}
-          {currentSprintStatus === 'active' && (
-             <RecordSaleDialog onAddSale={handleAddSale} currentUserProfile={currentUserProfile} sprint={selectedSprint} />
-          )}
+          
+          <div className="border-l pl-1">
+            {currentSprintStatus === 'active' && (
+               <RecordSaleDialog onAddSale={recordSale} currentUserProfile={currentUserProfile} sprint={selectedSprint} />
+            )}
+          </div>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        <div className="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col gap-8">
-          <SalesProgressChart data={teamChartData} />
-          <RecentSales
-            sales={sales}
-            userProfiles={userProfiles}
-            onDeleteSale={currentSprintStatus === 'active' ? handleDeleteSale : undefined}
-            onUpdateSale={currentSprintStatus === 'active' ? updateSale : undefined}
-            currentUserProfile={currentUserProfile}
-          />
-        </div>
-
-        <div className="col-span-1 flex flex-col gap-8">
+      {/* KPIs Grid style Tile */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <KpiCard
             title="Total Sales"
             value={`$${totalSales.toLocaleString()}`}
-            description={`${salesProgress.toFixed(1)}% of goal ($${salesGoal.toLocaleString()}). Missing: $${Math.max(0, salesGoal - totalSales).toLocaleString()}`}
+            description={`${salesProgress.toFixed(1)}% of goal`}
             icon={DollarSign}
+            iconColor="text-primary"
           />
           <KpiCard
-            title="Credits Issued"
-            value={`${totalCredits}`}
-            description={`${ventoCredits} Vento Credits of ${creditsGoal} goal`}
-            icon={CreditCard}
+            title="Number of Sales"
+            value={`${sales.length}`}
+            description={`${totalCredits} Financing deals`}
+            icon={TrendingUp}
+            iconColor="text-orange-500"
           />
           <KpiCard
             title="Commission"
-            value={`$${commissionData.earned.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
+            value={`$${commissionData.earned.toLocaleString(undefined, {maximumFractionDigits: 0})}`}
             description={commissionData.description}
-            icon={TrendingUp}
+            icon={Award}
             iconColor={commissionData.iconColor}
             valueClassName={commissionData.valueClassName}
             descriptionClassName={commissionData.descriptionClassName}
@@ -305,10 +208,71 @@ export default function DashboardPage() {
           <KpiCard
             title="Vento Bonus"
             value={`$${creditBonus.toLocaleString()}`}
-            description={ventoCredits < 5 ? `${5 - ventoCredits} more for bonus` : "$200 per credit after 4"}
-            icon={Award}
-            iconColor={ventoCredits >= 5 ? 'text-blue-500' : ''}
+            description={`${ventoCredits} Vento Credits`}
+            icon={CreditCard}
+            iconColor="text-accent"
           />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* Main Content Area */}
+        <div className="lg:col-span-2 space-y-10">
+          <SalesProgressChart data={teamChartData} />
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-2xl font-bold tracking-tight">Recent Activity</h3>
+              <Button variant="link" className="text-primary font-semibold flex items-center gap-1 group">
+                See All <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </div>
+            <RecentSales
+              sales={sales}
+              userProfiles={userProfiles}
+              onDeleteSale={currentSprintStatus === 'active' ? deleteSale : undefined}
+              onUpdateSale={currentSprintStatus === 'active' ? updateSale : undefined}
+              currentUserProfile={currentUserProfile}
+            />
+          </div>
+        </div>
+
+        {/* Sidebar inside dashboard */}
+        <div className="space-y-8">
+           <Card className="border-none bg-gradient-to-br from-primary to-accent text-primary-foreground p-8 rounded-[32px] shadow-premium relative overflow-hidden group">
+              <div className="relative z-10 space-y-4">
+                <div className="h-12 w-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
+                  <Award className="h-6 w-6 text-white" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-xl font-bold">Monthly Challenge</h4>
+                  <p className="text-white/80 text-sm">Reach 100% of your sales goal to unlock the elite bonus tier.</p>
+                </div>
+                <div className="pt-4">
+                  <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-white transition-all duration-1000" style={{ width: `${Math.min(100, salesProgress)}%` }}></div>
+                  </div>
+                  <p className="text-xs text-white/60 mt-2 text-right font-medium">{salesProgress.toFixed(0)}% Completed</p>
+                </div>
+              </div>
+              {/* Decorative elements */}
+              <div className="absolute top-[-20%] right-[-20%] h-64 w-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-500"></div>
+           </Card>
+
+           <div className="space-y-4">
+              <h4 className="text-lg font-bold px-2">Quick Actions</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <Button onClick={() => exportSalesToCSV(sales, `sales-${selectedSprint}`)} variant="outline" className="h-auto py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50">
+                  <Download className="h-6 w-6 text-primary" />
+                  <span className="font-semibold text-sm">Export CSV</span>
+                </Button>
+                {user?.uid === ADMIN_UID && !adminProfileExists && (
+                  <Button onClick={createAdminProfile} variant="outline" className="h-auto py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50">
+                    <UserPlus className="h-6 w-6 text-accent" />
+                    <span className="font-semibold text-sm">Admin Profile</span>
+                  </Button>
+                )}
+              </div>
+           </div>
         </div>
       </div>
     </div>

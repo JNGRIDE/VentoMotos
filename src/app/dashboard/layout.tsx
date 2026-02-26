@@ -14,9 +14,12 @@ import {
   LoaderCircle,
   BadgeDollarSign,
   FileSignature,
+  Search,
+  Bell,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -39,7 +42,7 @@ const navItems = [
   { href: "/dashboard/prospects", icon: Users, label: "Prospects" },
   { href: "/dashboard/reports", icon: FileText, label: "Reports" },
   { href: "/dashboard/editables", icon: FileSignature, label: "Editables" },
-  { href: "/dashboard/settings", icon: Settings, label: "Sprint Settings" },
+  { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
 export default function DashboardLayout({
@@ -59,87 +62,108 @@ export default function DashboardLayout({
 
   if (isLoading || !user) {
     return (
-      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40">
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
         <LoaderCircle className="h-10 w-10 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Cargando su panel de control...</p>
+        <p className="mt-4 text-muted-foreground font-medium">Cargando su espacio...</p>
       </div>
     );
   }
 
   return (
     <TooltipProvider>
-      <div className="flex min-h-screen w-full flex-col bg-muted/40">
-        <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r-0 bg-white/70 backdrop-blur-xl shadow-soft sm:flex print:hidden">
-          <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
+      <div className="flex min-h-screen w-full bg-background overflow-hidden">
+        {/* Modern Sidebar estilo Apple */}
+        <aside className="fixed inset-y-0 left-0 z-50 hidden w-20 flex-col items-center border-r border-border/40 bg-white/80 backdrop-blur-xl sm:flex print:hidden">
+          <nav className="flex flex-col items-center gap-6 px-2 py-8">
             <Link
-              href="#"
-              className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
+              href="/dashboard"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105"
             >
-              <Bike className="h-4 w-4 transition-all group-hover:scale-110" />
-              <span className="sr-only">MotoSales CRM</span>
+              <Bike className="h-6 w-6" />
             </Link>
-            {navItems.map((item) => (
-              <Tooltip key={item.label}>
-                <TooltipTrigger asChild>
-                  <Link
-                    href={item.href}
-                    className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8 ${
-                      pathname === item.href
-                        ? "bg-accent text-accent-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    <span className="sr-only">{item.label}</span>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">{item.label}</TooltipContent>
-              </Tooltip>
-            ))}
-          </nav>
-        </aside>
-        <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 print:p-0 print:gap-0">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 print:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button size="icon" variant="outline" className="sm:hidden">
-                <PanelLeft className="h-5 w-5" />
-                <span className="sr-only">Toggle Menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="sm:max-w-xs">
-              <nav className="grid gap-6 text-lg font-medium">
-                <Link
-                  href="#"
-                  className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
-                >
-                  <Bike className="h-5 w-5 transition-all group-hover:scale-110" />
-                  <span className="sr-only">MotoSales CRM</span>
-                </Link>
-                {navItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`flex items-center gap-4 px-2.5 ${
+            
+            <div className="flex flex-col gap-4 pt-4">
+              {navItems.map((item) => (
+                <Tooltip key={item.label}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href={item.href}
+                      className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-300 ${
                         pathname === item.href
-                          ? "text-foreground"
-                          : "text-muted-foreground hover:text-foreground"
+                          ? "bg-secondary text-primary shadow-sm"
+                          : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                       }`}
-                  >
-                    <item.icon className="h-5 w-5" />
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span className="sr-only">{item.label}</span>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="rounded-xl border-none shadow-premium bg-foreground text-background">
                     {item.label}
-                  </Link>
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
-          <div className="relative ml-auto flex-1 md:grow-0">
-            {/* Could be a global search bar */}
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          </nav>
+          
+          <div className="mt-auto pb-8 flex flex-col items-center gap-4">
+             <ModeToggle />
+             <UserNav user={user} />
           </div>
-          <ModeToggle />
-          <UserNav user={user} />
-        </header>
-          <main className="flex-1 p-4 sm:px-6 sm:py-0 print:p-0">{children}</main>
+        </aside>
+
+        <div className="flex flex-1 flex-col sm:pl-20">
+          <header className="sticky top-0 z-30 flex h-20 items-center gap-4 px-6 bg-background/80 backdrop-blur-md border-b border-border/10 print:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button size="icon" variant="ghost" className="sm:hidden rounded-2xl">
+                  <PanelLeft className="h-5 w-5" />
+                  <span className="sr-only">Toggle Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="sm:max-w-xs rounded-r-3xl">
+                <nav className="grid gap-6 text-lg font-medium pt-8">
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={`flex items-center gap-4 px-4 py-2 rounded-2xl transition-colors ${
+                          pathname === item.href
+                            ? "bg-secondary text-primary"
+                            : "text-muted-foreground hover:bg-secondary/50"
+                        }`}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {item.label}
+                    </Link>
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
+
+            <div className="relative flex-1 max-w-md hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search anything..." 
+                className="pl-10 h-11 bg-secondary/50 border-none rounded-2xl focus-visible:ring-primary/20"
+              />
+            </div>
+
+            <div className="ml-auto flex items-center gap-4">
+               <Button variant="ghost" size="icon" className="rounded-full relative">
+                  <Bell className="h-5 w-5 text-muted-foreground" />
+                  <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full border-2 border-background"></span>
+               </Button>
+               <div className="hidden sm:flex flex-col items-end mr-2">
+                  <span className="text-sm font-semibold leading-none">{user.displayName}</span>
+                  <span className="text-xs text-muted-foreground">Admin Access</span>
+               </div>
+            </div>
+          </header>
+
+          <main className="flex-1 p-6 sm:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {children}
+          </main>
         </div>
       </div>
     </TooltipProvider>

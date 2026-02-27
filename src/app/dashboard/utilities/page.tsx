@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { LoaderCircle, ExternalLink, FileText, MapPin, Globe, Trash2, LayoutGrid, ShieldAlert } from 'lucide-react';
+import { LoaderCircle, ExternalLink, FileText, MapPin, Globe, Trash2, LayoutGrid, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AddUtilityDialog } from '@/components/utilities/add-utility-dialog';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function UtilitiesPage() {
   const db = useFirestore();
@@ -20,10 +21,12 @@ export default function UtilitiesPage() {
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
   const [utilities, setUtilities] = useState<Utility[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
+    setPermissionError(null);
     try {
       const profile = await getUserProfile(db, user.uid);
       setCurrentUserProfile(profile);
@@ -32,11 +35,15 @@ export default function UtilitiesPage() {
       setUtilities(utils);
     } catch (error: any) {
       console.error("Error fetching utilities:", error);
-      toast({
-        variant: "destructive",
-        title: "Error de acceso",
-        description: error.message || "No tienes permisos para ver esta sección.",
-      });
+      if (error.message?.includes('permissions') || error.code === 'permission-denied') {
+        setPermissionError("No tienes permisos suficientes para ver esta sección. Asegúrate de tener un perfil configurado.");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error de carga",
+          description: error.message || "No se pudieron obtener las utilidades.",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +57,8 @@ export default function UtilitiesPage() {
     try {
       await removeUtility(db, id);
       toast({ title: "Eliminado", description: "La utilidad ha sido removida." });
-      fetchData();
+      // Refresh local state optimistically or re-fetch
+      setUtilities(prev => prev.filter(u => u.id !== id));
     } catch (error: any) {
       toast({ 
         variant: "destructive", 
@@ -79,6 +87,17 @@ export default function UtilitiesPage() {
     );
   }
 
+  if (permissionError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.32))] gap-4 max-w-md mx-auto text-center">
+        <ShieldAlert className="h-16 w-16 text-destructive/20" />
+        <h2 className="text-2xl font-bold">Acceso Denegado</h2>
+        <p className="text-muted-foreground">{permissionError}</p>
+        <Button onClick={fetchData} variant="outline" className="mt-4">Reintentar</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -96,6 +115,16 @@ export default function UtilitiesPage() {
           </div>
         )}
       </div>
+
+      {!isManager && (
+        <Alert className="bg-primary/5 border-primary/20 rounded-2xl">
+          <AlertTriangle className="h-4 w-4 text-primary" />
+          <AlertTitle className="text-primary font-bold">Modo Consulta</AlertTitle>
+          <AlertDescription className="text-primary/80">
+            Como Vendedor, puedes usar todos los recursos pero no puedes editarlos.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {utilities.length === 0 ? (
         <Card className="border-dashed bg-muted/20 rounded-[32px] p-12 flex flex-col items-center justify-center text-center">

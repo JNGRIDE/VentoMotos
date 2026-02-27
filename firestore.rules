@@ -2,20 +2,24 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper functions
     function isAuthenticated() {
       return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isManager() {
+      return isAuthenticated() && getUserData().role == 'Manager';
     }
 
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function isManager() {
-      // Forzamos lectura del documento del usuario para validar el rol 'Manager'
-      return isAuthenticated() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Manager';
-    }
-
+    // Rules for collections
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow write: if isOwner(userId) || isManager();
@@ -49,12 +53,12 @@ service cloud.firestore {
       allow write: if isManager();
     }
 
+    // REGLA ACTUALIZADA: Centro de Utilidades (v1.0.2 - Auto-deploy trigger)
     match /utilities/{utilityId} {
-      // Regla explícita para el Centro de Utilidades
-      // Lectura permitida para todo el equipo autenticado
+      // Todo el equipo puede ver los recursos
       allow read: if isAuthenticated();
-      // Solo el Manager puede crear, editar o borrar
-      allow create, update, delete: if isManager();
+      // Solo el Manager puede administrar el catálogo
+      allow write: if isManager();
     }
   }
 }

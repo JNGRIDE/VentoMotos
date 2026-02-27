@@ -9,6 +9,7 @@ import {
   setDoc,
   type Firestore,
 } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL, type FirebaseStorage } from "firebase/storage";
 import type { Utility, NewUtility } from "@/lib/data";
 import { fromFirestore } from "./utils";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -25,7 +26,6 @@ export async function addUtility(db: Firestore, utility: NewUtility): Promise<st
   const utilitiesCol = collection(db, "utilities");
   const docRef = doc(utilitiesCol);
   
-  // Iniciamos la escritura de forma no bloqueante para mejor UX
   setDoc(docRef, utility)
     .catch(async (serverError) => {
       const permissionError = new FirestorePermissionError({
@@ -37,6 +37,16 @@ export async function addUtility(db: Firestore, utility: NewUtility): Promise<st
     });
 
   return docRef.id;
+}
+
+export async function uploadUtilityFile(storage: FirebaseStorage, file: File, category: string): Promise<string> {
+  const timestamp = new Date().getTime();
+  const storageRef = ref(storage, `utilities/${category}/${timestamp}_${file.name}`);
+  
+  const snapshot = await uploadBytes(storageRef, file);
+  const downloadURL = await getDownloadURL(snapshot.ref);
+  
+  return downloadURL;
 }
 
 export async function updateUtility(db: Firestore, id: string, updates: Partial<Utility>): Promise<void> {

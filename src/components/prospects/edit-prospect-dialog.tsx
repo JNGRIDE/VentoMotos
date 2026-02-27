@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LoaderCircle, User, Briefcase, Bike, MessageSquare, History } from "lucide-react";
+import { LoaderCircle, User, Briefcase, MessageSquare, History } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,13 +17,13 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { updateProspect, getUserProfiles } from "@/firebase/services";
-import type { Prospect, UserProfile } from "@/lib/data";
+import { type Prospect, type UserProfile, PROSPECT_STAGES } from "@/lib/data";
 
 const prospectSchema = z.object({
   name: z.string().min(2, "El nombre es requerido"),
   source: z.enum(["Organic", "Advertising"]),
   salespersonId: z.string().min(1, "Vendedor es requerido"),
-  stage: z.enum(["Potential", "Appointment", "Credit", "Closed"]),
+  stage: z.enum(["Potencial", "Agendado", "Crédito Aprobado", "Caído", "Cerrado"]),
   phone: z.string().optional(),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   rfc: z.string().optional(),
@@ -82,11 +82,9 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
             motorcycleInterest: prospect.motorcycleInterest || "",
         });
 
-        if (currentUserProfile?.role === 'Manager') {
-            getUserProfiles(db).then(setUserProfiles);
-        }
+        getUserProfiles(db).then(setUserProfiles);
     }
-  }, [open, db, currentUserProfile, form, prospect]);
+  }, [open, db, form, prospect]);
 
   const onSubmit = async (data: ProspectFormValues) => {
     setIsSaving(true);
@@ -99,15 +97,6 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
 
       let currentNotesList = prospect.notesList || [];
 
-      // Migración si existe nota vieja
-      if (prospect.notes && currentNotesList.length === 0) {
-           currentNotesList = [{
-              content: prospect.notes,
-              date: prospect.lastContact || new Date().toISOString(),
-              author: "Nota Anterior",
-           }];
-      }
-
       if (data.notes && data.notes.trim().length > 0) {
           const newNoteObj = {
               content: data.notes,
@@ -115,8 +104,6 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
               author: currentUserProfile?.name || "Sistema",
           };
           updates.notesList = [...currentNotesList, newNoteObj];
-      } else {
-          delete updates.notes;
       }
 
       await updateProspect(db, prospect.id, updates);
@@ -141,19 +128,19 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-[32px] border-none shadow-premium p-0 gap-0">
+      <DialogContent className="sm:max-w-4xl max-h-[95vh] overflow-y-auto rounded-[40px] border-none shadow-premium p-0 gap-0">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
                 <div className="p-8 space-y-8">
                     <DialogHeader>
                         <div className="flex items-center justify-between">
-                            <div>
-                                <DialogTitle className="text-3xl font-bold tracking-tight mb-1">Bitácora de Prospecto</DialogTitle>
-                                <DialogDescription className="text-base">
-                                    Seguimiento detallado y perfil del cliente.
+                            <div className="space-y-1">
+                                <DialogTitle className="text-3xl font-black tracking-tight">Bitácora de Prospecto</DialogTitle>
+                                <DialogDescription className="text-sm font-medium uppercase tracking-widest text-muted-foreground/60">
+                                    Seguimiento comercial • {prospect.name}
                                 </DialogDescription>
                             </div>
-                            <Badge className="h-8 px-4 rounded-full bg-primary/10 text-primary border-none text-sm">
+                            <Badge className="h-10 px-6 rounded-2xl bg-primary text-white border-none text-sm font-bold shadow-lg shadow-primary/20">
                                 {prospect.stage}
                             </Badge>
                         </div>
@@ -162,9 +149,9 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                         {/* Columna Izquierda: Información Estructurada */}
                         <div className="space-y-8">
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                    <User className="h-4 w-4" /> Datos Personales
+                            <div className="space-y-6">
+                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                                    <User className="h-4 w-4" /> Datos del Cliente
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <FormField
@@ -172,8 +159,8 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                                         name="name"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Nombre Completo</FormLabel>
-                                                <FormControl><Input {...field} className="rounded-xl border-border/40" /></FormControl>
+                                                <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Nombre</FormLabel>
+                                                <FormControl><Input {...field} className="rounded-xl border-border/40 bg-secondary/20 h-11 font-semibold" /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -183,8 +170,8 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                                         name="phone"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Teléfono</FormLabel>
-                                                <FormControl><Input {...field} className="rounded-xl border-border/40" /></FormControl>
+                                                <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Teléfono</FormLabel>
+                                                <FormControl><Input {...field} className="rounded-xl border-border/40 bg-secondary/20 h-11 font-semibold" /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -195,19 +182,19 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                                     name="email"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Email</FormLabel>
-                                            <FormControl><Input {...field} className="rounded-xl border-border/40" /></FormControl>
+                                            <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Email</FormLabel>
+                                            <FormControl><Input {...field} className="rounded-xl border-border/40 bg-secondary/20 h-11 font-semibold" /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
                             </div>
 
-                            <Separator className="bg-border/40" />
+                            <Separator className="opacity-40" />
 
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                    <Briefcase className="h-4 w-4" /> Perfil de Interés
+                            <div className="space-y-6">
+                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                                    <Briefcase className="h-4 w-4" /> Perfil de Venta
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <FormField
@@ -215,8 +202,8 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                                         name="occupation"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Ocupación</FormLabel>
-                                                <FormControl><Input placeholder="Ej. Arquitecto, Uber..." {...field} className="rounded-xl border-border/40" /></FormControl>
+                                                <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Ocupación</FormLabel>
+                                                <FormControl><Input placeholder="Ej. Uber, Arquitecto..." {...field} className="rounded-xl border-border/40 bg-secondary/20 h-11 font-semibold" /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -226,8 +213,8 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                                         name="motorcycleInterest"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Moto de Interés</FormLabel>
-                                                <FormControl><Input placeholder="Ej. Rocketman 250" {...field} className="rounded-xl border-border/40" /></FormControl>
+                                                <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Moto de Interés</FormLabel>
+                                                <FormControl><Input placeholder="Ej. Rocketman 250" {...field} className="rounded-xl border-border/40 bg-secondary/20 h-11 font-semibold" /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -235,11 +222,11 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                                 </div>
                             </div>
 
-                            <Separator className="bg-border/40" />
+                            <Separator className="opacity-40" />
 
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                    <History className="h-4 w-4" /> Estado en el Funnel
+                            <div className="space-y-6">
+                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                                    <History className="h-4 w-4" /> Proceso Comercial
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <FormField
@@ -247,14 +234,11 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                                         name="stage"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Etapa Actual</FormLabel>
+                                                <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Etapa en el Funnel</FormLabel>
                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl><SelectTrigger className="rounded-xl border-border/40"><SelectValue /></SelectTrigger></FormControl>
+                                                    <FormControl><SelectTrigger className="rounded-xl border-border/40 bg-secondary/20 h-11 font-bold"><SelectValue /></SelectTrigger></FormControl>
                                                     <SelectContent className="rounded-2xl">
-                                                        <SelectItem value="Potential">Potential</SelectItem>
-                                                        <SelectItem value="Appointment">Appointment</SelectItem>
-                                                        <SelectItem value="Credit">Credit</SelectItem>
-                                                        <SelectItem value="Closed">Closed</SelectItem>
+                                                        {PROSPECT_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
@@ -267,9 +251,9 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                                             name="salespersonId"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Asignado a</FormLabel>
+                                                    <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Ejecutivo Asignado</FormLabel>
                                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                        <FormControl><SelectTrigger className="rounded-xl border-border/40"><SelectValue /></SelectTrigger></FormControl>
+                                                        <FormControl><SelectTrigger className="rounded-xl border-border/40 bg-secondary/20 h-11 font-bold"><SelectValue /></SelectTrigger></FormControl>
                                                         <SelectContent className="rounded-2xl">
                                                             {userProfiles.map(p => <SelectItem key={p.uid} value={p.uid}>{p.name}</SelectItem>)}
                                                         </SelectContent>
@@ -283,50 +267,48 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                             </div>
                         </div>
 
-                        {/* Columna Derecha: Timeline / Notion Style Notes */}
-                        <div className="bg-secondary/30 rounded-[24px] p-6 space-y-6 flex flex-col h-full min-h-[400px]">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        {/* Columna Derecha: Timeline Style Notes */}
+                        <div className="bg-secondary/40 rounded-[32px] p-6 space-y-6 flex flex-col h-full min-h-[450px] shadow-inner border border-border/10">
+                            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
                                 <MessageSquare className="h-4 w-4" /> Bitácora de Actividad
                             </h3>
                             
                             <div className="flex-1 overflow-y-auto space-y-4 pr-2 no-scrollbar">
-                                {(!prospect.notesList || prospect.notesList.length === 0) && !prospect.notes && (
-                                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground/40 italic py-12">
-                                        <MessageSquare className="h-12 w-12 mb-2 opacity-20" />
-                                        <p className="text-sm">Sin historial de notas.</p>
+                                {(!prospect.notesList || prospect.notesList.length === 0) && (
+                                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground/30 italic py-12">
+                                        <MessageSquare className="h-12 w-12 mb-3 opacity-10" />
+                                        <p className="text-xs font-bold uppercase tracking-widest">Sin entradas previas</p>
                                     </div>
                                 )}
                                 
-                                {prospect.notes && (!prospect.notesList || prospect.notesList.length === 0) && (
-                                    <div className="glass p-4 rounded-2xl border-none shadow-soft">
-                                        <p className="text-sm text-foreground/80 leading-relaxed">{prospect.notes}</p>
-                                        <p className="text-[10px] text-muted-foreground mt-2 font-bold uppercase">Nota Inicial</p>
-                                    </div>
-                                )}
-
                                 {prospect.notesList?.slice().reverse().map((note, i) => (
-                                    <div key={i} className="bg-card p-4 rounded-2xl shadow-soft border-none transition-all hover:scale-[1.01]">
-                                        <p className="text-sm text-foreground/80 leading-relaxed">{note.content}</p>
-                                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-border/40">
-                                            <span className="text-[10px] font-bold text-primary">{note.author}</span>
-                                            <span className="text-[10px] text-muted-foreground">{new Date(note.date).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                                    <div key={i} className="bg-card p-5 rounded-[24px] shadow-soft border-none transition-all hover:scale-[1.02] group">
+                                        <p className="text-sm font-medium text-foreground/90 leading-relaxed">{note.content}</p>
+                                        <div className="flex justify-between items-center mt-4 pt-3 border-t border-border/40">
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-[8px] font-black text-primary uppercase">
+                                                    {note.author?.charAt(0)}
+                                                </div>
+                                                <span className="text-[10px] font-black text-primary uppercase tracking-tighter">{note.author}</span>
+                                            </div>
+                                            <span className="text-[9px] font-bold text-muted-foreground/50">{new Date(note.date).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="pt-4 border-t border-border/40">
+                            <div className="pt-4 border-t border-border/20">
                                 <FormField
                                     control={form.control}
                                     name="notes"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="sr-only">Nueva Entrada</FormLabel>
+                                            <FormLabel className="sr-only">Siguiente Paso</FormLabel>
                                             <FormControl>
                                                 <Textarea 
                                                     {...field} 
-                                                    className="min-h-[100px] rounded-2xl bg-card border-none shadow-inner focus-visible:ring-primary/20 placeholder:text-muted-foreground/50" 
-                                                    placeholder="Escribe el siguiente paso del seguimiento..." 
+                                                    className="min-h-[120px] rounded-3xl bg-background/80 border-none shadow-premium focus-visible:ring-primary/20 placeholder:text-muted-foreground/40 font-semibold" 
+                                                    placeholder="Escribe aquí el seguimiento de hoy... ¿Qué habló el cliente? ¿Qué acordaron?" 
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -338,13 +320,13 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
                     </div>
                 </div>
 
-                <div className="bg-secondary/50 p-6 flex justify-end items-center gap-4 rounded-b-[32px] mt-auto">
-                    <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl">
+                <div className="bg-secondary/60 backdrop-blur-md p-8 flex justify-end items-center gap-4 rounded-b-[40px] mt-auto border-t border-border/10">
+                    <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-2xl h-12 px-8 font-bold hover:bg-secondary/80">
                         Cancelar
                     </Button>
-                    <Button type="submit" disabled={isSaving} className="rounded-xl px-8 shadow-primary/20">
-                        {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                        Guardar Cambios
+                    <Button type="submit" disabled={isSaving} className="rounded-2xl h-12 px-10 font-black shadow-lg shadow-primary/20">
+                        {isSaving && <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />}
+                        Guardar Bitácora
                     </Button>
                 </div>
             </form>

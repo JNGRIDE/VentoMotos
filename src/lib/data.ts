@@ -42,7 +42,7 @@ export type Prospect = {
   id: string; // Firestore document ID
   sprint: string; // e.g., "2024-07"
   name: string;
-  stage: "Potential" | "Appointment" | "Credit" | "Closed";
+  stage: "Potencial" | "Agendado" | "Crédito Aprobado" | "Caído" | "Cerrado";
   source: "Organic" | "Advertising";
   salespersonId: string; // This is now the salesperson's UID
   lastContact: string;
@@ -61,7 +61,7 @@ export type Prospect = {
   notesList?: { content: string; date: string; author?: string }[];
 };
 
-export const PROSPECT_STAGES: Prospect["stage"][] = ["Potential", "Appointment", "Credit", "Closed"];
+export const PROSPECT_STAGES: Prospect["stage"][] = ["Potencial", "Agendado", "Crédito Aprobado", "Caído", "Cerrado"];
 
 export type NewProspect = Omit<Prospect, "id">;
 

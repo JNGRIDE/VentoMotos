@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { addProspect, getUserProfiles } from "@/firebase/services";
-import type { NewProspect, UserProfile } from "@/lib/data";
+import { type NewProspect, type UserProfile, PROSPECT_STAGES } from "@/lib/data";
 
 const addProspectSchema = z.object({
   name: z.string().min(2, "El nombre es requerido"),
@@ -72,9 +72,7 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
              motorcycleInterest: "",
         });
 
-        if (role === 'Manager') {
-            getUserProfiles(db).then(setUserProfiles);
-        }
+        getUserProfiles(db).then(setUserProfiles);
     }
   }, [open, db, uid, role, form]);
 
@@ -86,7 +84,7 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
       sprint,
       source: data.source,
       salespersonId: data.salespersonId,
-      stage: "Potential",
+      stage: "Potencial",
       lastContact: new Date().toISOString(),
       stageUpdatedAt: new Date().toISOString(),
       phone: data.phone,
@@ -121,30 +119,30 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8 gap-1 rounded-xl shadow-primary/20">
-          <PlusCircle className="h-3.5 w-3.5" />
+        <Button size="sm" className="h-10 gap-2 rounded-2xl shadow-lg shadow-primary/20 px-6 font-bold">
+          <PlusCircle className="h-4 w-4" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Añadir Prospecto
+            Nuevo Lead
           </span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto rounded-[32px] shadow-premium">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto rounded-[40px] shadow-premium border-none">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)}>
             <DialogHeader>
-                <DialogTitle className="text-2xl font-bold">Nuevo Lead</DialogTitle>
-                <DialogDescription>
-                Registra los datos básicos para iniciar el seguimiento.
+                <DialogTitle className="text-3xl font-black">Nuevo Registro</DialogTitle>
+                <DialogDescription className="text-sm font-medium text-muted-foreground/60">
+                Inicia el seguimiento de un nuevo cliente potencial.
                 </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-6">
+            <div className="grid gap-6 py-8">
                 <FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Nombre del Cliente *</FormLabel>
-                            <FormControl><Input {...field} className="rounded-xl border-border/40" /></FormControl>
+                            <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Nombre del Cliente *</FormLabel>
+                            <FormControl><Input {...field} className="rounded-xl border-border/40 bg-secondary/20 h-11 font-semibold" /></FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
@@ -155,8 +153,8 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                         name="phone"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Teléfono</FormLabel>
-                                <FormControl><Input {...field} type="tel" className="rounded-xl border-border/40" /></FormControl>
+                                <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Teléfono</FormLabel>
+                                <FormControl><Input {...field} type="tel" className="rounded-xl border-border/40 bg-secondary/20 h-11 font-semibold" /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -166,8 +164,8 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                         name="motorcycleInterest"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Interés</FormLabel>
-                                <FormControl><Input placeholder="Modelo..." {...field} className="rounded-xl border-border/40" /></FormControl>
+                                <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Moto Interés</FormLabel>
+                                <FormControl><Input placeholder="Ej. Storm 250" {...field} className="rounded-xl border-border/40 bg-secondary/20 h-11 font-semibold" /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -179,9 +177,9 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                     name="notes"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Primeras Notas de Seguimiento</FormLabel>
+                            <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Nota de Inicio</FormLabel>
                             <FormControl>
-                                <Textarea {...field} className="min-h-[80px] rounded-xl border-border/40" placeholder="¿Cómo nos conoció? ¿Qué busca?" />
+                                <Textarea {...field} className="min-h-[100px] rounded-2xl border-border/40 bg-secondary/20 font-medium" placeholder="¿Qué busca? ¿Cómo nos contactó?" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -194,9 +192,9 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                         name="source"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Fuente</FormLabel>
+                                <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Fuente</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger className="rounded-xl border-border/40"><SelectValue /></SelectTrigger></FormControl>
+                                    <FormControl><SelectTrigger className="rounded-xl border-border/40 bg-secondary/20 h-11 font-bold"><SelectValue /></SelectTrigger></FormControl>
                                     <SelectContent className="rounded-2xl">
                                         <SelectItem value="Organic">Organic</SelectItem>
                                         <SelectItem value="Advertising">Advertising</SelectItem>
@@ -213,9 +211,9 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                             name="salespersonId"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Asignar a</FormLabel>
+                                    <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">Asignar a</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl><SelectTrigger className="rounded-xl border-border/40"><SelectValue /></SelectTrigger></FormControl>
+                                        <FormControl><SelectTrigger className="rounded-xl border-border/40 bg-secondary/20 h-11 font-bold"><SelectValue /></SelectTrigger></FormControl>
                                         <SelectContent className="rounded-2xl">
                                             {userProfiles.map(p => <SelectItem key={p.uid} value={p.uid}>{p.name}</SelectItem>)}
                                         </SelectContent>
@@ -227,9 +225,9 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
                     )}
                 </div>
             </div>
-            <DialogFooter className="bg-secondary/20 -mx-6 -mb-6 p-6 mt-4">
-                <Button type="submit" disabled={isSaving} className="w-full h-12 text-lg rounded-xl shadow-primary/20">
-                {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+            <DialogFooter className="bg-secondary/40 -mx-6 -mb-6 p-8 mt-4 border-t border-border/10">
+                <Button type="submit" disabled={isSaving} className="w-full h-14 text-lg font-black rounded-2xl shadow-xl shadow-primary/20">
+                {isSaving && <LoaderCircle className="mr-2 h-6 w-6 animate-spin" />}
                 Registrar Prospecto
                 </Button>
             </DialogFooter>

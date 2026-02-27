@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, memo, useRef, useEffect } from "react";
-import { Inbox, Calendar, FileText, CheckCircle } from "lucide-react";
+import { Inbox, Calendar, FileCheck, XCircle, Trophy } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
@@ -26,14 +26,14 @@ interface KanbanColumnProps {
 const EMPTY_PROSPECTS: Prospect[] = [];
 
 const EMPTY_STATE_CONFIG: Record<Prospect["stage"], { icon: React.ElementType, text: string }> = {
-  "Potential": { icon: Inbox, text: "No leads yet" },
-  "Appointment": { icon: Calendar, text: "No appointments" },
-  "Credit": { icon: FileText, text: "No applications" },
-  "Closed": { icon: CheckCircle, text: "No closed deals" },
+  "Potencial": { icon: Inbox, text: "Sin leads nuevos" },
+  "Agendado": { icon: Calendar, text: "Sin citas" },
+  "Crédito Aprobado": { icon: FileCheck, text: "Sin créditos" },
+  "Caído": { icon: XCircle, text: "Sin descartes" },
+  "Cerrado": { icon: Trophy, text: "Sin cierres" },
 };
 
 // Custom comparison function for KanbanColumn to prevent unnecessary re-renders.
-// Uses shallow comparison for the prospects array to handle new array references with identical content efficiently.
 function areKanbanColumnPropsEqual(prev: KanbanColumnProps, next: KanbanColumnProps) {
   return (
     prev.title === next.title &&
@@ -49,7 +49,6 @@ function areKanbanColumnPropsEqual(prev: KanbanColumnProps, next: KanbanColumnPr
   );
 }
 
-// Optimization: Memoize KanbanColumn to prevent re-renders when parent re-renders but props are unchanged
 const KanbanColumn = memo(function KanbanColumn({
   title,
   stageValue,
@@ -80,27 +79,27 @@ const KanbanColumn = memo(function KanbanColumn({
 
   return (
     <div
-      className={`flex flex-col w-72 min-w-72 flex-shrink-0 transition-colors rounded-lg ${isDragOver ? 'bg-primary/5 ring-2 ring-primary/20' : ''}`}
+      className={`flex flex-col w-72 min-w-72 flex-shrink-0 transition-all rounded-3xl ${isDragOver ? 'bg-primary/10 ring-2 ring-primary/20 scale-[1.02]' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="flex items-center justify-between p-2">
-        <h2 className="font-semibold font-headline text-lg">{title}</h2>
-        <span className="h-6 w-6 flex items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary">
+      <div className="flex items-center justify-between p-4 mb-2">
+        <h2 className="font-bold font-headline text-lg tracking-tight">{title}</h2>
+        <span className="h-6 min-w-6 px-2 flex items-center justify-center rounded-full bg-primary/10 text-xs font-black text-primary shadow-sm">
           {prospects.length}
         </span>
       </div>
-      <div className="flex-1 rounded-lg bg-muted/50 p-2 min-h-[500px] flex flex-col">
+      <div className="flex-1 rounded-[32px] bg-secondary/30 backdrop-blur-sm p-3 min-h-[600px] flex flex-col gap-3">
         {prospects.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/40 min-h-[200px]">
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/30 min-h-[200px] border-2 border-dashed border-border/40 rounded-[24px]">
             {(() => {
-              const Config = EMPTY_STATE_CONFIG[stageValue] || { icon: Inbox, text: "No prospects" };
+              const Config = EMPTY_STATE_CONFIG[stageValue] || { icon: Inbox, text: "Sin prospectos" };
               const Icon = Config.icon;
               return (
                 <>
-                  <Icon className="h-12 w-12 mb-2 opacity-20" />
-                  <p className="text-sm font-medium">{Config.text}</p>
+                  <Icon className="h-10 w-10 mb-3 opacity-20" />
+                  <p className="text-xs font-bold uppercase tracking-wider">{Config.text}</p>
                 </>
               );
             })()}
@@ -146,8 +145,6 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
     }, {} as Record<string, UserProfile>);
   }, [userProfiles]);
 
-  // Optimization: Pre-calculate prospects by stage to avoid filtering on every render
-  // This ensures that KanbanColumn receives stable arrays unless prospects actually change
   const prospectsByStage = useMemo(() => {
     const grouped: Record<string, Prospect[]> = {};
     for (const p of prospects) {
@@ -159,14 +156,11 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
     return grouped;
   }, [prospects]);
 
-  // Keep a ref to prospects to avoid re-creating handleDrop when prospects change.
-  // This prevents all KanbanColumns from re-rendering just because the prospects list updated.
   const prospectsRef = useRef(prospects);
   useEffect(() => {
     prospectsRef.current = prospects;
   }, [prospects]);
 
-  // Optimization: Memoize handleDragStart to provide a stable reference to child components, preventing unnecessary re-renders
   const handleDragStart = useCallback((e: React.DragEvent<HTMLDivElement>, prospectId: string) => {
     e.dataTransfer.setData("prospectId", prospectId);
   }, []);
@@ -175,7 +169,7 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
       const prospect = prospectsRef.current.find(p => p.id === prospectId);
       if (!prospect) return;
 
-      if (prospect.stage === newStage) return; // No change
+      if (prospect.stage === newStage) return;
 
       const originalStage = prospect.stage;
       const updatedProspect = {
@@ -184,7 +178,6 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
           stageUpdatedAt: new Date().toISOString()
       };
 
-      // Optimistic update
       onOptimisticUpdate(updatedProspect);
 
       try {
@@ -193,18 +186,17 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
               stageUpdatedAt: new Date().toISOString()
           });
           toast({
-              title: "Stage Updated",
-              description: `Moved to ${newStage}`,
+              title: "Etapa Actualizada",
+              description: `Movido a ${newStage}`,
           });
-          onRefresh(); // Trigger refresh to get latest data
+          onRefresh();
       } catch (error) {
           console.error("Failed to move prospect", error);
           toast({
               variant: "destructive",
               title: "Error",
-              description: "Could not move prospect.",
+              description: "No se pudo mover el prospecto.",
           });
-          // Revert optimistic update
           onOptimisticUpdate({ ...prospect, stage: originalStage });
       }
   }, [db, toast, onRefresh, onOptimisticUpdate]);
@@ -225,8 +217,8 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
 
   return (
     <>
-      <ScrollArea className="w-full">
-        <div className="flex gap-4 pb-4">
+      <ScrollArea className="w-full h-full">
+        <div className="flex gap-6 pb-8 pt-2 h-full">
           {PROSPECT_STAGES.map((stage) => (
             <KanbanColumn
               key={stage}
@@ -243,7 +235,7 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
             />
           ))}
         </div>
-        <ScrollBar orientation="horizontal" />
+        <ScrollBar orientation="horizontal" className="bg-muted/20" />
       </ScrollArea>
 
       {editingProspect && (

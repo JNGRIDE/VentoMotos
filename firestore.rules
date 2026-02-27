@@ -28,7 +28,7 @@ service cloud.firestore {
     }
 
     match /prospects/{prospectId} {
-      // A manager can read any prospect. A salesperson only their own.
+      // A manager can read any prospect. A salesperson can only read their own.
       allow read: if isManager() || request.auth.uid == resource.data.salespersonId;
       // A manager can write to any prospect. A salesperson can only write to their own.
       allow write: if isManager() || request.auth.uid == request.resource.data.salespersonId;
@@ -54,11 +54,17 @@ service cloud.firestore {
       allow delete: if isManager();
     }
 
-    // --- REGLA AÑADIDA ---
     match /settings/{settingId} {
       // Any authenticated user can read settings (like financiers list)
       allow read: if request.auth != null;
       // Only a manager can write settings
+      allow write: if isManager();
+    }
+
+    match /utilities/{utilityId} {
+      // Any authenticated user can read utilities
+      allow read: if request.auth != null;
+      // Only a manager can create, update or delete utilities
       allow write: if isManager();
     }
   }

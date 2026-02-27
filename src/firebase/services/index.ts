@@ -4,3 +4,4 @@ export * from './prospects';
 export * from './inventory';
 export * from './settings';
 export * from './sprints';
+export * from './utilities';

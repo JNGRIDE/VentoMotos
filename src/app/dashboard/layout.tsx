@@ -16,6 +16,7 @@ import {
   FileSignature,
   Search,
   Bell,
+  LayoutGrid,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,17 +34,17 @@ import { useFirestore } from "@/firebase";
 import { getUserProfile } from "@/firebase/services";
 import type { UserProfile } from "@/lib/data";
 
-// Redefining Sheet imports since they were using @/components/ui/sheet
 import { Sheet as SheetComp, SheetContent as SheetContentComp, SheetTrigger as SheetTriggerComp } from "@/components/ui/sheet";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/dashboard/sales", icon: BadgeDollarSign, label: "Sales" },
-  { href: "/dashboard/inventory", icon: Package, label: "Inventory" },
-  { href: "/dashboard/prospects", icon: Users, label: "Prospects" },
-  { href: "/dashboard/reports", icon: FileText, label: "Reports" },
+  { href: "/dashboard/sales", icon: BadgeDollarSign, label: "Ventas" },
+  { href: "/dashboard/inventory", icon: Package, label: "Inventario" },
+  { href: "/dashboard/prospects", icon: Users, label: "Prospectos" },
+  { href: "/dashboard/utilities", icon: LayoutGrid, label: "Centro de Utilidades" },
+  { href: "/dashboard/reports", icon: FileText, label: "Reportes" },
   { href: "/dashboard/editables", icon: FileSignature, label: "Editables" },
-  { href: "/dashboard/settings", icon: Settings, label: "Settings" },
+  { href: "/dashboard/settings", icon: Settings, label: "Configuración" },
 ];
 
 export default function DashboardLayout({
@@ -166,7 +167,7 @@ export default function DashboardLayout({
             <div className="relative flex-1 max-w-md hidden md:block group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
               <Input 
-                placeholder="Search analytics..." 
+                placeholder="Buscar en el ecosistema..." 
                 className="pl-11 h-11 bg-secondary/30 border-none rounded-2xl focus-visible:ring-primary/10 transition-all focus:bg-secondary/60"
               />
             </div>

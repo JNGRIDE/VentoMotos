@@ -65,6 +65,16 @@ export const PROSPECT_STAGES: Prospect["stage"][] = ["Potential", "Appointment",
 
 export type NewProspect = Omit<Prospect, "id">;
 
+export type Utility = {
+  id: string;
+  title: string;
+  url: string;
+  description?: string;
+  category: 'Link' | 'Document' | 'Location' | 'Other';
+};
+
+export type NewUtility = Omit<Utility, 'id'>;
+
 // This function will be used by components to filter data already fetched from Firestore.
 export const getSalesByUser = (uid: string, salesList: Sale[]) => salesList.filter(s => s.salespersonId === uid);
 export const getProspectsByUser = (uid: string, prospectsList: Prospect[]) => prospectsList.filter(p => p.salespersonId === uid);

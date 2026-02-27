@@ -12,6 +12,28 @@ import {
 import type { Prospect, UserProfile, NewProspect } from "@/lib/data";
 import { fromFirestore } from "./utils";
 
+/**
+ * Mapea etapas antiguas en inglés a las nuevas en español para mantener compatibilidad
+ * con datos existentes en la base de datos.
+ */
+function normalizeProspectStage(stage: string): Prospect["stage"] {
+  const mapping: Record<string, Prospect["stage"]> = {
+    "Potential": "Potencial",
+    "Scheduled": "Agendado",
+    "Interested": "Potencial",
+    "Negotiating": "Agendado",
+    "Closed": "Cerrado",
+    // Agregamos las nuevas por si acaso
+    "Potencial": "Potencial",
+    "Agendado": "Agendado",
+    "Crédito Aprobado": "Crédito Aprobado",
+    "Caído": "Caído",
+    "Cerrado": "Cerrado"
+  };
+
+  return mapping[stage] || "Potencial";
+}
+
 export async function getProspects(db: Firestore, user: UserProfile, sprint: string): Promise<Prospect[]> {
     const prospectsCol = collection(db, "prospects");
     
@@ -23,7 +45,14 @@ export async function getProspects(db: Firestore, user: UserProfile, sprint: str
     const q = query(prospectsCol, ...constraints);
     
     const prospectsSnapshot = await getDocs(q);
-    const prospectsList = prospectsSnapshot.docs.map(doc => fromFirestore<Prospect>(doc));
+    const prospectsList = prospectsSnapshot.docs.map(doc => {
+        const data = fromFirestore<Prospect>(doc);
+        // Normalizamos la etapa para que aparezca en el Kanban actual
+        return {
+            ...data,
+            stage: normalizeProspectStage(data.stage)
+        };
+    });
     
     prospectsList.sort((a, b) => new Date(b.lastContact).getTime() - new Date(a.lastContact).getTime());
     return prospectsList;

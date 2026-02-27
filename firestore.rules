@@ -2,69 +2,59 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isAuthenticated() && request.auth.uid == userId;
     }
 
     function isManager() {
-      // Check if the user's profile document has the role 'Manager'
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Manager';
+      // Validamos que el usuario exista y tenga el rol de Manager
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Manager';
     }
 
     match /users/{userId} {
-      // Any authenticated user can read profiles (to see names, avatars, etc.)
-      allow read: if request.auth != null;
-      // Only the user themselves or a manager can edit a profile.
+      // Cualquier usuario autenticado puede leer perfiles
+      allow read: if isAuthenticated();
+      // Solo el dueño o un manager puede editar un perfil
       allow write: if isOwner(userId) || isManager();
     }
 
     match /sales/{saleId} {
-      // A manager can read any sale. A salesperson can only read their own.
-      allow read: if isManager() || request.auth.uid == resource.data.salespersonId;
-      // A manager can create a sale for anyone. A salesperson only for themselves.
-      allow create: if isManager() || request.auth.uid == request.resource.data.salespersonId;
-      // Only a manager can update or delete a sale record.
+      allow read: if isManager() || (isAuthenticated() && resource.data.salespersonId == request.auth.uid);
+      allow create: if isManager() || (isAuthenticated() && request.resource.data.salespersonId == request.auth.uid);
       allow update, delete: if isManager();
     }
 
     match /prospects/{prospectId} {
-      // A manager can read any prospect. A salesperson can only read their own.
-      allow read: if isManager() || request.auth.uid == resource.data.salespersonId;
-      // A manager can write to any prospect. A salesperson can only write to their own.
-      allow write: if isManager() || request.auth.uid == request.resource.data.salespersonId;
+      allow read: if isManager() || (isAuthenticated() && resource.data.salespersonId == request.auth.uid);
+      allow write: if isManager() || (isAuthenticated() && request.resource.data.salespersonId == request.auth.uid);
     }
 
     match /inventory/{motorcycleId} {
-      // Any authenticated user can read the inventory (to see available models)
-      allow read: if request.auth != null;
-      // Any authenticated user can UPDATE inventory (to decrement stock during a sale)
-      allow update: if request.auth != null;
-      // Only a manager can CREATE or DELETE inventory items
+      allow read: if isAuthenticated();
+      allow update: if isAuthenticated();
       allow create, delete: if isManager();
     }
 
     match /sprints/{sprintId} {
-      // Any authenticated user can read sprints (to populate dropdowns, etc.)
-      allow read: if request.auth != null;
-      // Any authenticated user can create a sprint document (for ensureCurrentSprint)
-      allow create: if request.auth != null;
-      // Only a manager can update a sprint (e.g., to close it)
-      allow update: if isManager();
-      // Only a manager can delete a sprint
-      allow delete: if isManager();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isManager();
     }
 
     match /settings/{settingId} {
-      // Any authenticated user can read settings (like financiers list)
-      allow read: if request.auth != null;
-      // Only a manager can write settings
+      allow read: if isAuthenticated();
       allow write: if isManager();
     }
 
     match /utilities/{utilityId} {
-      // Any authenticated user can read utilities
-      allow read: if request.auth != null;
-      // Only a manager can create, update or delete utilities
+      // Todos los vendedores y managers pueden ver los links
+      allow read: if isAuthenticated();
+      // Solo el Manager puede crear, editar o borrar
       allow write: if isManager();
     }
   }

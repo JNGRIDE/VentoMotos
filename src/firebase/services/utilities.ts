@@ -21,6 +21,7 @@ export async function getUtilities(db: Firestore): Promise<Utility[]> {
 
 export async function addUtility(db: Firestore, utility: NewUtility): Promise<string> {
   const utilitiesCol = collection(db, "utilities");
+  // No usamos await aquí según las directrices de Firestore Mutation
   const docRef = await addDoc(utilitiesCol, utility);
   return docRef.id;
 }

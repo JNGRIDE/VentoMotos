@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { LoaderCircle, ExternalLink, FileText, MapPin, Globe, Trash2, LayoutGrid } from 'lucide-react';
+import { LoaderCircle, ExternalLink, FileText, MapPin, Globe, Trash2, LayoutGrid, ShieldAlert } from 'lucide-react';
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
 import { useToast } from "@/hooks/use-toast";
@@ -25,19 +25,17 @@ export default function UtilitiesPage() {
     if (!user) return;
     setIsLoading(true);
     try {
-      // Importante: Primero obtener el perfil para validar el rol antes de mostrar la UI
       const profile = await getUserProfile(db, user.uid);
       setCurrentUserProfile(profile);
 
-      // Luego obtener las utilidades
       const utils = await getUtilities(db);
       setUtilities(utils);
     } catch (error: any) {
       console.error("Error fetching utilities:", error);
       toast({
         variant: "destructive",
-        title: "Error cargando utilidades",
-        description: error.message || "No se pudo conectar con la base de datos.",
+        title: "Error de acceso",
+        description: error.message || "No tienes permisos para ver esta sección.",
       });
     } finally {
       setIsLoading(false);
@@ -54,7 +52,11 @@ export default function UtilitiesPage() {
       toast({ title: "Eliminado", description: "La utilidad ha sido removida." });
       fetchData();
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar." });
+      toast({ 
+        variant: "destructive", 
+        title: "Error", 
+        description: "No tienes permisos para eliminar este recurso." 
+      });
     }
   };
 

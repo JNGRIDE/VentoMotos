@@ -11,15 +11,13 @@ service cloud.firestore {
     }
 
     function isManager() {
-      // Validamos que el usuario exista y tenga el rol de Manager
+      // Forzamos lectura del documento del usuario para validar el rol 'Manager'
       return isAuthenticated() && 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Manager';
     }
 
     match /users/{userId} {
-      // Cualquier usuario autenticado puede leer perfiles
       allow read: if isAuthenticated();
-      // Solo el dueño o un manager puede editar un perfil
       allow write: if isOwner(userId) || isManager();
     }
 
@@ -52,10 +50,11 @@ service cloud.firestore {
     }
 
     match /utilities/{utilityId} {
-      // Todos los vendedores y managers pueden ver los links
+      // Regla explícita para el Centro de Utilidades
+      // Lectura permitida para todo el equipo autenticado
       allow read: if isAuthenticated();
       // Solo el Manager puede crear, editar o borrar
-      allow write: if isManager();
+      allow create, update, delete: if isManager();
     }
   }
 }

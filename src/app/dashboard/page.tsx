@@ -1,7 +1,19 @@
 "use client";
 
-import React, { useMemo, useEffect } from 'react';
-import { DollarSign, CreditCard, Award, TrendingUp, UserPlus, ShieldAlert, Download, CalendarOff, CalendarPlus, ChevronRight } from 'lucide-react';
+import React, { useMemo, useEffect, useState } from 'react';
+import { 
+  DollarSign, 
+  CreditCard, 
+  Award, 
+  TrendingUp, 
+  UserPlus, 
+  ShieldAlert, 
+  Download, 
+  CalendarOff, 
+  CalendarPlus, 
+  ChevronRight,
+  AlertTriangle
+} from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,13 +23,23 @@ import { RecentSales } from '@/components/dashboard/recent-sales';
 import { RecordSaleDialog } from '@/components/sales/record-sale-dialog';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { useToast } from "@/hooks/use-toast";
-import { getSalesByUser, type NewSale, type Sale } from '@/lib/data';
+import { getSalesByUser } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ADMIN_UID, COMMISSION_RATES, GOALS } from '@/lib/constants';
 import { useDashboardData } from '@/hooks/use-dashboard-data';
 import { useUser } from '@/firebase/auth/use-user';
 import { exportSalesToCSV } from '@/lib/export-utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -39,6 +61,8 @@ export default function DashboardPage() {
     startNextSprint,
     error
   } = useDashboardData();
+
+  const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false);
 
   useEffect(() => {
     if (error) {
@@ -63,19 +87,11 @@ export default function DashboardPage() {
     return currentUserProfile?.salesGoal || 0;
   }, [userProfiles, currentUserProfile]);
   
-  const creditsGoal = useMemo(() => {
-    if (currentUserProfile?.role === 'Manager') {
-      return userProfiles.reduce((sum, sp) => sum + sp.creditsGoal, 0);
-    }
-    return currentUserProfile?.creditsGoal || 0;
-  }, [userProfiles, currentUserProfile]);
-
   const salesProgress = salesGoal > 0 ? (totalSales / salesGoal) * 100 : 0;
   
   const commissionData = useMemo(() => {
     const commissionRate = isManager ? COMMISSION_RATES.MANAGER : COMMISSION_RATES.SALESPERSON;
     const earned = totalSales * commissionRate;
-    const isUnlocked = salesProgress >= GOALS.SALES_PROGRESS_THRESHOLD;
 
     let description = "";
     let iconColor = "text-muted-foreground";
@@ -120,6 +136,23 @@ export default function DashboardPage() {
      return s ? s.status : 'closed';
   }, [sprints, selectedSprint]);
 
+  const handleFinishSprint = async () => {
+    try {
+      await finishSprint(selectedSprint);
+      setIsFinishDialogOpen(false);
+      toast({
+        title: "Mes cerrado",
+        description: "El periodo ha sido bloqueado con éxito.",
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cerrar el mes.",
+      });
+    }
+  };
+
   if (isLoading) {
     return <DashboardSkeleton />;
   }
@@ -136,7 +169,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6 md:gap-10">
-      {/* Header Section style Apple */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
@@ -177,7 +209,7 @@ export default function DashboardPage() {
                 {currentSprintStatus === 'active' && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button onClick={finishSprint} variant="ghost" size="icon" className="h-9 w-9 md:h-10 md:w-10 rounded-2xl hover:bg-destructive/10">
+                      <Button onClick={() => setIsFinishDialogOpen(true)} variant="ghost" size="icon" className="h-9 w-9 md:h-10 md:w-10 rounded-2xl hover:bg-destructive/10">
                           <CalendarOff className="h-4 w-4 md:h-5 md:w-5 text-destructive" />
                       </Button>
                     </TooltipTrigger>
@@ -197,7 +229,6 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      {/* KPIs Grid style Tile */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <KpiCard
             title="Ventas Totales"
@@ -232,7 +263,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
-        {/* Main Content Area */}
         <div className="lg:col-span-2 space-y-6 md:space-y-10">
           <SalesProgressChart data={teamChartData} />
           
@@ -253,7 +283,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Sidebar inside dashboard */}
         <div className="space-y-6 md:space-y-8">
            <Card className="border-none bg-gradient-to-br from-primary to-accent text-primary-foreground p-6 md:p-8 rounded-[32px] shadow-premium relative overflow-hidden group">
               <div className="relative z-10 space-y-4">
@@ -271,7 +300,6 @@ export default function DashboardPage() {
                   <p className="text-xs text-white/60 mt-2 text-right font-medium">{salesProgress.toFixed(0)}% Completado</p>
                 </div>
               </div>
-              {/* Decorative elements */}
               <div className="absolute top-[-20%] right-[-20%] h-64 w-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-500"></div>
            </Card>
 
@@ -292,6 +320,29 @@ export default function DashboardPage() {
            </div>
         </div>
       </div>
+
+      <AlertDialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
+        <AlertDialogContent className="rounded-[32px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              ¿Cerrar este mes definitivamente?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción marcará el mes como **Finalizado**. Se bloquearán todas las ediciones, borrados y nuevos registros de ventas para este periodo. Esta es una acción de seguridad para proteger tus reportes mensuales.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-2xl">Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleFinishSprint}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-2xl"
+            >
+              Sí, cerrar mes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

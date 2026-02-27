@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { LoaderCircle, ExternalLink, FileText, MapPin, Globe, Trash2, LayoutGrid, ShieldAlert, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { LoaderCircle, ExternalLink, FileText, MapPin, Globe, Trash2, LayoutGrid, ShieldAlert, AlertTriangle, Filter } from 'lucide-react';
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { AddUtilityDialog } from '@/components/utilities/add-utility-dialog';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function UtilitiesPage() {
   const db = useFirestore();
@@ -22,6 +23,7 @@ export default function UtilitiesPage() {
   const [utilities, setUtilities] = useState<Utility[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("all");
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -57,7 +59,6 @@ export default function UtilitiesPage() {
     try {
       await removeUtility(db, id);
       toast({ title: "Eliminado", description: "La utilidad ha sido removida." });
-      // Refresh local state optimistically or re-fetch
       setUtilities(prev => prev.filter(u => u.id !== id));
     } catch (error: any) {
       toast({ 
@@ -75,9 +76,30 @@ export default function UtilitiesPage() {
       case 'Link': return <Globe className="h-5 w-5" />;
       case 'Document': return <FileText className="h-5 w-5" />;
       case 'Location': return <MapPin className="h-5 w-5" />;
-      default: return <ExternalLink className="h-5 w-5" />;
+      default: return <LayoutGrid className="h-5 w-5" />;
     }
   };
+
+  const categories = [
+    { id: 'all', label: 'Todas', icon: Filter },
+    { id: 'Link', label: 'Enlaces', icon: Globe },
+    { id: 'Document', label: 'Documentos', icon: FileText },
+    { id: 'Location', label: 'Ubicaciones', icon: MapPin },
+    { id: 'Other', label: 'Otros', icon: LayoutGrid },
+  ];
+
+  const filteredUtilities = useMemo(() => {
+    if (activeTab === 'all') return utilities;
+    return utilities.filter(u => u.category === activeTab);
+  }, [utilities, activeTab]);
+
+  const stats = useMemo(() => {
+    const counts: Record<string, number> = { all: utilities.length };
+    utilities.forEach(u => {
+      counts[u.category] = (counts[u.category] || 0) + 1;
+    });
+    return counts;
+  }, [utilities]);
 
   if (isLoading) {
     return (
@@ -99,14 +121,14 @@ export default function UtilitiesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-8 md:gap-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
             Centro de Utilidades
           </h1>
           <p className="text-muted-foreground text-base md:text-lg">
-            Herramientas, enlaces y recursos clave para el equipo Vento.
+            Recursos clave centralizados para el equipo Vento.
           </p>
         </div>
         {isManager && (
@@ -117,7 +139,7 @@ export default function UtilitiesPage() {
       </div>
 
       {!isManager && (
-        <Alert className="bg-primary/5 border-primary/20 rounded-2xl">
+        <Alert className="bg-primary/5 border-primary/20 rounded-[24px]">
           <AlertTriangle className="h-4 w-4 text-primary" />
           <AlertTitle className="text-primary font-bold">Modo Consulta</AlertTitle>
           <AlertDescription className="text-primary/80">
@@ -126,62 +148,89 @@ export default function UtilitiesPage() {
         </Alert>
       )}
 
-      {utilities.length === 0 ? (
-        <Card className="border-dashed bg-muted/20 rounded-[32px] p-12 flex flex-col items-center justify-center text-center">
-          <div className="h-16 w-16 rounded-3xl bg-secondary flex items-center justify-center mb-4">
-            <LayoutGrid className="h-8 w-8 text-muted-foreground/40" />
+      <div className="flex flex-col gap-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="bg-secondary/40 p-1.5 rounded-[24px] h-auto flex flex-wrap md:inline-flex w-full md:w-auto shadow-soft border border-border/10">
+            {categories.map((cat) => (
+              <TabsTrigger 
+                key={cat.id} 
+                value={cat.id}
+                className="rounded-2xl h-10 px-4 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-premium transition-all duration-300"
+              >
+                <cat.icon className="h-4 w-4" />
+                <span className="font-semibold">{cat.label}</span>
+                {stats[cat.id] > 0 && (
+                  <Badge variant="secondary" className="h-5 min-w-5 p-0 px-1 rounded-md text-[10px] bg-primary/10 text-primary border-none">
+                    {stats[cat.id]}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
+        {filteredUtilities.length === 0 ? (
+          <Card className="border-dashed bg-muted/10 rounded-[40px] p-16 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500">
+            <div className="h-20 w-20 rounded-[32px] bg-secondary flex items-center justify-center mb-6 shadow-soft">
+              <LayoutGrid className="h-10 w-10 text-muted-foreground/30" />
+            </div>
+            <h3 className="text-2xl font-bold">Sin recursos en "{categories.find(c => c.id === activeTab)?.label}"</h3>
+            <p className="text-muted-foreground max-w-sm mt-3 text-lg">
+              {isManager 
+                ? "Como Manager, puedes empezar agregando portales, archivos o guías para esta categoría." 
+                : "Aún no se han agregado recursos en esta sección."}
+            </p>
+            {isManager && activeTab !== 'all' && (
+              <Button variant="outline" onClick={() => setActiveTab('all')} className="mt-6 rounded-2xl">
+                Ver todos los recursos
+              </Button>
+            )}
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {filteredUtilities.map((item) => (
+              <Card key={item.id} className="group overflow-hidden rounded-[32px] border-none shadow-soft hover:shadow-premium transition-all duration-500">
+                <CardHeader className="p-6 pb-2">
+                  <div className="flex justify-between items-start">
+                    <div className="p-3.5 rounded-2xl bg-primary/10 text-primary transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-inner">
+                      {getIcon(item.category)}
+                    </div>
+                    <div className="flex gap-1">
+                      <Badge variant="secondary" className="rounded-full text-[10px] font-bold uppercase tracking-wider bg-secondary/60 backdrop-blur-sm px-2 py-1">
+                        {item.category}
+                      </Badge>
+                      {isManager && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <CardTitle className="text-xl font-bold mt-5 leading-tight line-clamp-1 group-hover:text-primary transition-colors">{item.title}</CardTitle>
+                  <CardDescription className="line-clamp-2 min-h-[40px] mt-2 text-muted-foreground/80 leading-relaxed">
+                    {item.description || "Sin descripción adicional."}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6 pt-4">
+                  <Button 
+                    asChild 
+                    className="w-full rounded-2xl h-12 shadow-primary/10 group-hover:shadow-primary/30 transition-all duration-300 gap-2 font-bold"
+                  >
+                    <a href={item.url} target="_blank" rel="noopener noreferrer">
+                      Abrir Recurso <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          <h3 className="text-xl font-bold">No hay utilidades aún</h3>
-          <p className="text-muted-foreground max-w-sm mt-2">
-            {isManager 
-              ? "Como Manager, puedes empezar agregando portales de crédito, manuales o ubicaciones." 
-              : "El Manager aún no ha agregado recursos a esta sección."}
-          </p>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {utilities.map((item) => (
-            <Card key={item.id} className="group overflow-hidden rounded-[32px] border-none shadow-soft hover:shadow-premium transition-all duration-500 animate-in fade-in slide-in-from-bottom-2">
-              <CardHeader className="p-6 pb-2">
-                <div className="flex justify-between items-start">
-                  <div className="p-3 rounded-2xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
-                    {getIcon(item.category)}
-                  </div>
-                  <div className="flex gap-1">
-                    <Badge variant="secondary" className="rounded-full text-[10px] font-bold uppercase tracking-wider bg-secondary/50">
-                      {item.category}
-                    </Badge>
-                    {isManager && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7 rounded-full text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <CardTitle className="text-xl font-bold mt-4 leading-tight">{item.title}</CardTitle>
-                <CardDescription className="line-clamp-2 min-h-[40px] mt-1">
-                  {item.description || "Sin descripción adicional."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 pt-4">
-                <Button 
-                  asChild 
-                  className="w-full rounded-2xl h-12 shadow-primary/10 group-hover:shadow-primary/30 transition-all"
-                >
-                  <a href={item.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
-                    Abrir Recurso <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

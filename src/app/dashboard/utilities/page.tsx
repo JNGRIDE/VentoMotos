@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { LoaderCircle, ExternalLink, FileText, MapPin, Globe, PlusCircle, Trash2, ShieldAlert } from 'lucide-react';
+import { LoaderCircle, ExternalLink, FileText, MapPin, Globe, Trash2, LayoutGrid } from 'lucide-react';
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
 import { useToast } from "@/hooks/use-toast";
@@ -25,13 +25,15 @@ export default function UtilitiesPage() {
     if (!user) return;
     setIsLoading(true);
     try {
-      const [profile, utils] = await Promise.all([
-        getUserProfile(db, user.uid),
-        getUtilities(db)
-      ]);
+      // Importante: Primero obtener el perfil para validar el rol antes de mostrar la UI
+      const profile = await getUserProfile(db, user.uid);
       setCurrentUserProfile(profile);
+
+      // Luego obtener las utilidades
+      const utils = await getUtilities(db);
       setUtilities(utils);
     } catch (error: any) {
+      console.error("Error fetching utilities:", error);
       toast({
         variant: "destructive",
         title: "Error cargando utilidades",
@@ -78,45 +80,51 @@ export default function UtilitiesPage() {
   return (
     <div className="flex flex-col gap-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-headline">
+        <div className="space-y-1">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
             Centro de Utilidades
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-base md:text-lg">
             Herramientas, enlaces y recursos clave para el equipo Vento.
           </p>
         </div>
         {isManager && (
-          <AddUtilityDialog onUtilityAdded={fetchData} />
+          <div className="animate-in fade-in zoom-in duration-500">
+            <AddUtilityDialog onUtilityAdded={fetchData} />
+          </div>
         )}
       </div>
 
       {utilities.length === 0 ? (
         <Card className="border-dashed bg-muted/20 rounded-[32px] p-12 flex flex-col items-center justify-center text-center">
-          <LayoutGrid className="h-16 w-16 text-muted-foreground/20 mb-4" />
+          <div className="h-16 w-16 rounded-3xl bg-secondary flex items-center justify-center mb-4">
+            <LayoutGrid className="h-8 w-8 text-muted-foreground/40" />
+          </div>
           <h3 className="text-xl font-bold">No hay utilidades aún</h3>
           <p className="text-muted-foreground max-w-sm mt-2">
-            El Manager puede agregar enlaces a portales de crédito, documentos PDF o ubicaciones de sucursales aquí.
+            {isManager 
+              ? "Como Manager, puedes empezar agregando portales de crédito, manuales o ubicaciones." 
+              : "El Manager aún no ha agregado recursos a esta sección."}
           </p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {utilities.map((item) => (
-            <Card key={item.id} className="group overflow-hidden rounded-[32px] border-none shadow-soft hover:shadow-premium transition-all duration-500">
+            <Card key={item.id} className="group overflow-hidden rounded-[32px] border-none shadow-soft hover:shadow-premium transition-all duration-500 animate-in fade-in slide-in-from-bottom-2">
               <CardHeader className="p-6 pb-2">
                 <div className="flex justify-between items-start">
                   <div className="p-3 rounded-2xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
                     {getIcon(item.category)}
                   </div>
                   <div className="flex gap-1">
-                    <Badge variant="secondary" className="rounded-full text-[10px] font-bold uppercase tracking-wider">
+                    <Badge variant="secondary" className="rounded-full text-[10px] font-bold uppercase tracking-wider bg-secondary/50">
                       {item.category}
                     </Badge>
                     {isManager && (
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-7 w-7 rounded-full text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="h-7 w-7 rounded-full text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => handleDelete(item.id)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -146,5 +154,3 @@ export default function UtilitiesPage() {
     </div>
   );
 }
-
-import { LayoutGrid } from 'lucide-react';

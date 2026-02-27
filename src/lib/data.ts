@@ -54,7 +54,7 @@ export type Prospect = {
   address?: string;
   notes?: string;
 
-  // Enriched fields
+  // Enriched fields (Notion-like)
   occupation?: string;
   motorcycleInterest?: string;
   stageUpdatedAt?: string;

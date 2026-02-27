@@ -34,8 +34,6 @@ interface ProspectCardProps {
   onDelete: (prospect: Prospect) => void;
 }
 
-// Custom comparison function for React.memo to prevent unnecessary re-renders
-// particularly when the prospects list is refreshed but the individual card data hasn't changed.
 function arePropsEqual(prevProps: ProspectCardProps, nextProps: ProspectCardProps) {
   return (
     prevProps.userProfile === nextProps.userProfile &&
@@ -48,20 +46,17 @@ function arePropsEqual(prevProps: ProspectCardProps, nextProps: ProspectCardProp
   );
 }
 
-// Optimization: Memoize ProspectCard to prevent re-renders when parent re-renders but props (like prospect data) are stable
 export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, currentUserProfile, onDragStart, onMoveStage, onEdit, onDelete }: ProspectCardProps) {
   const sourceColor =
     prospect.source === "Advertising" ? "bg-accent/20 text-accent-foreground" : "bg-primary/20 text-primary-foreground";
 
-  // Visual prioritization: Colored border based on source
   const borderColor = prospect.source === "Advertising" ? "border-l-4 border-l-blue-500" : "border-l-4 border-l-green-500";
 
-  // Time in stage
+  // Alerta de estancamiento (Notion-like logic)
   const daysInStage = prospect.stageUpdatedAt
       ? Math.floor((new Date().getTime() - new Date(prospect.stageUpdatedAt).getTime()) / (1000 * 3600 * 24))
       : null;
 
-  // Quick Actions Links
   const whatsappLink = prospect.phone ? `https://wa.me/52${prospect.phone.replace(/\D/g, '')}` : null;
   const phoneLink = prospect.phone ? `tel:${prospect.phone}` : null;
 
@@ -95,12 +90,12 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onEdit(prospect); }}>
                     <Pencil className="mr-2 h-4 w-4" />
-                    Edit
+                    Ver / Editar Bitácora
                   </DropdownMenuItem>
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                       <ArrowRight className="mr-2 h-4 w-4" />
-                      Move to
+                      Mover a
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                       <DropdownMenuSubContent>
@@ -117,7 +112,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                   </DropdownMenuSub>
                   <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDelete(prospect); }} className="text-destructive focus:text-destructive">
                     <Trash className="mr-2 h-4 w-4" />
-                    Delete
+                    Eliminar
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -125,7 +120,6 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-0 space-y-2">
-         {/* Quick Actions & Info */}
          <div className="flex items-center justify-between">
             <div className="flex gap-2">
                 {phoneLink && (
@@ -137,7 +131,7 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                                 </a>
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>Call: {prospect.phone}</p></TooltipContent>
+                        <TooltipContent><p>Llamar: {prospect.phone}</p></TooltipContent>
                     </Tooltip>
                 )}
                 {whatsappLink && (
@@ -152,44 +146,33 @@ export const ProspectCard = memo(function ProspectCard({ prospect, userProfile, 
                         <TooltipContent><p>WhatsApp: {prospect.phone}</p></TooltipContent>
                     </Tooltip>
                 )}
-                {prospect.email && (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                             <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" asChild>
-                                <a href={`mailto:${prospect.email}`} aria-label={`Email ${prospect.name}`}>
-                                    <Mail className="h-3.5 w-3.5" />
-                                </a>
-                             </Button>
-                        </TooltipTrigger>
-                         <TooltipContent><p>Email: {prospect.email}</p></TooltipContent>
-                    </Tooltip>
-                )}
             </div>
 
             {daysInStage !== null && (
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <div className={cn("flex items-center text-xs cursor-help outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm", daysInStage > 7 ? "text-destructive font-medium" : "text-muted-foreground")} tabIndex={0}>
+                        <div className={cn("flex items-center text-[10px] px-1.5 py-0.5 rounded-full cursor-help outline-none transition-colors", 
+                            daysInStage > 7 ? "bg-destructive/10 text-destructive font-bold" : "bg-muted text-muted-foreground")} tabIndex={0}>
                             <Clock className="h-3 w-3 mr-1" />
-                            <span>{daysInStage}d</span>
+                            <span>{daysInStage} días aquí</span>
                         </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Days in current stage</p>
+                        <p>Días en esta etapa actual</p>
                     </TooltipContent>
                 </Tooltip>
             )}
          </div>
 
-        <div className="flex items-center justify-between text-sm text-muted-foreground pt-1 border-t">
+        <div className="flex items-center justify-between text-sm text-muted-foreground pt-1 border-t border-border/40">
           <div className="flex items-center gap-2">
-            <Avatar className="h-6 w-6">
+            <Avatar className="h-6 w-6 border border-border/40">
               <AvatarImage src={userProfile?.avatarUrl} />
               <AvatarFallback>{userProfile?.name?.charAt(0)}</AvatarFallback>
             </Avatar>
-            <span className="truncate max-w-[80px]">{userProfile?.name || "Unassigned"}</span>
+            <span className="truncate max-w-[80px] text-[11px] font-medium">{userProfile?.name || "Sin asignar"}</span>
           </div>
-          <span>{new Date(prospect.lastContact).toLocaleDateString()}</span>
+          <span className="text-[10px]">{new Date(prospect.lastContact).toLocaleDateString()}</span>
         </div>
       </CardContent>
     </Card>

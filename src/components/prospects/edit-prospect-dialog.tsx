@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, User, Briefcase, Bike, MessageSquare, History } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,18 +12,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { updateProspect, getUserProfiles } from "@/firebase/services";
 import type { Prospect, UserProfile } from "@/lib/data";
 
 const prospectSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  name: z.string().min(2, "El nombre es requerido"),
   source: z.enum(["Organic", "Advertising"]),
-  salespersonId: z.string().min(1, "Salesperson is required"),
+  salespersonId: z.string().min(1, "Vendedor es requerido"),
   stage: z.enum(["Potential", "Appointment", "Credit", "Closed"]),
   phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
   rfc: z.string().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
@@ -66,7 +68,6 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
 
   useEffect(() => {
     if (open) {
-        // Reset form to current prospect values when dialog opens
         form.reset({
             name: prospect.name,
             source: prospect.source,
@@ -76,7 +77,7 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
             email: prospect.email || "",
             rfc: prospect.rfc || "",
             address: prospect.address || "",
-            notes: "", // Reset to empty to allow adding new note
+            notes: "",
             occupation: prospect.occupation || "",
             motorcycleInterest: prospect.motorcycleInterest || "",
         });
@@ -85,27 +86,25 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
             getUserProfiles(db).then(setUserProfiles);
         }
     }
-  }, [open, db, currentUserProfile, form, prospect]); // prospect in dep array is fine now that parent doesn't unmount
+  }, [open, db, currentUserProfile, form, prospect]);
 
   const onSubmit = async (data: ProspectFormValues) => {
     setIsSaving(true);
     try {
       const updates: Partial<Prospect> = { ...data };
 
-      // Update stageUpdatedAt if stage changed
       if (data.stage !== prospect.stage) {
           updates.stageUpdatedAt = new Date().toISOString();
       }
 
-      // Handle notes and migration
       let currentNotesList = prospect.notesList || [];
 
-      // Migration: If we have a legacy note but no list, move it to list before adding new one
+      // Migración si existe nota vieja
       if (prospect.notes && currentNotesList.length === 0) {
            currentNotesList = [{
               content: prospect.notes,
               date: prospect.lastContact || new Date().toISOString(),
-              author: "Legacy Note",
+              author: "Nota Anterior",
            }];
       }
 
@@ -113,35 +112,25 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
           const newNoteObj = {
               content: data.notes,
               date: new Date().toISOString(),
-              author: currentUserProfile?.name || "Unknown",
+              author: currentUserProfile?.name || "Sistema",
           };
           updates.notesList = [...currentNotesList, newNoteObj];
       } else {
-          // Don't overwrite existing notes field with empty string
           delete updates.notes;
-          // If we didn't add a new note, but we performed a migration in memory,
-          // we might want to save it if we were doing a rigorous migration,
-          // but for now let's only save if other things changed or if we want to enforce migration.
-          // To be safe and simple: only update notesList if we added a new note.
-          // If we didn't add a new note, we don't save the migrated list,
-          // so the UI will continue to show the "Legacy Note" from prospect.notes (via the check in render).
       }
 
       await updateProspect(db, prospect.id, updates);
       toast({
-        title: "Prospect Updated",
-        description: "The prospect details have been saved.",
+        title: "Bitácora Actualizada",
+        description: "Los cambios se han guardado en el historial del cliente.",
       });
-      // Close dialog FIRST to avoid race conditions with refresh
       onOpenChange(false);
-      // THEN trigger refresh
       onProspectUpdated();
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to update prospect.";
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: errorMessage,
+        description: error.message || "No se pudo actualizar el prospecto.",
       });
     } finally {
       setIsSaving(false);
@@ -152,221 +141,212 @@ export function EditProspectDialog({ prospect, open, onOpenChange, onProspectUpd
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Prospect</DialogTitle>
-          <DialogDescription>
-            Update the details for this lead.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-[32px] border-none shadow-premium p-0 gap-0">
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Name *</FormLabel>
-                            <FormControl>
-                                <Input {...field} autoComplete="name" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Phone</FormLabel>
-                            <FormControl>
-                                <Input {...field} type="tel" autoComplete="tel" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                                <Input {...field} type="email" autoComplete="email" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="rfc"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>RFC</FormLabel>
-                            <FormControl>
-                                <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Address</FormLabel>
-                            <FormControl>
-                                <Textarea {...field} autoComplete="street-address" className="min-h-[60px]" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="occupation"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Occupation</FormLabel>
-                            <FormControl>
-                                <Input {...field} placeholder="Employee, Business Owner..." />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="motorcycleInterest"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Interest</FormLabel>
-                            <FormControl>
-                                <Input {...field} placeholder="Rocketman 250..." />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <div className="space-y-2">
-                    <FormLabel>Notes History</FormLabel>
-                    <div className="bg-muted/50 rounded-md p-3 max-h-[150px] overflow-y-auto text-sm space-y-2">
-                        {(!prospect.notesList || prospect.notesList.length === 0) && !prospect.notes && (
-                            <p className="text-muted-foreground italic">No notes yet.</p>
-                        )}
-                         {/* Show legacy note if it exists and not in list (simplistic check) */}
-                        {prospect.notes && (!prospect.notesList || prospect.notesList.length === 0) && (
-                            <div className="bg-background p-2 rounded border">
-                                <p>{prospect.notes}</p>
-                                <p className="text-xs text-muted-foreground mt-1 text-right">Legacy Note</p>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                <div className="p-8 space-y-8">
+                    <DialogHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <DialogTitle className="text-3xl font-bold tracking-tight mb-1">Bitácora de Prospecto</DialogTitle>
+                                <DialogDescription className="text-base">
+                                    Seguimiento detallado y perfil del cliente.
+                                </DialogDescription>
                             </div>
-                        )}
-                        {prospect.notesList?.map((note, i) => (
-                            <div key={i} className="bg-background p-2 rounded border">
-                                <p>{note.content}</p>
-                                <div className="flex justify-between items-center mt-1">
-                                    <span className="text-xs text-muted-foreground font-medium">{note.author}</span>
-                                    <span className="text-xs text-muted-foreground">{new Date(note.date).toLocaleString()}</span>
+                            <Badge className="h-8 px-4 rounded-full bg-primary/10 text-primary border-none text-sm">
+                                {prospect.stage}
+                            </Badge>
+                        </div>
+                    </DialogHeader>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        {/* Columna Izquierda: Información Estructurada */}
+                        <div className="space-y-8">
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                    <User className="h-4 w-4" /> Datos Personales
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="name"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Nombre Completo</FormLabel>
+                                                <FormControl><Input {...field} className="rounded-xl border-border/40" /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="phone"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Teléfono</FormLabel>
+                                                <FormControl><Input {...field} className="rounded-xl border-border/40" /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                                <FormField
+                                    control={form.control}
+                                    name="email"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Email</FormLabel>
+                                            <FormControl><Input {...field} className="rounded-xl border-border/40" /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            <Separator className="bg-border/40" />
+
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                    <Briefcase className="h-4 w-4" /> Perfil de Interés
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="occupation"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Ocupación</FormLabel>
+                                                <FormControl><Input placeholder="Ej. Arquitecto, Uber..." {...field} className="rounded-xl border-border/40" /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="motorcycleInterest"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Moto de Interés</FormLabel>
+                                                <FormControl><Input placeholder="Ej. Rocketman 250" {...field} className="rounded-xl border-border/40" /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                 </div>
                             </div>
-                        ))}
+
+                            <Separator className="bg-border/40" />
+
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                    <History className="h-4 w-4" /> Estado en el Funnel
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="stage"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Etapa Actual</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl><SelectTrigger className="rounded-xl border-border/40"><SelectValue /></SelectTrigger></FormControl>
+                                                    <SelectContent className="rounded-2xl">
+                                                        <SelectItem value="Potential">Potential</SelectItem>
+                                                        <SelectItem value="Appointment">Appointment</SelectItem>
+                                                        <SelectItem value="Credit">Credit</SelectItem>
+                                                        <SelectItem value="Closed">Closed</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    {isManager && (
+                                        <FormField
+                                            control={form.control}
+                                            name="salespersonId"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Asignado a</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl><SelectTrigger className="rounded-xl border-border/40"><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent className="rounded-2xl">
+                                                            {userProfiles.map(p => <SelectItem key={p.uid} value={p.uid}>{p.name}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Columna Derecha: Timeline / Notion Style Notes */}
+                        <div className="bg-secondary/30 rounded-[24px] p-6 space-y-6 flex flex-col h-full min-h-[400px]">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                <MessageSquare className="h-4 w-4" /> Bitácora de Actividad
+                            </h3>
+                            
+                            <div className="flex-1 overflow-y-auto space-y-4 pr-2 no-scrollbar">
+                                {(!prospect.notesList || prospect.notesList.length === 0) && !prospect.notes && (
+                                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground/40 italic py-12">
+                                        <MessageSquare className="h-12 w-12 mb-2 opacity-20" />
+                                        <p className="text-sm">Sin historial de notas.</p>
+                                    </div>
+                                )}
+                                
+                                {prospect.notes && (!prospect.notesList || prospect.notesList.length === 0) && (
+                                    <div className="glass p-4 rounded-2xl border-none shadow-soft">
+                                        <p className="text-sm text-foreground/80 leading-relaxed">{prospect.notes}</p>
+                                        <p className="text-[10px] text-muted-foreground mt-2 font-bold uppercase">Nota Inicial</p>
+                                    </div>
+                                )}
+
+                                {prospect.notesList?.slice().reverse().map((note, i) => (
+                                    <div key={i} className="bg-card p-4 rounded-2xl shadow-soft border-none transition-all hover:scale-[1.01]">
+                                        <p className="text-sm text-foreground/80 leading-relaxed">{note.content}</p>
+                                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-border/40">
+                                            <span className="text-[10px] font-bold text-primary">{note.author}</span>
+                                            <span className="text-[10px] text-muted-foreground">{new Date(note.date).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="pt-4 border-t border-border/40">
+                                <FormField
+                                    control={form.control}
+                                    name="notes"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="sr-only">Nueva Entrada</FormLabel>
+                                            <FormControl>
+                                                <Textarea 
+                                                    {...field} 
+                                                    className="min-h-[100px] rounded-2xl bg-card border-none shadow-inner focus-visible:ring-primary/20 placeholder:text-muted-foreground/50" 
+                                                    placeholder="Escribe el siguiente paso del seguimiento..." 
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                 <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Add New Note</FormLabel>
-                            <FormControl>
-                                <Textarea {...field} className="min-h-[60px]" placeholder="Type a new note here..." />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="source"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Source</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select source" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="Organic">Organic</SelectItem>
-                                    <SelectItem value="Advertising">Advertising</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="stage"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Stage</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select stage" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="Potential">Potential</SelectItem>
-                                    <SelectItem value="Appointment">Appointment</SelectItem>
-                                    <SelectItem value="Credit">Credit</SelectItem>
-                                    <SelectItem value="Closed">Closed</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                {isManager && (
-                     <FormField
-                        control={form.control}
-                        name="salespersonId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Assigned To</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select salesperson" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                         {userProfiles.map(p => <SelectItem key={p.uid} value={p.uid}>{p.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                )}
-
-                <DialogFooter>
-                    <Button type="submit" disabled={isSaving}>
-                        {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Changes
+                <div className="bg-secondary/50 p-6 flex justify-end items-center gap-4 rounded-b-[32px] mt-auto">
+                    <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl">
+                        Cancelar
                     </Button>
-                </DialogFooter>
+                    <Button type="submit" disabled={isSaving} className="rounded-xl px-8 shadow-primary/20">
+                        {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                        Guardar Cambios
+                    </Button>
+                </div>
             </form>
         </Form>
       </DialogContent>

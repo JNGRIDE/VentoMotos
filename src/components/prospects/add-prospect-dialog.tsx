@@ -18,13 +18,11 @@ import { addProspect, getUserProfiles } from "@/firebase/services";
 import type { NewProspect, UserProfile } from "@/lib/data";
 
 const addProspectSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  name: z.string().min(2, "El nombre es requerido"),
   source: z.enum(["Organic", "Advertising"]),
-  salespersonId: z.string().min(1, "Salesperson is required"),
+  salespersonId: z.string().min(1, "Vendedor es requerido"),
   phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
-  rfc: z.string().optional(),
-  address: z.string().optional(),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
   notes: z.string().optional(),
   occupation: z.string().optional(),
   motorcycleInterest: z.string().optional(),
@@ -53,8 +51,6 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
       salespersonId: currentUserProfile.uid,
       phone: "",
       email: "",
-      rfc: "",
-      address: "",
       notes: "",
       occupation: "",
       motorcycleInterest: "",
@@ -71,8 +67,6 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
              salespersonId: uid,
              phone: "",
              email: "",
-             rfc: "",
-             address: "",
              notes: "",
              occupation: "",
              motorcycleInterest: "",
@@ -97,8 +91,6 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
       stageUpdatedAt: new Date().toISOString(),
       phone: data.phone,
       email: data.email,
-      rfc: data.rfc,
-      address: data.address,
       notes: data.notes,
       occupation: data.occupation,
       motorcycleInterest: data.motorcycleInterest,
@@ -108,17 +100,16 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
     try {
       await addProspect(db, newProspect);
       toast({
-        title: "Prospect Added!",
-        description: `${data.name} has been added to the funnel.`,
+        title: "Nuevo Prospecto!",
+        description: `${data.name} ha sido añadido a tu embudo.`,
       });
       onProspectAdded();
       setOpen(false);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+    } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: errorMessage,
+        title: "Error",
+        description: error.message || "No se pudo añadir el prospecto.",
       });
     } finally {
       setIsSaving(false);
@@ -130,197 +121,116 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8 gap-1">
+        <Button size="sm" className="h-8 gap-1 rounded-xl shadow-primary/20">
           <PlusCircle className="h-3.5 w-3.5" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Add Prospect
+            Añadir Prospecto
           </span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto rounded-[32px] shadow-premium">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)}>
             <DialogHeader>
-                <DialogTitle className="font-headline">Add New Prospect</DialogTitle>
+                <DialogTitle className="text-2xl font-bold">Nuevo Lead</DialogTitle>
                 <DialogDescription>
-                Enter the details for the new lead. Only name is required.
+                Registra los datos básicos para iniciar el seguimiento.
                 </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-6">
                 <FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                            <FormLabel className="text-right">Name *</FormLabel>
-                            <div className="col-span-3">
-                                <FormControl>
-                                    <Input {...field} autoComplete="name" />
-                                </FormControl>
-                                <FormMessage />
-                            </div>
+                        <FormItem>
+                            <FormLabel>Nombre del Cliente *</FormLabel>
+                            <FormControl><Input {...field} className="rounded-xl border-border/40" /></FormControl>
+                            <FormMessage />
                         </FormItem>
                     )}
                 />
-                 <FormField
-                    control={form.control}
-                    name="occupation"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                            <FormLabel className="text-right">Occupation</FormLabel>
-                            <div className="col-span-3">
-                                <FormControl>
-                                    <Input {...field} placeholder="Employee, Business Owner..." />
-                                </FormControl>
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Teléfono</FormLabel>
+                                <FormControl><Input {...field} type="tel" className="rounded-xl border-border/40" /></FormControl>
                                 <FormMessage />
-                            </div>
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="motorcycleInterest"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                            <FormLabel className="text-right">Interest</FormLabel>
-                            <div className="col-span-3">
-                                <FormControl>
-                                    <Input {...field} placeholder="Rocketman 250..." />
-                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="motorcycleInterest"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Interés</FormLabel>
+                                <FormControl><Input placeholder="Modelo..." {...field} className="rounded-xl border-border/40" /></FormControl>
                                 <FormMessage />
-                            </div>
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                            <FormLabel className="text-right">Phone</FormLabel>
-                            <div className="col-span-3">
-                                <FormControl>
-                                    <Input {...field} type="tel" autoComplete="tel" placeholder="55 1234 5678" />
-                                </FormControl>
-                                <FormMessage />
-                            </div>
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                            <FormLabel className="text-right">Email</FormLabel>
-                            <div className="col-span-3">
-                                <FormControl>
-                                    <Input {...field} type="email" autoComplete="email" placeholder="client@example.com" />
-                                </FormControl>
-                                <FormMessage />
-                            </div>
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="rfc"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                            <FormLabel className="text-right">RFC</FormLabel>
-                            <div className="col-span-3">
-                                <FormControl>
-                                    <Input {...field} placeholder="XAXX010101000" />
-                                </FormControl>
-                                <FormMessage />
-                            </div>
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                            <FormLabel className="text-right">Address</FormLabel>
-                            <div className="col-span-3">
-                                <FormControl>
-                                    <Textarea {...field} autoComplete="street-address" className="min-h-[60px]" placeholder="Calle 123, Col. Centro..." />
-                                </FormControl>
-                                <FormMessage />
-                            </div>
-                        </FormItem>
-                    )}
-                />
-                 <FormField
+                            </FormItem>
+                        )}
+                    />
+                </div>
+                
+                <FormField
                     control={form.control}
                     name="notes"
                     render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                            <FormLabel className="text-right">Notes</FormLabel>
-                            <div className="col-span-3">
-                                <FormControl>
-                                    <Textarea {...field} className="min-h-[60px]" placeholder="Interested in Vento Rocketman..." />
-                                </FormControl>
-                                <FormMessage />
-                            </div>
+                        <FormItem>
+                            <FormLabel>Primeras Notas de Seguimiento</FormLabel>
+                            <FormControl>
+                                <Textarea {...field} className="min-h-[80px] rounded-xl border-border/40" placeholder="¿Cómo nos conoció? ¿Qué busca?" />
+                            </FormControl>
+                            <FormMessage />
                         </FormItem>
                     )}
                 />
 
-                <FormField
-                    control={form.control}
-                    name="source"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                            <FormLabel className="text-right">Source</FormLabel>
-                            <div className="col-span-3">
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="source"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Fuente</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
+                                    <FormControl><SelectTrigger className="rounded-xl border-border/40"><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent className="rounded-2xl">
                                         <SelectItem value="Organic">Organic</SelectItem>
                                         <SelectItem value="Advertising">Advertising</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
-                            </div>
-                        </FormItem>
-                    )}
-                />
+                            </FormItem>
+                        )}
+                    />
 
-                {isManager && (
-                   <FormField
-                        control={form.control}
-                        name="salespersonId"
-                        render={({ field }) => (
-                            <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                                <FormLabel className="text-right">Assign to</FormLabel>
-                                <div className="col-span-3">
+                    {isManager && (
+                    <FormField
+                            control={form.control}
+                            name="salespersonId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Asignar a</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
+                                        <FormControl><SelectTrigger className="rounded-xl border-border/40"><SelectValue /></SelectTrigger></FormControl>
+                                        <SelectContent className="rounded-2xl">
                                             {userProfiles.map(p => <SelectItem key={p.uid} value={p.uid}>{p.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
-                                </div>
-                            </FormItem>
-                        )}
-                    />
-                )}
+                                </FormItem>
+                            )}
+                        />
+                    )}
+                </div>
             </div>
-            <DialogFooter>
-                <Button type="submit" disabled={isSaving}>
+            <DialogFooter className="bg-secondary/20 -mx-6 -mb-6 p-6 mt-4">
+                <Button type="submit" disabled={isSaving} className="w-full h-12 text-lg rounded-xl shadow-primary/20">
                 {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                Save Prospect
+                Registrar Prospecto
                 </Button>
             </DialogFooter>
             </form>

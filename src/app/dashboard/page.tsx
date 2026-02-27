@@ -17,6 +17,7 @@ import { ADMIN_UID, COMMISSION_RATES, GOALS } from '@/lib/constants';
 import { useDashboardData } from '@/hooks/use-dashboard-data';
 import { useUser } from '@/firebase/auth/use-user';
 import { exportSalesToCSV } from '@/lib/export-utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -162,13 +163,28 @@ export default function DashboardPage() {
 
           {isManager && (
             <div className="flex gap-1 border-l border-border/40 pl-1">
-                <Button onClick={startNextSprint} variant="ghost" size="icon" className="h-9 w-9 md:h-10 md:w-10 rounded-2xl hover:bg-secondary/60">
-                    <CalendarPlus className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-                </Button>
-                {currentSprintStatus === 'active' && (
-                    <Button onClick={finishSprint} variant="ghost" size="icon" className="h-9 w-9 md:h-10 md:w-10 rounded-2xl hover:bg-destructive/10">
-                        <CalendarOff className="h-4 w-4 md:h-5 md:w-5 text-destructive" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={startNextSprint} variant="ghost" size="icon" className="h-9 w-9 md:h-10 md:w-10 rounded-2xl hover:bg-secondary/60">
+                        <CalendarPlus className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                     </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Crear nuevo mes (Sprint)</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {currentSprintStatus === 'active' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={finishSprint} variant="ghost" size="icon" className="h-9 w-9 md:h-10 md:w-10 rounded-2xl hover:bg-destructive/10">
+                          <CalendarOff className="h-4 w-4 md:h-5 md:w-5 text-destructive" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Cerrar mes actual</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
             </div>
           )}

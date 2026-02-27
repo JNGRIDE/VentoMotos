@@ -21,6 +21,7 @@ interface KanbanColumnProps {
   onMoveStage: (prospectId: string, newStage: Prospect["stage"]) => Promise<void>;
   onEdit: (prospect: Prospect) => void;
   onDelete: (prospect: Prospect) => void;
+  isHiddenOnMobile?: boolean;
 }
 
 const EMPTY_PROSPECTS: Prospect[] = [];
@@ -45,6 +46,7 @@ function areKanbanColumnPropsEqual(prev: KanbanColumnProps, next: KanbanColumnPr
     prev.onMoveStage === next.onMoveStage &&
     prev.onEdit === next.onEdit &&
     prev.onDelete === next.onDelete &&
+    prev.isHiddenOnMobile === next.isHiddenOnMobile &&
     (prev.prospects === next.prospects || areArraysOfFlatObjectsEqual(prev.prospects, next.prospects))
   );
 }
@@ -59,7 +61,8 @@ const KanbanColumn = memo(function KanbanColumn({
   onDrop,
   onMoveStage,
   onEdit,
-  onDelete
+  onDelete,
+  isHiddenOnMobile
 }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -77,20 +80,24 @@ const KanbanColumn = memo(function KanbanColumn({
     onDrop(e, stageValue);
   }
 
+  if (isHiddenOnMobile) {
+    return null;
+  }
+
   return (
     <div
-      className={`flex flex-col w-72 min-w-72 flex-shrink-0 transition-all rounded-3xl ${isDragOver ? 'bg-primary/10 ring-2 ring-primary/20 scale-[1.02]' : ''}`}
+      className={`flex flex-col w-[85vw] md:w-72 shrink-0 transition-all rounded-3xl snap-center ${isDragOver ? 'bg-primary/10 ring-2 ring-primary/20 scale-[1.02]' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div className="flex items-center justify-between p-4 mb-2">
-        <h2 className="font-bold font-headline text-lg tracking-tight">{title}</h2>
-        <span className="h-6 min-w-6 px-2 flex items-center justify-center rounded-full bg-primary/10 text-xs font-black text-primary shadow-sm">
+        <h2 className="font-bold font-headline text-lg tracking-tight truncate pr-2">{title}</h2>
+        <span className="h-6 min-w-6 px-2 flex items-center justify-center rounded-full bg-primary/10 text-xs font-black text-primary shadow-sm shrink-0">
           {prospects.length}
         </span>
       </div>
-      <div className="flex-1 rounded-[32px] bg-secondary/30 backdrop-blur-sm p-3 min-h-[600px] flex flex-col gap-3">
+      <div className="flex-1 rounded-[32px] bg-secondary/30 backdrop-blur-sm p-3 min-h-[450px] md:min-h-[600px] flex flex-col gap-3">
         {prospects.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/30 min-h-[200px] border-2 border-dashed border-border/40 rounded-[24px]">
             {(() => {
@@ -99,7 +106,7 @@ const KanbanColumn = memo(function KanbanColumn({
               return (
                 <>
                   <Icon className="h-10 w-10 mb-3 opacity-20" />
-                  <p className="text-xs font-bold uppercase tracking-wider">{Config.text}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider">{Config.text}</p>
                 </>
               );
             })()}
@@ -129,9 +136,10 @@ interface KanbanBoardProps {
   currentUserProfile: UserProfile | null;
   onRefresh: () => void;
   onOptimisticUpdate: (prospect: Prospect) => void;
+  activeTab?: string;
 }
 
-export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRefresh, onOptimisticUpdate }: KanbanBoardProps) {
+export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRefresh, onOptimisticUpdate, activeTab = "all" }: KanbanBoardProps) {
   const db = useFirestore();
   const { toast } = useToast();
   
@@ -218,22 +226,26 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
   return (
     <>
       <ScrollArea className="w-full h-full">
-        <div className="flex gap-6 pb-8 pt-2 h-full">
-          {PROSPECT_STAGES.map((stage) => (
-            <KanbanColumn
-              key={stage}
-              title={stage}
-              stageValue={stage}
-              prospects={prospectsByStage[stage] || EMPTY_PROSPECTS}
-              userProfilesMap={userProfilesMap}
-              currentUserProfile={currentUserProfile}
-              onDragStart={handleDragStart}
-              onDrop={handleDrop}
-              onMoveStage={handleMoveStage}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          ))}
+        <div className="flex gap-4 md:gap-6 pb-8 pt-2 h-full snap-x snap-mandatory overflow-x-auto no-scrollbar md:no-scrollbar-none">
+          {PROSPECT_STAGES.map((stage) => {
+            const isHidden = activeTab !== "all" && activeTab !== stage;
+            return (
+              <KanbanColumn
+                key={stage}
+                title={stage}
+                stageValue={stage}
+                prospects={prospectsByStage[stage] || EMPTY_PROSPECTS}
+                userProfilesMap={userProfilesMap}
+                currentUserProfile={currentUserProfile}
+                onDragStart={handleDragStart}
+                onDrop={handleDrop}
+                onMoveStage={handleMoveStage}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                isHiddenOnMobile={isHidden}
+              />
+            );
+          })}
         </div>
         <ScrollBar orientation="horizontal" className="bg-muted/20" />
       </ScrollArea>

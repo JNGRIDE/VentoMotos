@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { LoaderCircle, ShieldAlert } from "lucide-react";
+import { LoaderCircle, ShieldAlert, Kanban as KanbanIcon, ListFilter } from "lucide-react";
 import { KanbanBoard } from "@/components/prospects/kanban-board";
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generateSprints, getCurrentSprintValue, type Sprint } from '@/lib/sprints';
 import { AddProspectDialog } from "@/components/prospects/add-prospect-dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PROSPECT_STAGES } from "@/lib/data";
 
 export default function ProspectsPage() {
   const db = useFirestore();
@@ -24,6 +26,7 @@ export default function ProspectsPage() {
 
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [selectedSprint, setSelectedSprint] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<string>("all");
 
   useEffect(() => {
     setSprints(generateSprints());
@@ -107,10 +110,10 @@ export default function ProspectsPage() {
   
   if (!currentUserProfile) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.32))]">
-          <ShieldAlert className="h-10 w-10 text-destructive" />
-          <h2 className="mt-4 text-xl font-semibold">Profile Not Found</h2>
-          <p className="text-muted-foreground mt-2">We couldn't find a user profile for you.</p>
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.32))] px-4 text-center">
+          <ShieldAlert className="h-16 w-16 text-destructive/20" />
+          <h2 className="mt-4 text-xl font-bold">Perfil No Encontrado</h2>
+          <p className="text-muted-foreground mt-2">No pudimos encontrar tu perfil de usuario en el sistema.</p>
       </div>
     )
   }
@@ -118,20 +121,20 @@ export default function ProspectsPage() {
   const isManager = currentUserProfile.role === 'Manager';
 
   return (
-    <div className="flex flex-col gap-4 h-[calc(100vh-theme(spacing.32))]">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-4 h-full">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline">
-            {isManager ? "Team's Prospects Funnel" : "My Prospects Funnel"}
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
+            {isManager ? "Embudo del Equipo" : "Mis Prospectos"}
           </h1>
-          <p className="text-muted-foreground">
-            {isManager ? "Manage all leads from potential to closed." : "Manage your leads from potential to closed."}
+          <p className="text-sm md:text-base text-muted-foreground">
+            {isManager ? "Seguimiento de todos los leads del equipo." : "Gestiona tus leads de potencial a cierre."}
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 md:pb-0">
             <Select value={selectedSprint} onValueChange={setSelectedSprint}>
-                <SelectTrigger className="w-[180px] h-8">
-                    <SelectValue placeholder="Select a sprint" />
+                <SelectTrigger className="w-[140px] md:w-[180px] h-9 rounded-xl">
+                    <SelectValue placeholder="Sprint" />
                 </SelectTrigger>
                 <SelectContent>
                     {sprints.map((sprint) => (
@@ -148,7 +151,31 @@ export default function ProspectsPage() {
             />
         </div>
       </div>
-      <div className="flex-1 relative">
+
+      {/* Selector de Etapa para Móvil */}
+      <div className="md:hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full justify-start overflow-x-auto bg-transparent h-auto p-0 gap-2 no-scrollbar">
+            <TabsTrigger 
+              value="all" 
+              className="rounded-full border border-border/40 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary px-4 py-1.5 text-xs font-bold transition-all"
+            >
+              <KanbanIcon className="h-3 w-3 mr-1.5" /> Todo
+            </TabsTrigger>
+            {PROSPECT_STAGES.map((stage) => (
+              <TabsTrigger 
+                key={stage} 
+                value={stage}
+                className="rounded-full border border-border/40 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary px-4 py-1.5 text-xs font-bold transition-all whitespace-nowrap"
+              >
+                {stage}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+
+      <div className="flex-1 relative min-h-[500px]">
         {isProspectsLoading && (
            <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10 backdrop-blur-[1px]">
              <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
@@ -160,6 +187,7 @@ export default function ProspectsPage() {
             currentUserProfile={currentUserProfile}
             onRefresh={handleRefresh}
             onOptimisticUpdate={handleOptimisticUpdate}
+            activeTab={activeTab}
         />
       </div>
     </div>

@@ -1,6 +1,7 @@
 import {
   collection,
   getDocs,
+  addDoc,
   query,
   orderBy,
   where,
@@ -20,6 +21,49 @@ export async function getInventory(db: Firestore): Promise<Motorcycle[]> {
   const inventoryList = snapshot.docs.map(doc => fromFirestore<Motorcycle>(doc));
   return inventoryList;
 }
+
+/**
+ * Adds a single motorcycle to the inventory, ensuring no duplicate SKUs are added.
+ * It checks for SKUs across the entire inventory.
+ * 
+ * @param db The Firestore instance.
+ * @param motorcycle The new motorcycle to add.
+ */
+export async function addMotorcycle(db: Firestore, motorcycle: NewMotorcycle): Promise<void> {
+  const inventoryCol = collection(db, "inventory");
+
+  const inventorySnapshot = await getDocs(inventoryCol);
+  const existingInventory = inventorySnapshot.docs.map(doc => fromFirestore<Motorcycle>(doc));
+
+  const existingSkus = new Set<string>();
+  existingInventory.forEach(item => {
+    if (item.skus) {
+      item.skus.forEach(sku => existingSkus.add(sku));
+    }
+  });
+
+  const uniqueNewSkus = motorcycle.skus.filter(sku => !existingSkus.has(sku));
+
+  if (uniqueNewSkus.length === 0) {
+    throw new Error("All SKUs provided already exist in the inventory.");
+  }
+
+  const existingModel = existingInventory.find(item => item.model === motorcycle.model);
+
+  if (existingModel) {
+    const docRef = doc(db, "inventory", existingModel.id);
+    const updatedSkus = [...(existingModel.skus || []), ...uniqueNewSkus];
+    await setDoc(docRef, { stock: updatedSkus.length, skus: updatedSkus }, { merge: true });
+  } else {
+    const newDocData: NewMotorcycle = {
+        model: motorcycle.model,
+        skus: uniqueNewSkus,
+        stock: uniqueNewSkus.length
+    };
+    await addDoc(inventoryCol, newDocData);
+  }
+}
+
 
 export async function updateMotorcycle(db: Firestore, motorcycleId: string, data: Partial<NewMotorcycle>): Promise<void> {
   const motorcycleRef = doc(db, "inventory", motorcycleId);

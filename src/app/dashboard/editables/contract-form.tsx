@@ -254,7 +254,7 @@ export function ContractForm() {
                           <SelectGroup>
                             <SelectLabel>Personas Físicas</SelectLabel>
                             {REGIMEN_FISCAL.fisicas.map((item) => (
-                              <SelectItem key={item.value} value={item.label}>
+                              <SelectItem key={`fisica-${item.value}`} value={item.label}>
                                 {item.label}
                               </SelectItem>
                             ))}
@@ -263,7 +263,7 @@ export function ContractForm() {
                           <SelectGroup>
                             <SelectLabel>Personas Morales</SelectLabel>
                             {REGIMEN_FISCAL.morales.map((item) => (
-                              <SelectItem key={item.value} value={item.label}>
+                              <SelectItem key={`moral-${item.value}`} value={item.label}>
                                 {item.label}
                               </SelectItem>
                             ))}
@@ -272,7 +272,7 @@ export function ContractForm() {
                           <SelectGroup>
                             <SelectLabel>Extranjeros</SelectLabel>
                             {REGIMEN_FISCAL.extranjeros.map((item) => (
-                              <SelectItem key={item.value} value={item.label}>
+                              <SelectItem key={`ext-${item.value}`} value={item.label}>
                                 {item.label}
                               </SelectItem>
                             ))}

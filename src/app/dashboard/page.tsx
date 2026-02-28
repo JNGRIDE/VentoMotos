@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { 
   DollarSign, 
   CreditCard, 
@@ -269,8 +270,10 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between px-2">
               <h3 className="text-xl md:text-2xl font-bold tracking-tight">Actividad Reciente</h3>
-              <Button variant="link" className="text-primary font-semibold flex items-center gap-1 group p-0 h-auto">
-                Ver Todo <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <Button asChild variant="link" className="text-primary font-semibold flex items-center gap-1 group p-0 h-auto">
+                <Link href="/dashboard/sales">
+                  Ver Todo <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
               </Button>
             </div>
             <RecentSales

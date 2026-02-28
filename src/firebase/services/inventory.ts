@@ -1,7 +1,6 @@
 import {
   collection,
   getDocs,
-  addDoc,
   query,
   orderBy,
   where,
@@ -22,31 +21,6 @@ export async function getInventory(db: Firestore): Promise<Motorcycle[]> {
   return inventoryList;
 }
 
-export async function addMotorcycle(db: Firestore, motorcycle: NewMotorcycle): Promise<string> {
-  const inventoryCol = collection(db, "inventory");
-
-  const q = query(inventoryCol, where("model", "==", motorcycle.model));
-  const querySnapshot = await getDocs(q);
-
-  if (!querySnapshot.empty) {
-    const existingDoc = querySnapshot.docs[0];
-    const existingData = existingDoc.data() as Motorcycle;
-    const docRef = existingDoc.ref;
-
-    const existingSkus = existingData.skus || [];
-    const newSkusToAdd = motorcycle.skus.filter(sku => !existingSkus.includes(sku));
-
-    const updatedSkus = [...existingSkus, ...newSkusToAdd];
-    const updatedStock = updatedSkus.length;
-
-    await setDoc(docRef, { stock: updatedStock, skus: updatedSkus }, { merge: true });
-    return docRef.id;
-  } else {
-    const docRef = await addDoc(inventoryCol, motorcycle);
-    return docRef.id;
-  }
-}
-
 export async function updateMotorcycle(db: Firestore, motorcycleId: string, data: Partial<NewMotorcycle>): Promise<void> {
   const motorcycleRef = doc(db, "inventory", motorcycleId);
   await setDoc(motorcycleRef, data, { merge: true });
@@ -57,28 +31,86 @@ export async function deleteMotorcycle(db: Firestore, motorcycleId: string): Pro
   await deleteDoc(motorcycleRef);
 }
 
+/**
+ * Securely updates the inventory in a batch. 
+ * It prevents SKU duplication by checking against all existing SKUs in the database.
+ * - If a SKU from the input already exists, it's ignored.
+ * - If a model exists, new unique SKUs are added to it.
+ * - If a model is new, it is created with its SKUs.
+ * 
+ * @param db The Firestore instance.
+ * @param motorcycles An array of NewMotorcycle objects from the parsed CSV.
+ */
 export async function addMotorcyclesBatch(db: Firestore, motorcycles: NewMotorcycle[]): Promise<void> {
   const batch = writeBatch(db);
   const inventoryCol = collection(db, "inventory");
 
-  for (const motorcycle of motorcycles) {
-    const q = query(inventoryCol, where("model", "==", motorcycle.model));
-    const querySnapshot = await getDocs(q);
-    
-    if (querySnapshot.empty) {
-      const docRef = doc(inventoryCol);
-      batch.set(docRef, motorcycle);
-    } else {
-      const existingDoc = querySnapshot.docs[0];
-      const existingData = existingDoc.data() as Motorcycle;
-      const docRef = existingDoc.ref;
+  // 1. Get all existing inventory to check against.
+  const inventorySnapshot = await getDocs(inventoryCol);
+  const existingInventory = inventorySnapshot.docs.map(doc => fromFirestore<Motorcycle>(doc));
 
-      const updatedStock = (existingData.stock || 0) + motorcycle.stock;
-      const updatedSkus = [...(existingData.skus || []), ...motorcycle.skus];
-      
-      batch.update(docRef, { stock: updatedStock, skus: updatedSkus });
+  // 2. Create a Set of all existing SKUs for efficient O(1) lookup.
+  const existingSkus = new Set<string>();
+  existingInventory.forEach(item => {
+    if (item.skus) {
+      item.skus.forEach(sku => existingSkus.add(sku));
+    }
+  });
+
+  // 3. Create a Map for existing models for quick access to their data and doc ID.
+  const modelMap = new Map<string, { id: string, skus: string[] }>();
+  existingInventory.forEach(item => {
+    modelMap.set(item.model, { id: item.id, skus: item.skus || [] });
+  });
+
+  // This will hold motorcycles grouped by model from the user's upload
+  const newMotorcyclesByModel = new Map<string, { skus: string[] }>();
+
+  // Group user-provided motorcycles by model and collect all their unique SKUs
+  for (const motorcycle of motorcycles) {
+    if (!newMotorcyclesByModel.has(motorcycle.model)) {
+      newMotorcyclesByModel.set(motorcycle.model, { skus: [] });
+    }
+    const modelEntry = newMotorcyclesByModel.get(motorcycle.model)!;
+    
+    // Filter out SKUs that already exist in the database or in the current upload batch
+    const uniqueNewSkus = motorcycle.skus.filter(sku => !existingSkus.has(sku));
+
+    if (uniqueNewSkus.length > 0) {
+      modelEntry.skus.push(...uniqueNewSkus);
+      // Add the new unique SKUs to the global set to handle duplicates within the uploaded file itself
+      uniqueNewSkus.forEach(sku => existingSkus.add(sku));
     }
   }
 
+  // 4. Iterate over the grouped new motorcycles and prepare the batch write
+  for (const [model, data] of newMotorcyclesByModel.entries()) {
+    if (data.skus.length === 0) {
+        // Skip if there are no new unique SKUs to add for this model
+        continue;
+    }
+
+    const existingModel = modelMap.get(model);
+
+    if (existingModel) {
+      // 5a. If model exists, prepare an UPDATE operation
+      const docRef = doc(db, "inventory", existingModel.id);
+      const updatedSkus = [...existingModel.skus, ...data.skus];
+      const updatedStock = updatedSkus.length;
+      batch.update(docRef, { stock: updatedStock, skus: updatedSkus });
+    } else {
+      // 5b. If model is new, prepare a SET operation
+      const docRef = doc(inventoryCol);
+      const newStock = data.skus.length;
+      const newMotorcycle: NewMotorcycle = {
+          model: model,
+          stock: newStock,
+          skus: data.skus,
+      };
+      batch.set(docRef, newMotorcycle);
+    }
+  }
+
+  // 6. Commit the batch
   await batch.commit();
 }

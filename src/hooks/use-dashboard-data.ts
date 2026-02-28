@@ -11,9 +11,9 @@ import {
   getSprints,
   ensureCurrentSprint,
   closeSprint,
-  createNextSprint
+  createNextSprint,
+  updateSaleAndAdjustInventory, // Use the transactional update function
 } from "@/firebase/services";
-import { updateSaleAndAdjustInventory } from "@/firebase/services/sales"; // <-- IMPORT THE NEW FUNCTION
 import { generateSprints, getCurrentSprintValue, type SprintDoc } from '@/lib/sprints';
 import type { Sale, UserProfile, NewSale } from '@/lib/data';
 import { ADMIN_UID } from '@/lib/constants';
@@ -30,7 +30,7 @@ interface UseDashboardDataResult {
   createAdminProfile: () => Promise<void>;
   recordSale: (newSaleData: NewSale) => Promise<void>;
   deleteSale: (sale: Sale) => Promise<void>;
-  updateSale: (saleId: string, originalSale: Sale, updatedData: Partial<NewSale>) => Promise<void>; // <-- UPDATE SIGNATURE
+  updateSale: (saleId: string, originalSale: Sale, updatedData: Partial<NewSale>) => Promise<void>;
   finishSprint: (sprintId: string) => Promise<void>;
   startNextSprint: () => Promise<void>;
   error: { title: string; description: string } | null;
@@ -49,7 +49,6 @@ export function useDashboardData(): UseDashboardDataResult {
   const [sprints, setSprints] = useState<SprintDoc[]>([]);
   const [selectedSprint, setSelectedSprint] = useState<string>('');
 
-  // Initialize Sprints
   useEffect(() => {
     const initSprints = async () => {
        if (!db) return;
@@ -62,21 +61,20 @@ export function useDashboardData(): UseDashboardDataResult {
          }
        } catch (e) {
          console.error("Failed to init sprints", e);
-         const generated = generateSprints();
-         setSprints(generated.map(s => ({ id: s.value, label: s.label, status: 'active', createdAt: new Date().toISOString() })));
-         if (!selectedSprint) setSelectedSprint(getCurrentSprintValue());
+         setError({ title: "Error loading sprints", description: "Could not load the sprint data. Please try again later." });
        }
     };
     initSprints();
-  }, [db]);
+  }, [db, selectedSprint]);
 
   const fetchData = useCallback(async () => {
-    if (!user || !selectedSprint) return;
+    if (!user || !selectedSprint || !db) return;
     setIsLoading(true);
     setError(null);
     try {
       const profile = await getUserProfile(db, user.uid);
       if (!profile) {
+        // This can happen during initial user profile creation
         setIsLoading(false);
         return;
       }
@@ -89,13 +87,13 @@ export function useDashboardData(): UseDashboardDataResult {
       setSales(salesData);
       setUserProfiles(profilesData);
     } catch (err: unknown) {
-      console.error("Failed to fetch data:", err);
-      const errorObj = err as { code?: string };
-      let description = "An unexpected error occurred.";
+      console.error("Failed to fetch dashboard data:", err);
+      const errorObj = err as { code?: string, message?: string };
+      let description = errorObj.message || "An unexpected error occurred while fetching data.";
       if (errorObj.code === 'permission-denied') {
           description = "You do not have permission to view this data. Contact your administrator.";
       }
-      setError({ title: "Error loading dashboard", description });
+      setError({ title: "Error Loading Dashboard", description });
     } finally {
       setIsLoading(false);
     }
@@ -108,73 +106,46 @@ export function useDashboardData(): UseDashboardDataResult {
   }, [fetchData, selectedSprint]);
 
   const createAdminProfile = async () => {
-    if (!user || user.uid !== ADMIN_UID) return;
+    if (!user || user.uid !== ADMIN_UID || !db) return;
     const adminProfile: UserProfile = {
       uid: ADMIN_UID, name: "Admin Manager", email: "theinhumanride10@gmail.com",
       avatarUrl: user.photoURL || "", salesGoal: 200000, creditsGoal: 15, role: 'Manager'
     };
-    try {
-        await setUserProfile(db, adminProfile);
-        await fetchData();
-    } catch (err) {
-        console.error("Failed to create admin profile:", err);
-        throw err;
-    }
+    await setUserProfile(db, adminProfile);
+    await fetchData();
   };
 
   const recordSale = async (newSaleData: NewSale) => {
-    try {
-      await addSale(db, newSaleData);
-      await fetchData();
-    } catch (err) {
-      console.error("Failed to add sale:", err);
-      throw err;
-    }
+    if(!db) return;
+    await addSale(db, newSaleData);
+    await fetchData();
   };
 
   const handleDeleteSale = async (sale: Sale) => {
-    try {
-        await deleteSale(db, sale);
-        await fetchData();
-    } catch (err) {
-        console.error("Failed to delete sale:", err);
-        throw err;
-    }
+    if(!db) return;
+    await deleteSale(db, sale);
+    await fetchData();
   }
 
-  // USE THE NEW TRANSACTIONAL FUNCTION
   const handleUpdateSale = async (saleId: string, originalSale: Sale, updatedData: Partial<NewSale>) => {
-      try {
-          await updateSaleAndAdjustInventory(db, saleId, updatedData, originalSale);
-          await fetchData(); // Refresh data to reflect changes
-      } catch (err: unknown) {
-          console.error("Failed to update sale:", err);
-          const errorObj = err as { message?: string };
-          throw new Error(errorObj.message || "An unexpected error occurred.");
-      }
+      if(!db) return;
+      await updateSaleAndAdjustInventory(db, saleId, updatedData, originalSale);
+      await fetchData();
   }
 
   const finishSprint = async (sprintId: string) => {
-      try {
-          await closeSprint(db, sprintId);
-          const sprintList = await getSprints(db);
-          setSprints(sprintList);
-      } catch (err) {
-          console.error("Failed to close sprint", err);
-          throw err;
-      }
+      if(!db) return;
+      await closeSprint(db, sprintId);
+      const sprintList = await getSprints(db);
+      setSprints(sprintList);
   }
 
   const startNextSprint = async () => {
-      try {
-          const newSprint = await createNextSprint(db);
-          const sprintList = await getSprints(db);
-          setSprints(sprintList);
-          setSelectedSprint(newSprint.id);
-      } catch (err) {
-          console.error("Failed to start next sprint", err);
-          throw err;
-      }
+      if(!db) return;
+      const newSprint = await createNextSprint(db);
+      const sprintList = await getSprints(db);
+      setSprints(sprintList);
+      setSelectedSprint(newSprint.id);
   }
 
   return {

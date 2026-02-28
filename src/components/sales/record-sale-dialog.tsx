@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { getUserProfiles, getInventory, getFinanciers } from "@/firebase/services";
@@ -29,6 +30,7 @@ const saleSchema = z.object({
   soldSku: z.string().optional(),
   amount: z.coerce.number().positive("Amount must be positive"),
   notes: z.string().optional(),
+  isExternal: z.boolean().optional(),
 }).superRefine((data, ctx) => {
     if (data.paymentMethod === 'Financing' && !data.creditProvider) {
         ctx.addIssue({
@@ -74,6 +76,7 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
       paymentMethod: "Cash" as any, // Initial placeholder
       motorcycleId: "",
       amount: 0,
+      isExternal: false,
     },
     mode: "onChange"
   });
@@ -94,9 +97,10 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
         form.reset({
             salespersonId: currentUserProfile.uid,
             prospectName: "",
-            paymentMethod: "Cash" as any, // Cast to any to avoid type error if empty initially, though Zod handles it
+            paymentMethod: "Cash" as any,
             motorcycleId: "",
             amount: 0,
+            isExternal: false,
         });
         setStep(1);
       });
@@ -111,7 +115,7 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
   const paymentMethod = form.watch("paymentMethod");
 
   const handleNextStep = async () => {
-    const valid = await form.trigger(["salespersonId", "prospectName", "paymentMethod", "creditProvider"]);
+    const valid = await form.trigger(["salespersonId", "prospectName", "paymentMethod", "creditProvider", "isExternal"]);
     if (valid) {
         setStep(2);
     }
@@ -159,6 +163,7 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
       motorcycleModel: selectedMotorcycle!.model,
       soldSku: data.soldSku || "",
       notes: currentSpecialOrderNotes || data.notes || "",
+      isExternal: data.isExternal ?? false,
     };
     
     try {
@@ -205,6 +210,30 @@ export function RecordSaleDialog({ onAddSale, currentUserProfile, sprint }: Reco
                 </FormItem>
             )}
         />
+
+        {!isManager && (
+            <FormField
+                control={form.control}
+                name="isExternal"
+                render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
+                        <FormLabel className="text-right">External Sale</FormLabel>
+                        <div className="col-span-3 flex flex-col gap-2">
+                            <FormControl>
+                                <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormDescription>
+                                If checked, this sale will count towards your personal goal but not the branch goal.
+                            </FormDescription>
+                            <FormMessage />
+                        </div>
+                    </FormItem>
+                )}
+            />
+        )}
 
         <FormField
             control={form.control}

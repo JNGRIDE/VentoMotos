@@ -77,9 +77,20 @@ export default function DashboardPage() {
   
   const isManager = currentUserProfile?.role === 'Manager';
   
-  const totalSales = useMemo(() => sales.reduce((sum, sale) => sum + sale.amount, 0), [sales]);
-  const totalCredits = useMemo(() => sales.filter(s => s.paymentMethod === 'Financing').length, [sales]);
-  const ventoCredits = useMemo(() => sales.filter(s => s.creditProvider === 'Vento').length, [sales]);
+  // For a manager, branch sales exclude external sales. For a salesperson, this will be their own sales.
+  const branchSales = useMemo(() => isManager ? sales.filter(s => !s.isExternal) : sales, [sales, isManager]);
+
+  const totalSales = useMemo(() => {
+    // A salesperson's total includes their external sales, so we use the raw `sales` array.
+    if (!isManager) {
+      return sales.reduce((sum, sale) => sum + sale.amount, 0);
+    }
+    // A manager's "Total Sales" KPI refers to the branch total, so we use `branchSales`.
+    return branchSales.reduce((sum, sale) => sum + sale.amount, 0);
+  }, [sales, branchSales, isManager]);
+  
+  const totalCredits = useMemo(() => branchSales.filter(s => s.paymentMethod === 'Financing').length, [branchSales]);
+  const ventoCredits = useMemo(() => branchSales.filter(s => s.creditProvider === 'Vento').length, [branchSales]);
 
   const salesGoal = useMemo(() => {
     if (currentUserProfile?.role === 'Manager') {
@@ -240,7 +251,7 @@ export default function DashboardPage() {
           />
           <KpiCard
             title="Número de Ventas"
-            value={`${sales.length}`}
+            value={`${branchSales.length}`}
             description={`${totalCredits} créditos colocados este mes`}
             icon={TrendingUp}
             iconColor="text-orange-500"

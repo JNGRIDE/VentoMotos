@@ -33,6 +33,7 @@ export type Sale = {
   paymentMethod: "Cash" | "Financing";
   creditProvider?: string; // "Vento", "Maxicash", "Galgo", etc.
   notes?: string; // For special orders, e.g. "Sobre pedido (CEDIS)"
+  isExternal?: boolean; // New field for sales that don't count towards branch total
 };
 
 // NewSale will be used in the form. Note `notes` is optional

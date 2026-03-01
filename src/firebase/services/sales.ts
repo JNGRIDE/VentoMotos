@@ -8,53 +8,57 @@ import {
   serverTimestamp,
   Timestamp,
   type Firestore,
+  writeBatch,
 } from "firebase/firestore";
 import type { Sale, NewSale, UserProfile, Motorcycle } from "@/lib/data";
 import { fromFirestore } from "./utils";
 
-// Type assertion to include createdAt for sorting purposes
-// as it's added dynamically but not in the base Sale type.
+// Type assertion for sorting, as createdAt is added on the server.
 type SaleWithTimestamp = Sale & { createdAt?: Timestamp };
 
 /**
- * Fetches sales for a sprint and sorts them in-memory.
- * This avoids the need for a composite index in Firestore.
+ * Fetches sales for a specific sprint, respecting user roles.
+ * Sorts them in-memory to avoid composite indexes.
  */
 export async function getSales(db: Firestore, profile: UserProfile, sprint: string): Promise<Sale[]> {
   let salesQuery;
-
-  // Base query fetches documents for the sprint.
   if (profile.role !== 'Manager') {
-    // Salespeople see only their own sales.
     salesQuery = query(
       collection(db, "sales"),
       where("sprint", "==", sprint),
       where("salespersonId", "==", profile.uid)
     );
   } else {
-    // Managers see all sales for the sprint.
-    salesQuery = query(
-      collection(db, "sales"),
-      where("sprint", "==", sprint)
-    );
+    salesQuery = query(collection(db, "sales"), where("sprint", "==", sprint));
   }
 
   const snapshot = await getDocs(salesQuery);
   const sales = snapshot.docs.map(doc => fromFirestore<SaleWithTimestamp>(doc));
 
-  // Sort the results in-memory by creation date, descending.
-  sales.sort((a, b) => {
-    const timeA = a.createdAt?.toDate().getTime() || 0;
-    const timeB = b.createdAt?.toDate().getTime() || 0;
-    return timeB - timeA;
-  });
+  // Sort in-memory to prevent index errors
+  sales.sort((a, b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
 
   return sales;
 }
 
 /**
+ * Fetches all sales across all sprints, for manager use.
+ * Sorts them in-memory to avoid needing a global index.
+ */
+export async function getAllSales(db: Firestore): Promise<Sale[]> {
+  const salesQuery = query(collection(db, "sales"));
+  const snapshot = await getDocs(salesQuery);
+  const sales = snapshot.docs.map(doc => fromFirestore<SaleWithTimestamp>(doc));
+
+  // Sort in-memory to prevent index errors
+  sales.sort((a, b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
+
+  return sales;
+}
+
+
+/**
  * Adds a new sale and adjusts the inventory in a single transaction.
- * If the sold item is in stock, its SKU is removed from the inventory.
  */
 export async function addSale(db: Firestore, newSale: NewSale): Promise<void> {
   await runTransaction(db, async (transaction) => {
@@ -65,21 +69,16 @@ export async function addSale(db: Firestore, newSale: NewSale): Promise<void> {
       const motorcycleRef = doc(db, "inventory", newSale.motorcycleId);
       const motorcycleDoc = await transaction.get(motorcycleRef);
 
-      if (!motorcycleDoc.exists()) {
-        throw new Error("Motorcycle for the sale not found in inventory.");
-      }
+      if (!motorcycleDoc.exists()) throw new Error("Motorcycle not found in inventory.");
 
       const motorcycleData = motorcycleDoc.data() as Motorcycle;
       const updatedSkus = (motorcycleData.skus || []).filter(sku => sku !== newSale.soldSku);
 
       if (motorcycleData.skus && updatedSkus.length === motorcycleData.skus.length) {
-          throw new Error(`Sold SKU ${newSale.soldSku} not found in inventory for model ${motorcycleData.model}.`);
+          throw new Error(`Sold SKU ${newSale.soldSku} not found for model ${motorcycleData.model}.`);
       }
 
-      transaction.update(motorcycleRef, { 
-        skus: updatedSkus, 
-        stock: updatedSkus.length 
-      });
+      transaction.update(motorcycleRef, { skus: updatedSkus, stock: updatedSkus.length });
     }
     
     transaction.set(saleRef, saleData);
@@ -87,7 +86,7 @@ export async function addSale(db: Firestore, newSale: NewSale): Promise<void> {
 }
 
 /**
- * Deletes a sale and adds the sold SKU back to the inventory in a transaction.
+ * Deletes a sale and restocks the sold SKU in a transaction.
  */
 export async function deleteSale(db: Firestore, sale: Sale): Promise<void> {
   await runTransaction(db, async (transaction) => {
@@ -102,10 +101,7 @@ export async function deleteSale(db: Firestore, sale: Sale): Promise<void> {
         const skus = motorcycleData.skus || [];
         if (!skus.includes(sale.soldSku)) {
           const updatedSkus = [...skus, sale.soldSku];
-          transaction.update(motorcycleRef, {
-            skus: updatedSkus,
-            stock: updatedSkus.length,
-          });
+          transaction.update(motorcycleRef, { skus: updatedSkus, stock: updatedSkus.length });
         }
       }
     }
@@ -115,8 +111,7 @@ export async function deleteSale(db: Firestore, sale: Sale): Promise<void> {
 }
 
 /**
- * Updates a sale and adjusts inventory for both the old and new motorcycle models
- * in a single, atomic transaction.
+ * Updates a sale and adjusts inventory for old and new models in a transaction.
  */
 export async function updateSaleAndAdjustInventory(
   db: Firestore,
@@ -162,4 +157,16 @@ export async function updateSaleAndAdjustInventory(
     }
     transaction.update(saleRef, updatedSaleData);
   });
+}
+
+/**
+ * Updates multiple sale documents in a single batch.
+ */
+export async function batchUpdateSales(db: Firestore, updates: { id: string; amount: number }[]): Promise<void> {
+  const batch = writeBatch(db);
+  updates.forEach(update => {
+    const saleRef = doc(db, "sales", update.id);
+    batch.update(saleRef, { amount: update.amount });
+  });
+  await batch.commit();
 }

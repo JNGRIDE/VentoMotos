@@ -59,29 +59,33 @@ export async function getAllSales(db: Firestore): Promise<Sale[]> {
 
 /**
  * Adds a new sale and adjusts the inventory in a single transaction.
+ * All reads must be performed before any writes.
  */
 export async function addSale(db: Firestore, newSale: NewSale): Promise<void> {
+  const saleRef = doc(collection(db, "sales"));
+  const motorcycleRef = newSale.motorcycleId ? doc(db, "inventory", newSale.motorcycleId) : null;
+
   await runTransaction(db, async (transaction) => {
-    const saleRef = doc(collection(db, "sales"));
-    const saleData = { ...newSale, createdAt: serverTimestamp() };
-    
-    if (newSale.soldSku && newSale.motorcycleId) {
-      const motorcycleRef = doc(db, "inventory", newSale.motorcycleId);
-      const motorcycleDoc = await transaction.get(motorcycleRef);
+    // 1. READ PHASE: Read all necessary documents first.
+    const motorcycleDoc = motorcycleRef ? await transaction.get(motorcycleRef) : null;
 
-      if (!motorcycleDoc.exists()) throw new Error("Motorcycle not found in inventory.");
-
+    // 2. WRITE PHASE: Perform all writes after reads are complete.
+    if (motorcycleRef && newSale.soldSku) {
+      if (!motorcycleDoc?.exists()) {
+        throw new Error("Motorcycle not found in inventory.");
+      }
       const motorcycleData = motorcycleDoc.data() as Motorcycle;
       const updatedSkus = (motorcycleData.skus || []).filter(sku => sku !== newSale.soldSku);
 
       if (motorcycleData.skus && updatedSkus.length === motorcycleData.skus.length) {
           throw new Error(`Sold SKU ${newSale.soldSku} not found for model ${motorcycleData.model}.`);
       }
-
+      // Write the inventory update
       transaction.update(motorcycleRef, { skus: updatedSkus, stock: updatedSkus.length });
     }
     
-    transaction.set(saleRef, saleData);
+    // Write the new sale document
+    transaction.set(saleRef, { ...newSale, createdAt: serverTimestamp() });
   });
 }
 
@@ -89,21 +93,21 @@ export async function addSale(db: Firestore, newSale: NewSale): Promise<void> {
  * Deletes a sale and restocks the sold SKU in a transaction.
  */
 export async function deleteSale(db: Firestore, sale: Sale): Promise<void> {
+  const saleRef = doc(db, "sales", sale.id);
+  const motorcycleRef = sale.motorcycleId ? doc(db, "inventory", sale.motorcycleId) : null;
+
   await runTransaction(db, async (transaction) => {
-    const saleRef = doc(db, "sales", sale.id);
+    // 1. READ PHASE
+    const motorcycleDoc = motorcycleRef && sale.soldSku ? await transaction.get(motorcycleRef) : null;
 
-    if (sale.soldSku && sale.motorcycleId) {
-      const motorcycleRef = doc(db, "inventory", sale.motorcycleId);
-      const motorcycleDoc = await transaction.get(motorcycleRef);
-
-      if (motorcycleDoc.exists()) {
+    // 2. WRITE PHASE
+    if (motorcycleDoc && motorcycleDoc.exists()) {
         const motorcycleData = motorcycleDoc.data() as Motorcycle;
         const skus = motorcycleData.skus || [];
-        if (!skus.includes(sale.soldSku)) {
-          const updatedSkus = [...skus, sale.soldSku];
-          transaction.update(motorcycleRef, { skus: updatedSkus, stock: updatedSkus.length });
+        if (!skus.includes(sale.soldSku!)) {
+          const updatedSkus = [...skus, sale.soldSku!];
+          transaction.update(motorcycleRef!, { skus: updatedSkus, stock: updatedSkus.length });
         }
-      }
     }
 
     transaction.delete(saleRef);
@@ -119,42 +123,39 @@ export async function updateSaleAndAdjustInventory(
   updatedSaleData: Partial<NewSale>,
   originalSale: Sale
 ): Promise<void> {
+  const saleRef = doc(db, "sales", saleId);
+
   await runTransaction(db, async (transaction) => {
-    const saleRef = doc(db, "sales", saleId);
+    // 1. READ PHASE
+    const oldMotoRef = originalSale.motorcycleId && originalSale.soldSku ? doc(db, "inventory", originalSale.motorcycleId) : null;
+    const newMotoRef = updatedSaleData.motorcycleId && updatedSaleData.soldSku ? doc(db, "inventory", updatedSaleData.motorcycleId) : null;
 
-    const oldMotorcycleId = originalSale.motorcycleId;
-    const oldSku = originalSale.soldSku;
-    const newMotorcycleId = updatedSaleData.motorcycleId;
-    const newSku = updatedSaleData.soldSku;
+    const oldMotoDoc = oldMotoRef ? await transaction.get(oldMotoRef) : null;
+    const newMotoDoc = newMotoRef ? await transaction.get(newMotoRef) : null;
 
-    const inventoryNeedsAdjustment = newMotorcycleId !== oldMotorcycleId || newSku !== oldSku;
+    // 2. WRITE PHASE
+    const inventoryNeedsAdjustment = updatedSaleData.motorcycleId !== originalSale.motorcycleId || updatedSaleData.soldSku !== originalSale.soldSku;
 
     if (inventoryNeedsAdjustment) {
-      if (oldMotorcycleId && oldSku) {
-        const oldMotoRef = doc(db, "inventory", oldMotorcycleId);
-        const oldMotoDoc = await transaction.get(oldMotoRef);
-        if (oldMotoDoc.exists()) {
-          const oldMotoData = oldMotoDoc.data() as Motorcycle;
-          const skus = oldMotoData.skus || [];
-          if (!skus.includes(oldSku)) {
-            const updatedSkus = [...skus, oldSku];
-            transaction.update(oldMotoRef, { skus: updatedSkus, stock: updatedSkus.length });
-          }
+      // Restock old item
+      if (oldMotoDoc && oldMotoDoc.exists()) {
+        const oldMotoData = oldMotoDoc.data() as Motorcycle;
+        if (!oldMotoData.skus.includes(originalSale.soldSku!)) {
+          const updatedSkus = [...oldMotoData.skus, originalSale.soldSku!];
+          transaction.update(oldMotoRef!, { skus: updatedSkus, stock: updatedSkus.length });
         }
       }
 
-      if (newMotorcycleId && newSku) {
-        const newMotoRef = doc(db, "inventory", newMotorcycleId);
-        const newMotoDoc = await transaction.get(newMotoRef);
-        if (newMotoDoc.exists()) {
-          const newMotoData = newMotoDoc.data() as Motorcycle;
-          const updatedSkus = (newMotoData.skus || []).filter(s => s !== newSku);
-          transaction.update(newMotoRef, { skus: updatedSkus, stock: updatedSkus.length });
-        } else {
-          throw new Error(`New motorcycle with ID ${newMotorcycleId} not found.`);
-        }
+      // Destock new item
+      if (newMotoDoc && newMotoDoc.exists()) {
+        const newMotoData = newMotoDoc.data() as Motorcycle;
+        const updatedSkus = (newMotoData.skus || []).filter(s => s !== updatedSaleData.soldSku);
+        transaction.update(newMotoRef!, { skus: updatedSkus, stock: updatedSkus.length });
+      } else if (newMotoRef) {
+        throw new Error(`New motorcycle with ID ${updatedSaleData.motorcycleId} not found.`);
       }
     }
+    
     transaction.update(saleRef, updatedSaleData);
   });
 }

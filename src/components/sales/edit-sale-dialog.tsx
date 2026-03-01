@@ -43,10 +43,10 @@ type SaleFormValues = z.infer<typeof saleSchema>;
 
 interface EditSaleDialogProps {
   sale: Sale;
-  onUpdateSale: (saleId: string, oldSale: Sale, newSale: NewSale) => Promise<void>;
+  onUpdateSale: (updatedData: Partial<NewSale>) => Promise<void>; // Simplified signature
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  currentUserProfile?: UserProfile;
+  currentUserProfile?: UserProfile | null;
 }
 
 export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, currentUserProfile }: EditSaleDialogProps) {
@@ -68,20 +68,10 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
 
   const form = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
-    defaultValues: {
-      salespersonId: sale.salespersonId,
-      prospectName: sale.prospectName,
-      paymentMethod: sale.paymentMethod,
-      creditProvider: sale.creditProvider || undefined,
-      motorcycleId: sale.motorcycleId,
-      soldSku: sale.soldSku,
-      amount: Math.round(sale.amount * 1.16), // Display Gross Amount
-      notes: sale.notes || "",
-    },
+    defaultValues: {},
     mode: "onChange"
   });
 
-  // Re-initialize form when sale changes (if dialog re-opens with different sale)
   useEffect(() => {
       if (open && sale) {
           form.reset({
@@ -91,15 +81,16 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
               creditProvider: sale.creditProvider || undefined,
               motorcycleId: sale.motorcycleId,
               soldSku: sale.soldSku,
-              amount: Math.round(sale.amount * 1.16), // Display Gross Amount
+              amount: Math.round(sale.amount * 1.16), // Display Gross
               notes: sale.notes || "",
           });
           setSpecialOrderNotes(sale.notes || "");
+          setStep(1); // Reset to first step
       }
   }, [sale, open, form]);
 
   useEffect(() => {
-    if (open) {
+    if (open && db) {
       setIsLoadingData(true);
       Promise.all([
         getUserProfiles(db),
@@ -110,9 +101,13 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
         setInventory(inventoryData);
         setFinanciers(financiersData);
         setIsLoadingData(false);
+      }).catch(err => {
+          console.error("Failed to load dialog data:", err);
+          setIsLoadingData(false);
+          toast({ title: "Error", description: "Could not load necessary data for editing.", variant: "destructive" });
       });
     }
-  }, [db, open]);
+  }, [db, open, toast]);
 
   const selectedMotorcycleId = form.watch("motorcycleId");
 
@@ -120,13 +115,10 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
     return inventory.find(m => m.id === selectedMotorcycleId) || null;
   }, [inventory, selectedMotorcycleId]);
 
-  // Inject the currently sold SKU into the available options if we are on the same model
   const availableSkus = useMemo(() => {
       if (!selectedMotorcycle) return [];
       let skus = [...(selectedMotorcycle.skus || [])];
 
-      // If we selected the same model as the original sale, add the sold SKU back
-      // EXCEPT if the original sale was a special order (no SKU sold)
       if (selectedMotorcycle.id === sale.motorcycleId && sale.soldSku && !sale.notes) {
           if (!skus.includes(sale.soldSku)) {
               skus.push(sale.soldSku);
@@ -139,23 +131,14 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
 
   const handleNextStep = async () => {
     const valid = await form.trigger(["salespersonId", "prospectName", "paymentMethod", "creditProvider"]);
-    if (valid) {
-        setStep(2);
-    }
+    if (valid) setStep(2);
   }
 
   const handleMotorcycleSelect = (motorcycleId: string) => {
     form.setValue("motorcycleId", motorcycleId);
-
-    // If we switch back to original model, restore original SKU
-    if (motorcycleId === sale.motorcycleId) {
-        form.setValue("soldSku", sale.soldSku);
-    } else {
-        form.setValue("soldSku", "");
-    }
+    form.setValue("soldSku", motorcycleId === sale.motorcycleId ? sale.soldSku : "");
 
     const motorcycle = inventory.find(m => m.id === motorcycleId);
-    // If stock is 0 AND it's not the original motorcycle (which effectively has stock 1 for us)
     if (motorcycle && motorcycle.stock === 0 && motorcycleId !== sale.motorcycleId) {
       setSpecialOrderNotes("");
       setShowZeroStockAlert(true);
@@ -165,35 +148,31 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
   }
 
   const handleSpecialOrderAndSubmit = (notes: string) => {
-      setSpecialOrderNotes(notes);
       setShowZeroStockAlert(false);
+      // Use a timeout to ensure state update before submitting
       setTimeout(() => {
         form.handleSubmit((data) => onSubmit(data, notes))();
       }, 0);
   }
 
   const onSubmit = async (data: SaleFormValues, currentSpecialOrderNotes = specialOrderNotes) => {
-    // Check stock availability again
     if (selectedMotorcycle?.stock === 0 && selectedMotorcycle.id !== sale.motorcycleId && !currentSpecialOrderNotes) {
       setShowZeroStockAlert(true);
       return;
     }
-
-    if (selectedMotorcycle && !data.soldSku && !currentSpecialOrderNotes) {
-       // Allow empty SKU only if it's special order
+    if (selectedMotorcycle && !data.soldSku && availableSkus.length > 0 && !currentSpecialOrderNotes) {
        form.setError("soldSku", { message: "SKU is required for in-stock items" });
        return;
     }
 
     setIsSaving(true);
 
-    const newSale: NewSale = {
-      sprint: sale.sprint, // Keep original sprint
+    const newSaleData: Partial<NewSale> = {
       salespersonId: data.salespersonId,
       prospectName: data.prospectName,
       amount: data.amount / 1.16, // Store Net Amount
       paymentMethod: data.paymentMethod,
-      ...(data.paymentMethod === 'Financing' && data.creditProvider ? { creditProvider: data.creditProvider } : {}),
+      creditProvider: data.paymentMethod === 'Financing' ? data.creditProvider : "",
       motorcycleId: data.motorcycleId,
       motorcycleModel: selectedMotorcycle!.model,
       soldSku: data.soldSku || "",
@@ -201,192 +180,19 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
     };
 
     try {
-      await onUpdateSale(sale.id, sale, newSale);
-      toast({ title: "Sale Updated!", description: "The sale has been successfully modified." });
+      await onUpdateSale(newSaleData); // Use the simplified function call
       onOpenChange(false);
-    } catch (error) {
-       // handled by hook usually, but good to have
     } finally {
-        setIsSaving(false);
+      setIsSaving(false);
     }
   };
 
   const isManager = currentUserProfile?.role === 'Manager';
 
-  const renderStepOne = () => (
-    <div className="grid gap-4 py-4">
-        <FormField
-            control={form.control}
-            name="salespersonId"
-            render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                    <FormLabel className="text-right">Salesperson</FormLabel>
-                    <div className="col-span-3">
-                         <Select onValueChange={field.onChange} value={field.value} disabled={!isManager}>
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select salesperson" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value={EXTERNAL_SALESPERSON_ID}>External Sale (No Commission)</SelectItem>
-                                {userProfiles.map((sp) => (
-                                    <SelectItem key={sp.uid} value={sp.uid}>{sp.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </div>
-                </FormItem>
-            )}
-        />
+  // Main Form and Dialog rendering...
+  // (Keeping the JSX the same as it's the logic that's changed)
 
-        <FormField
-            control={form.control}
-            name="prospectName"
-            render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                    <FormLabel className="text-right">Prospect</FormLabel>
-                    <div className="col-span-3">
-                        <FormControl>
-                            <Input placeholder="John Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </div>
-                </FormItem>
-            )}
-        />
-
-        <FormField
-            control={form.control}
-            name="paymentMethod"
-            render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                    <FormLabel className="text-right">Payment</FormLabel>
-                    <div className="col-span-3">
-                         <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select method" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="Cash">Cash</SelectItem>
-                                <SelectItem value="Financing">Financing</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </div>
-                </FormItem>
-            )}
-        />
-
-        {paymentMethod === "Financing" && (
-            <FormField
-                control={form.control}
-                name="creditProvider"
-                render={({ field }) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                        <FormLabel className="text-right">Credit</FormLabel>
-                        <div className="col-span-3">
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select provider" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {financiers.map((f) => (
-                                        <SelectItem key={f} value={f}>{f}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </div>
-                    </FormItem>
-                )}
-            />
-        )}
-      </div>
-  );
-
-  const renderStepTwo = () => (
-    <div className="grid gap-4 py-4">
-         <FormField
-            control={form.control}
-            name="motorcycleId"
-            render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                    <FormLabel className="text-right">Model</FormLabel>
-                    <div className="col-span-3">
-                        <Select onValueChange={handleMotorcycleSelect} value={field.value}>
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a model..." />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {inventory.map(moto => (
-                                <SelectItem key={moto.id} value={moto.id}>
-                                    {moto.model} (Stock: {moto.stock})
-                                </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </div>
-                </FormItem>
-            )}
-        />
-
-        {selectedMotorcycle && (selectedMotorcycle.stock > 0 || (selectedMotorcycle.id === sale.motorcycleId && sale.soldSku)) && (
-            <FormField
-                control={form.control}
-                name="soldSku"
-                render={({ field }) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                        <FormLabel className="text-right">SKU</FormLabel>
-                        <div className="col-span-3">
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select SKU to sell..." />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {availableSkus.map(sku => (
-                                    <SelectItem key={sku} value={sku}>
-                                        ...{sku.slice(-6)}
-                                    </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </div>
-                    </FormItem>
-                )}
-            />
-        )}
-
-        <FormField
-            control={form.control}
-            name="amount"
-            render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0">
-                    <FormLabel className="text-right">Amount</FormLabel>
-                    <div className="col-span-3">
-                        <FormControl>
-                            <Input type="number" placeholder="35000" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </div>
-                </FormItem>
-            )}
-        />
-      </div>
-  );
-
-  return (
+    return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
@@ -404,7 +210,38 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
             ) : (
                 <Form {...form}>
                     <form>
-                        {step === 1 ? renderStepOne() : renderStepTwo()}
+                        {step === 1 ? (
+                            <div className="grid gap-4 py-4">
+                                <FormField control={form.control} name="salespersonId" render={({ field }) => (
+                                    <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0"><FormLabel className="text-right">Salesperson</FormLabel><div className="col-span-3"><Select onValueChange={field.onChange} value={field.value} disabled={!isManager}><FormControl><SelectTrigger><SelectValue placeholder="Select salesperson" /></SelectTrigger></FormControl><SelectContent><SelectItem value={EXTERNAL_SALESPERSON_ID}>External Sale (No Commission)</SelectItem>{userProfiles.map((sp) => (<SelectItem key={sp.uid} value={sp.uid}>{sp.name}</SelectItem>))}</SelectContent></Select><FormMessage /></div></FormItem>)}
+                                />
+                                <FormField control={form.control} name="prospectName" render={({ field }) => (
+                                    <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0"><FormLabel className="text-right">Prospect</FormLabel><div className="col-span-3"><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></div></FormItem>)}
+                                />
+                                <FormField control={form.control} name="paymentMethod" render={({ field }) => (
+                                    <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0"><FormLabel className="text-right">Payment</FormLabel><div className="col-span-3"><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select method" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Cash">Cash</SelectItem><SelectItem value="Financing">Financing</SelectItem></SelectContent></Select><FormMessage /></div></FormItem>)}
+                                />
+                                {paymentMethod === "Financing" && (
+                                    <FormField control={form.control} name="creditProvider" render={({ field }) => (
+                                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0"><FormLabel className="text-right">Credit</FormLabel><div className="col-span-3"><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger></FormControl><SelectContent>{financiers.map((f) => (<SelectItem key={f} value={f}>{f}</SelectItem>))}</SelectContent></Select><FormMessage /></div></FormItem>)}
+                                    />
+                                )}
+                            </div>
+                        ) : (
+                            <div className="grid gap-4 py-4">
+                                <FormField control={form.control} name="motorcycleId" render={({ field }) => (
+                                    <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0"><FormLabel className="text-right">Model</FormLabel><div className="col-span-3"><Select onValueChange={handleMotorcycleSelect} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a model..." /></SelectTrigger></FormControl><SelectContent>{inventory.map(moto => (<SelectItem key={moto.id} value={moto.id}>{moto.model} (Stock: {moto.stock})</SelectItem>))}</SelectContent></Select><FormMessage /></div></FormItem>)}
+                                />
+                                {(selectedMotorcycle && (selectedMotorcycle.stock > 0 || (selectedMotorcycle.id === sale.motorcycleId && sale.soldSku))) && (
+                                    <FormField control={form.control} name="soldSku" render={({ field }) => (
+                                        <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0"><FormLabel className="text-right">SKU</FormLabel><div className="col-span-3"><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select SKU to sell..." /></SelectTrigger></FormControl><SelectContent>{availableSkus.map(sku => (<SelectItem key={sku} value={sku}>...{sku.slice(-6)}</SelectItem>))}</SelectContent></Select><FormMessage /></div></FormItem>)}
+                                    />
+                                )}
+                                <FormField control={form.control} name="amount" render={({ field }) => (
+                                    <FormItem className="grid grid-cols-4 items-center gap-4 space-y-0"><FormLabel className="text-right">Amount</FormLabel><div className="col-span-3"><FormControl><Input type="number" placeholder="35000" {...field} /></FormControl><FormMessage /></div></FormItem>)}
+                                />
+                            </div>
+                        )}
                         <DialogFooter>
                              {step === 1 ? (
                                 <Button type="button" onClick={handleNextStep}>Next</Button>
@@ -429,7 +266,7 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2"><AlertCircle className="text-destructive"/> Out of Stock</AlertDialogTitle>
             <AlertDialogDescription>
-              There are no units of the "{selectedMotorcycle?.model}" model available. How do you want to proceed with this sale?
+              There are no units of the "{selectedMotorcycle?.model}" model available. How do you want to proceed?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -441,4 +278,5 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
       </AlertDialog>
     </>
   );
+
 }

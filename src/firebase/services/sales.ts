@@ -3,38 +3,53 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   doc,
   runTransaction,
   serverTimestamp,
+  Timestamp,
   type Firestore,
-  writeBatch,
 } from "firebase/firestore";
 import type { Sale, NewSale, UserProfile, Motorcycle } from "@/lib/data";
 import { fromFirestore } from "./utils";
 
+// Type assertion to include createdAt for sorting purposes
+// as it's added dynamically but not in the base Sale type.
+type SaleWithTimestamp = Sale & { createdAt?: Timestamp };
+
 /**
- * Fetches sales based on the user's role and the selected sprint.
- * Managers can see all sales, while other roles only see their own.
+ * Fetches sales for a sprint and sorts them in-memory.
+ * This avoids the need for a composite index in Firestore.
  */
 export async function getSales(db: Firestore, profile: UserProfile, sprint: string): Promise<Sale[]> {
-  let salesQuery = query(
-    collection(db, "sales"), 
-    where("sprint", "==", sprint), 
-    orderBy("createdAt", "desc")
-  );
+  let salesQuery;
 
+  // Base query fetches documents for the sprint.
   if (profile.role !== 'Manager') {
+    // Salespeople see only their own sales.
     salesQuery = query(
-      collection(db, "sales"), 
-      where("sprint", "==", sprint), 
-      where("salespersonId", "==", profile.uid), 
-      orderBy("createdAt", "desc")
+      collection(db, "sales"),
+      where("sprint", "==", sprint),
+      where("salespersonId", "==", profile.uid)
+    );
+  } else {
+    // Managers see all sales for the sprint.
+    salesQuery = query(
+      collection(db, "sales"),
+      where("sprint", "==", sprint)
     );
   }
 
   const snapshot = await getDocs(salesQuery);
-  return snapshot.docs.map(doc => fromFirestore<Sale>(doc));
+  const sales = snapshot.docs.map(doc => fromFirestore<SaleWithTimestamp>(doc));
+
+  // Sort the results in-memory by creation date, descending.
+  sales.sort((a, b) => {
+    const timeA = a.createdAt?.toDate().getTime() || 0;
+    const timeB = b.createdAt?.toDate().getTime() || 0;
+    return timeB - timeA;
+  });
+
+  return sales;
 }
 
 /**
@@ -46,7 +61,6 @@ export async function addSale(db: Firestore, newSale: NewSale): Promise<void> {
     const saleRef = doc(collection(db, "sales"));
     const saleData = { ...newSale, createdAt: serverTimestamp() };
     
-    // Only adjust inventory if a specific SKU was sold (not a special order)
     if (newSale.soldSku && newSale.motorcycleId) {
       const motorcycleRef = doc(db, "inventory", newSale.motorcycleId);
       const motorcycleDoc = await transaction.get(motorcycleRef);
@@ -59,7 +73,6 @@ export async function addSale(db: Firestore, newSale: NewSale): Promise<void> {
       const updatedSkus = (motorcycleData.skus || []).filter(sku => sku !== newSale.soldSku);
 
       if (motorcycleData.skus && updatedSkus.length === motorcycleData.skus.length) {
-          // This indicates the SKU wasn't found, which is an inconsistency.
           throw new Error(`Sold SKU ${newSale.soldSku} not found in inventory for model ${motorcycleData.model}.`);
       }
 
@@ -80,7 +93,6 @@ export async function deleteSale(db: Firestore, sale: Sale): Promise<void> {
   await runTransaction(db, async (transaction) => {
     const saleRef = doc(db, "sales", sale.id);
 
-    // Only adjust inventory if a specific SKU was sold (not a special order)
     if (sale.soldSku && sale.motorcycleId) {
       const motorcycleRef = doc(db, "inventory", sale.motorcycleId);
       const motorcycleDoc = await transaction.get(motorcycleRef);
@@ -88,7 +100,6 @@ export async function deleteSale(db: Firestore, sale: Sale): Promise<void> {
       if (motorcycleDoc.exists()) {
         const motorcycleData = motorcycleDoc.data() as Motorcycle;
         const skus = motorcycleData.skus || [];
-        // Add SKU back if it's not already there to prevent duplicates
         if (!skus.includes(sale.soldSku)) {
           const updatedSkus = [...skus, sale.soldSku];
           transaction.update(motorcycleRef, {
@@ -124,7 +135,6 @@ export async function updateSaleAndAdjustInventory(
     const inventoryNeedsAdjustment = newMotorcycleId !== oldMotorcycleId || newSku !== oldSku;
 
     if (inventoryNeedsAdjustment) {
-      // Step 1: Add the old SKU back to its motorcycle's inventory (if it existed)
       if (oldMotorcycleId && oldSku) {
         const oldMotoRef = doc(db, "inventory", oldMotorcycleId);
         const oldMotoDoc = await transaction.get(oldMotoRef);
@@ -138,7 +148,6 @@ export async function updateSaleAndAdjustInventory(
         }
       }
 
-      // Step 2: Remove the new SKU from its motorcycle's inventory (if it exists)
       if (newMotorcycleId && newSku) {
         const newMotoRef = doc(db, "inventory", newMotorcycleId);
         const newMotoDoc = await transaction.get(newMotoRef);
@@ -151,8 +160,6 @@ export async function updateSaleAndAdjustInventory(
         }
       }
     }
-
-    // Step 3: Update the sale document itself
     transaction.update(saleRef, updatedSaleData);
   });
 }

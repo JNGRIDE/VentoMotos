@@ -13,8 +13,8 @@ import {
 import type { Sale, NewSale, UserProfile, Motorcycle } from "@/lib/data";
 import { fromFirestore } from "./utils";
 
-// Type assertion for sorting, as createdAt is added on the server.
-type SaleWithTimestamp = Sale & { createdAt?: Timestamp };
+// Type assertion for sorting, as createdAt is added on the server and converted to string by fromFirestore
+type SaleWithTimestamp = Sale & { createdAt?: string };
 
 /**
  * Fetches sales for a specific sprint, respecting user roles.
@@ -35,8 +35,12 @@ export async function getSales(db: Firestore, profile: UserProfile, sprint: stri
   const snapshot = await getDocs(salesQuery);
   const sales = snapshot.docs.map(doc => fromFirestore<SaleWithTimestamp>(doc));
 
-  // Sort in-memory to prevent index errors
-  sales.sort((a, b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
+  // Sort in-memory to prevent index errors. createdAt is an ISO string here.
+  sales.sort((a, b) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return timeB - timeA;
+  });
 
   return sales;
 }
@@ -50,8 +54,12 @@ export async function getAllSales(db: Firestore): Promise<Sale[]> {
   const snapshot = await getDocs(salesQuery);
   const sales = snapshot.docs.map(doc => fromFirestore<SaleWithTimestamp>(doc));
 
-  // Sort in-memory to prevent index errors
-  sales.sort((a, b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
+  // Sort in-memory to prevent index errors. createdAt is an ISO string here.
+  sales.sort((a, b) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return timeB - timeA;
+  });
 
   return sales;
 }
@@ -85,7 +93,11 @@ export async function addSale(db: Firestore, newSale: NewSale): Promise<void> {
     }
     
     // Write the new sale document
-    transaction.set(saleRef, { ...newSale, createdAt: serverTimestamp() });
+    transaction.set(saleRef, { 
+      ...newSale, 
+      date: new Date().toISOString(), // Ensure local date is set
+      createdAt: serverTimestamp() 
+    });
   });
 }
 

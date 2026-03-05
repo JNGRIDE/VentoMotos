@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import {
   Edit,
   LoaderCircle,
@@ -130,9 +130,7 @@ export default function SalesPage() {
     setEditDialogOpen(true);
   };
 
-  const handleUpdateSale = async (
-    updatedData: Partial<NewSale>
-  ) => {
+  const handleUpdateSale = async (updatedData: Partial<NewSale>) => {
     if (!editingSale || !db) return;
     try {
       await updateSaleAndAdjustInventory(
@@ -143,8 +141,12 @@ export default function SalesPage() {
       );
       toast({ title: "Success", description: "Sale updated and inventory adjusted." });
       await fetchData(); // Refresh list
-    } catch(e: any) {
-       toast({ title: "Error", description: e.message || "Failed to update sale.", variant: "destructive" });
+    } catch (e: any) {
+      toast({
+        title: "Error",
+        description: e.message || "Failed to update sale.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -210,6 +212,11 @@ export default function SalesPage() {
     return profile ? profile.name : "Unknown";
   };
 
+  const formatDate = (date: any) => {
+    const d = new Date(date);
+    return isValid(d) ? format(d, "dd/MM/yyyy") : "Invalid Date";
+  }
+
   if (loading) {
     return (
       <div className="flex h-full w-full items-center justify-center min-h-[400px]">
@@ -232,8 +239,10 @@ export default function SalesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-        <h1 className="text-3xl font-bold tracking-tight font-headline">Sales Control</h1>
-      
+      <h1 className="text-3xl font-bold tracking-tight font-headline">
+        Sales Control
+      </h1>
+
       {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <Select value={salespersonFilter} onValueChange={setSalespersonFilter}>
@@ -251,9 +260,13 @@ export default function SalesPage() {
               ))}
           </SelectContent>
         </Select>
-        <Button variant="outline" onClick={checkVatFixCandidates} className="gap-2 ml-auto">
-            <AlertTriangle className="h-4 w-4" />
-            Fix Legacy VAT
+        <Button
+          variant="outline"
+          onClick={checkVatFixCandidates}
+          className="gap-2 ml-auto"
+        >
+          <AlertTriangle className="h-4 w-4" />
+          Fix Legacy VAT
         </Button>
       </div>
 
@@ -273,27 +286,46 @@ export default function SalesPage() {
           <TableBody>
             {filteredSales.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={7}
+                  className="h-32 text-center text-muted-foreground"
+                >
                   No sales found.
                 </TableCell>
               </TableRow>
             ) : (
               filteredSales.map((sale) => (
                 <TableRow key={sale.id}>
-                  <TableCell>{format(new Date(sale.date), "dd/MM/yyyy")}</TableCell>
+                  <TableCell>{formatDate(sale.date)}</TableCell>
                   <TableCell>{sale.prospectName}</TableCell>
                   <TableCell>{getSalespersonName(sale.salespersonId)}</TableCell>
                   <TableCell>{sale.motorcycleModel}</TableCell>
                   <TableCell>
-                      <Badge variant="outline">{sale.paymentMethod}</Badge>
+                    <Badge variant="outline">{sale.paymentMethod}</Badge>
                   </TableCell>
-                  <TableCell className="text-right font-mono">${sale.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono">
+                    {
+                      sale.amount.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })
+                    }
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleEditClick(sale)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditClick(sale)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setDeletingSale(sale)} className="text-destructive">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeletingSale(sale)}
+                        className="text-destructive"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -316,18 +348,25 @@ export default function SalesPage() {
       )}
 
       {/* Delete Alert */}
-      <AlertDialog open={!!deletingSale} onOpenChange={(open) => !open && setDeletingSale(null)}>
+      <AlertDialog
+        open={!!deletingSale}
+        onOpenChange={(open) => !open && setDeletingSale(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete the sale for <span className="font-bold">{deletingSale?.prospectName}</span> and restock the inventory if applicable.
+              This will delete the sale for{" "}
+              <span className="font-bold">{deletingSale?.prospectName}</span> and
+              restock the inventory if applicable.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteSale} disabled={isDeleting}>
-              {isDeleting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+              {isDeleting && (
+                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Confirm Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -335,28 +374,39 @@ export default function SalesPage() {
       </AlertDialog>
 
       <Dialog open={vatFixDialogOpen} onOpenChange={setVatFixDialogOpen}>
-          <DialogContent>
-              <DialogHeader>
-                  <DialogTitle>Fix Legacy VAT</DialogTitle>
-                  <DialogDescription>
-                      This tool finds sales with integer amounts (likely Gross) and converts them to Net Amount.
-                  </DialogDescription>
-              </DialogHeader>
-              <div>
-                  {vatFixCandidates.length > 0 ? (
-                      <p>{vatFixCandidates.length} sales found to fix.</p>
-                  ) : (
-                      <p>No sales with integer amounts found.</p>
-                  )}
-              </div>
-              <DialogFooter>
-                  <Button variant="outline" onClick={() => setVatFixDialogOpen(false)}>Cancel</Button>
-                  <Button onClick={applyVatFix} disabled={vatFixCandidates.length === 0 || isFixingVat}>
-                      {isFixingVat && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                      Apply Fix
-                  </Button>
-              </DialogFooter>
-          </DialogContent>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Fix Legacy VAT</DialogTitle>
+            <DialogDescription>
+              This tool finds sales with integer amounts (likely Gross) and
+              converts them to Net Amount.
+            </DialogDescription>
+          </DialogHeader>
+          <div>
+            {vatFixCandidates.length > 0 ? (
+              <p>{vatFixCandidates.length} sales found to fix.</p>
+            ) : (
+              <p>No sales with integer amounts found.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setVatFixDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={applyVatFix}
+              disabled={vatFixCandidates.length === 0 || isFixingVat}
+            >
+              {isFixingVat && (
+                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Apply Fix
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );

@@ -43,7 +43,7 @@ type SaleFormValues = z.infer<typeof saleSchema>;
 
 interface EditSaleDialogProps {
   sale: Sale;
-  onUpdateSale: (updatedData: Partial<NewSale>) => Promise<void>; // Simplified signature
+  onUpdateSale: (updatedData: Partial<NewSale>) => Promise<void>; 
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentUserProfile?: UserProfile | null;
@@ -56,24 +56,33 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
   const [isSaving, setIsSaving] = useState(false);
   const [step, setStep] = useState(1);
 
-  // Data states
   const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [inventory, setInventory] = useState<Motorcycle[]>([]);
   const [financiers, setFinanciers] = useState<string[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
-  // Zero-stock alert states
   const [showZeroStockAlert, setShowZeroStockAlert] = useState(false);
   const [specialOrderNotes, setSpecialOrderNotes] = useState("");
 
   const form = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
-    defaultValues: {},
+    // Initialize with sale data directly
+    defaultValues: {
+        salespersonId: sale.salespersonId,
+        prospectName: sale.prospectName,
+        paymentMethod: sale.paymentMethod,
+        creditProvider: sale.creditProvider || undefined,
+        motorcycleId: sale.motorcycleId,
+        soldSku: sale.soldSku,
+        amount: Math.round(sale.amount * 1.16), // Display Gross
+        notes: sale.notes || "",
+    },
     mode: "onChange"
   });
 
   useEffect(() => {
-      if (open && sale) {
+      // When the dialog opens with a new sale, reset the form and state
+      if (open) {
           form.reset({
               salespersonId: sale.salespersonId,
               prospectName: sale.prospectName,
@@ -81,11 +90,11 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
               creditProvider: sale.creditProvider || undefined,
               motorcycleId: sale.motorcycleId,
               soldSku: sale.soldSku,
-              amount: Math.round(sale.amount * 1.16), // Display Gross
+              amount: Math.round(sale.amount * 1.16),
               notes: sale.notes || "",
           });
           setSpecialOrderNotes(sale.notes || "");
-          setStep(1); // Reset to first step
+          setStep(1); 
       }
   }, [sale, open, form]);
 
@@ -97,7 +106,7 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
         getInventory(db),
         getFinanciers(db)
       ]).then(([profilesData, inventoryData, financiersData]) => {
-        setUserProfiles(profilesData);
+        setUserProfiles(profilesData.filter(p => p.role === 'Salesperson')); // <-- FIX: Only show salespeople
         setInventory(inventoryData);
         setFinanciers(financiersData);
         setIsLoadingData(false);
@@ -149,7 +158,6 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
 
   const handleSpecialOrderAndSubmit = (notes: string) => {
       setShowZeroStockAlert(false);
-      // Use a timeout to ensure state update before submitting
       setTimeout(() => {
         form.handleSubmit((data) => onSubmit(data, notes))();
       }, 0);
@@ -180,7 +188,7 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
     };
 
     try {
-      await onUpdateSale(newSaleData); // Use the simplified function call
+      await onUpdateSale(newSaleData);
       onOpenChange(false);
     } finally {
       setIsSaving(false);
@@ -188,9 +196,6 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
   };
 
   const isManager = currentUserProfile?.role === 'Manager';
-
-  // Main Form and Dialog rendering...
-  // (Keeping the JSX the same as it's the logic that's changed)
 
     return (
     <>

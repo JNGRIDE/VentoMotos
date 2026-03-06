@@ -20,6 +20,7 @@ import { useFirestore } from "@/firebase";
 import { getUserProfiles, getInventory, getFinanciers } from "@/firebase/services";
 import type { Sale, NewSale, UserProfile, Motorcycle } from "@/lib/data";
 import { EXTERNAL_SALESPERSON_ID } from "@/lib/constants";
+import * as fpixel from "@/lib/fpixel";
 
 const saleSchema = z.object({
   salespersonId: z.string().min(1, "Salesperson is required"),
@@ -107,11 +108,15 @@ export function RecordSaleDialog({
         
         if (isEditMode) {
             form.reset({
-                ...saleToEdit,
-                amount: parseFloat((saleToEdit.amount * 1.16).toFixed(2)), // Convert net to gross for form
+                salespersonId: saleToEdit.salespersonId,
+                prospectName: saleToEdit.prospectName,
+                paymentMethod: saleToEdit.paymentMethod,
+                motorcycleId: saleToEdit.motorcycleId,
+                amount: parseFloat((saleToEdit.amount * 1.16).toFixed(2)),
                 creditProvider: saleToEdit.creditProvider || "",
                 soldSku: saleToEdit.soldSku || "",
                 notes: saleToEdit.notes || "",
+                isExternal: saleToEdit.isExternal || false,
             });
         } else {
             form.reset({
@@ -187,15 +192,24 @@ export function RecordSaleDialog({
     try {
       if (isEditMode) {
         await onUpdateSale!(saleToEdit.id, saleData);
-        toast({ title: "Sale Updated!", description: "The sale has been successfully updated." });
+        toast({ title: "¡Venta Actualizada!", description: "El registro ha sido modificado con éxito." });
       } else {
         const newSale: NewSale = { ...saleData, sprint: sprint! } as NewSale;
         await onAddSale!(newSale);
-        toast({ title: "Sale Recorded!", description: "The new sale has been successfully added." });
+
+        // Tracking Facebook Pixel: Purchase
+        fpixel.event('Purchase', {
+          value: data.amount,
+          currency: 'MXN',
+          content_name: selectedMotorcycle?.model,
+          content_type: 'product',
+        });
+
+        toast({ title: "¡Venta Registrada!", description: "La venta se ha guardado correctamente." });
       }
       setOpen(false);
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Save Failed", description: error.message || "An unexpected error occurred." });
+      toast({ variant: "destructive", title: "Fallo al Guardar", description: error.message || "Ocurrió un error inesperado." });
     } finally {
         setIsSaving(false);
     }

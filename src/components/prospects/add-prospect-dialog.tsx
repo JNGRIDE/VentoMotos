@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import { addProspect, getUserProfiles } from "@/firebase/services";
 import { type NewProspect, type UserProfile, PROSPECT_STAGES } from "@/lib/data";
+import * as fpixel from "@/lib/fpixel";
 
 const addProspectSchema = z.object({
   name: z.string().min(2, "El nombre es requerido"),
@@ -97,8 +98,15 @@ export function AddProspectDialog({ sprint, currentUserProfile, onProspectAdded 
 
     try {
       await addProspect(db, newProspect);
+      
+      // Tracking Facebook Pixel: Lead
+      fpixel.event('Lead', {
+        content_name: data.motorcycleInterest || 'General Prospect',
+        content_category: data.source,
+      });
+
       toast({
-        title: "Nuevo Prospecto!",
+        title: "¡Nuevo Prospecto!",
         description: `${data.name} ha sido añadido a tu embudo.`,
       });
       onProspectAdded();

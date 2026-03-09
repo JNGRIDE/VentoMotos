@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { format } from "date-fns"
+import { format, isValid } from "date-fns"
 import {
   Card,
   CardContent,
@@ -32,6 +32,12 @@ export function SalesDetailTable({ sales, userProfiles }: SalesDetailTableProps)
     }, {} as Record<string, UserProfile>);
   }, [userProfiles]);
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "N/A";
+    const d = new Date(dateStr);
+    return isValid(d) ? format(d, "MMM d, yyyy") : "N/A";
+  };
+
   return (
     <Card className="print:border-0 print:shadow-none">
       <CardHeader>
@@ -58,7 +64,7 @@ export function SalesDetailTable({ sales, userProfiles }: SalesDetailTableProps)
               const userProfile = isExternal ? null : userProfilesMap[sale.salespersonId];
               return (
               <TableRow key={sale.id}>
-                <TableCell className="font-medium">{format(new Date(sale.date), "MMM d, yyyy")}</TableCell>
+                <TableCell className="font-medium">{formatDate(sale.date)}</TableCell>
                 <TableCell>{isExternal ? 'External Sale' : (userProfile?.name || 'N/A')}</TableCell>
                 <TableCell>{sale.prospectName}</TableCell>
                 <TableCell>{sale.motorcycleModel}</TableCell>

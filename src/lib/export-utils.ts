@@ -1,5 +1,5 @@
 import type { Sale } from "./data";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 
 export function exportSalesToCSV(sales: Sale[], filename: string = "sales-report") {
   if (!sales || sales.length === 0) {
@@ -21,18 +21,23 @@ export function exportSalesToCSV(sales: Sale[], filename: string = "sales-report
   ];
 
   // Map data to rows
-  const rows = sales.map(sale => [
-    format(new Date(sale.date), "yyyy-MM-dd HH:mm"),
-    sale.sprint,
-    sale.salespersonId,
-    `"${sale.prospectName.replace(/"/g, '""')}"`, // Escape quotes
-    `"${sale.motorcycleModel.replace(/"/g, '""')}"`,
-    sale.amount,
-    sale.paymentMethod,
-    sale.creditProvider || "",
-    sale.soldSku || "",
-    `"${(sale.notes || "").replace(/"/g, '""')}"`
-  ]);
+  const rows = sales.map(sale => {
+    const d = new Date(sale.date);
+    const dateFormatted = isValid(d) ? format(d, "yyyy-MM-dd HH:mm") : "N/A";
+    
+    return [
+      dateFormatted,
+      sale.sprint,
+      sale.salespersonId,
+      `"${sale.prospectName.replace(/"/g, '""')}"`, // Escape quotes
+      `"${sale.motorcycleModel.replace(/"/g, '""')}"`,
+      sale.amount,
+      sale.paymentMethod,
+      sale.creditProvider || "",
+      sale.soldSku || "",
+      `"${(sale.notes || "").replace(/"/g, '""')}"`
+    ];
+  });
 
   // Combine headers and rows
   const csvContent = [

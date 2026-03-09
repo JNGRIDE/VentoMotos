@@ -41,6 +41,12 @@ export function SalesDetailTable({ sales, userProfiles }: SalesDetailTableProps)
     return isValid(d) ? format(d, "dd MMM", { locale: es }) : "N/A";
   };
 
+  const getYear = (dateStr: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return isValid(d) ? d.getFullYear().toString() : "";
+  };
+
   return (
     <Card className="border-none shadow-soft rounded-[32px] overflow-hidden group hover:shadow-premium transition-all duration-500 print:border-0 print:shadow-none">
       <CardContent className="p-0">
@@ -59,13 +65,14 @@ export function SalesDetailTable({ sales, userProfiles }: SalesDetailTableProps)
             {sales.map((sale) => {
               const isExternal = sale.salespersonId === EXTERNAL_SALESPERSON_ID;
               const userProfile = isExternal ? null : userProfilesMap[sale.salespersonId];
+              const year = getYear(sale.date);
               
               return (
               <TableRow key={sale.id} className="h-20 border-border/40 hover:bg-secondary/20 transition-colors group/row">
                 <TableCell className="pl-8">
                   <div className="flex flex-col">
                     <span className="font-bold text-foreground/90">{formatDate(sale.date)}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase">{new Date(sale.date).getFullYear()}</span>
+                    {year && <span className="text-[10px] text-muted-foreground uppercase">{year}</span>}
                   </div>
                 </TableCell>
                 <TableCell>

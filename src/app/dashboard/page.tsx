@@ -2,7 +2,7 @@
 
 import React, { useMemo, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   DollarSign, 
   CreditCard, 
@@ -42,6 +42,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+  }
+};
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -119,7 +139,7 @@ export default function DashboardPage() {
        description = `¡Meta cumplida! ${salesProgress.toFixed(0)}% alcanzado`;
        iconColor = "text-accent";
        valueClassName = "text-accent";
-       descriptionClassName = "text-accent font-bold";
+       descriptionClassName = "text-accent font-black";
     }
 
     return { earned, description, iconColor, valueClassName, descriptionClassName };
@@ -178,37 +198,31 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 md:gap-10">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="flex flex-col gap-8 md:gap-12"
+    >
+      <motion.div 
+        variants={itemVariants}
+        className="flex flex-col md:flex-row md:items-end justify-between gap-6"
+      >
         <div className="space-y-1">
-          <motion.h1 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="text-3xl md:text-4xl font-bold tracking-tight"
-          >
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight">
             Hola, {currentUserProfile.name.split(' ')[0]}!
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-muted-foreground text-base md:text-lg"
-          >
+          </h1>
+          <p className="text-muted-foreground text-lg md:text-xl font-medium">
             Explora la actividad y el rendimiento de tu sucursal.
-          </motion.p>
+          </p>
         </div>
         
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="flex items-center gap-2 bg-card/50 backdrop-blur-md p-1.5 rounded-3xl shadow-soft border border-border/20 self-start md:self-auto"
-        >
+        <div className="flex items-center gap-2 bg-card/50 backdrop-blur-md p-2 rounded-[28px] shadow-soft border border-border/20 self-start md:self-auto">
           <Select value={selectedSprint} onValueChange={setSelectedSprint}>
-            <SelectTrigger className="w-[140px] md:w-[180px] border-none bg-transparent h-9 md:h-10 rounded-2xl focus:ring-0 shadow-none hover:bg-secondary/40">
+            <SelectTrigger className="w-[160px] md:w-[200px] border-none bg-transparent h-10 rounded-2xl focus:ring-0 shadow-none hover:bg-secondary/40 font-bold">
               <SelectValue placeholder="Sprint" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-[24px]">
               {sprints.map((sprint) => (
                 <SelectItem key={sprint.id} value={sprint.id}>
                   {sprint.label} {sprint.status === 'closed' ? '🔒' : ''}
@@ -221,11 +235,11 @@ export default function DashboardPage() {
             <div className="flex gap-1 border-l border-border/40 pl-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button onClick={startNextSprint} variant="ghost" size="icon" className="h-9 w-9 md:h-10 md:w-10 rounded-2xl hover:bg-secondary/60">
-                        <CalendarPlus className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+                    <Button onClick={startNextSprint} variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-secondary/60 transition-all active:scale-90">
+                        <CalendarPlus className="h-5 w-5 text-primary" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>
+                  <TooltipContent className="rounded-xl font-bold">
                     <p>Crear nuevo mes (Sprint)</p>
                   </TooltipContent>
                 </Tooltip>
@@ -233,11 +247,11 @@ export default function DashboardPage() {
                 {currentSprintStatus === 'active' && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button onClick={() => setIsFinishDialogOpen(true)} variant="ghost" size="icon" className="h-9 w-9 md:h-10 md:w-10 rounded-2xl hover:bg-destructive/10">
-                          <CalendarOff className="h-4 w-4 md:h-5 md:w-5 text-destructive" />
+                      <Button onClick={() => setIsFinishDialogOpen(true)} variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-destructive/10 transition-all active:scale-90">
+                          <CalendarOff className="h-5 w-5 text-destructive" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent className="rounded-xl font-bold">
                       <p>Cerrar mes actual</p>
                     </TooltipContent>
                   </Tooltip>
@@ -250,17 +264,17 @@ export default function DashboardPage() {
                <RecordSaleDialog onAddSale={recordSale} currentUserProfile={currentUserProfile} sprint={selectedSprint} />
             )}
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <KpiCard
             title="Ventas Totales"
             value={`$${totalSales.toLocaleString()}`}
             description={`${salesProgress.toFixed(1)}% de la meta ($${salesGoal.toLocaleString()})`}
             icon={DollarSign}
             iconColor="text-primary"
-            delay={0.1}
+            delay={0.3}
           />
           <KpiCard
             title="Número de Ventas"
@@ -268,7 +282,7 @@ export default function DashboardPage() {
             description={`${totalCredits} créditos colocados este mes`}
             icon={TrendingUp}
             iconColor="text-orange-500"
-            delay={0.2}
+            delay={0.4}
           />
           <KpiCard
             title="Comisión Generada"
@@ -278,7 +292,7 @@ export default function DashboardPage() {
             iconColor={commissionData.iconColor}
             valueClassName={commissionData.valueClassName}
             descriptionClassName={commissionData.descriptionClassName}
-            delay={0.3}
+            delay={0.5}
           />
           <KpiCard
             title="Bono Vento"
@@ -286,25 +300,23 @@ export default function DashboardPage() {
             description={`${ventoCredits} Créditos Vento logrados`}
             icon={CreditCard}
             iconColor="text-accent"
-            delay={0.4}
+            delay={0.6}
           />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="lg:col-span-2 space-y-6 md:space-y-10"
+          variants={itemVariants}
+          className="lg:col-span-2 space-y-10"
         >
           <SalesProgressChart data={teamChartData} />
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center justify-between px-2">
-              <h3 className="text-xl md:text-2xl font-bold tracking-tight">Actividad Reciente</h3>
-              <Button asChild variant="link" className="text-primary font-semibold flex items-center gap-1 group p-0 h-auto">
+              <h3 className="text-2xl md:text-3xl font-black tracking-tight">Actividad Reciente</h3>
+              <Button asChild variant="link" className="text-primary font-black flex items-center gap-1 group p-0 h-auto hover:no-underline">
                 <Link href="/dashboard/sales">
-                  Ver Todo <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  Explorar Todo <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1.5" />
                 </Link>
               </Button>
             </div>
@@ -319,46 +331,52 @@ export default function DashboardPage() {
         </motion.div>
 
         <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.6 }}
-          className="space-y-6 md:space-y-8"
+          variants={itemVariants}
+          className="space-y-8"
         >
-           <Card className="border-none bg-gradient-to-br from-primary to-accent text-primary-foreground p-6 md:p-8 rounded-[32px] shadow-premium relative overflow-hidden group">
-              <div className="relative z-10 space-y-4">
-                <div className="h-10 w-10 md:h-12 md:w-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
-                  <Award className="h-5 w-5 md:h-6 md:w-6 text-white" />
+           <Card className="border-none bg-gradient-to-br from-primary to-accent text-primary-foreground p-8 md:p-10 rounded-[40px] shadow-premium relative overflow-hidden group transition-all duration-700 hover:shadow-primary/30">
+              <div className="relative z-10 space-y-6">
+                <div className="h-14 w-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg transition-transform duration-500 group-hover:rotate-6">
+                  <Award className="h-8 w-8 text-white" />
                 </div>
-                <div className="space-y-1">
-                  <h4 className="text-lg md:text-xl font-bold">Desafío Mensual</h4>
-                  <p className="text-white/80 text-xs md:text-sm">Alcanza el 100% de tu meta para desbloquear el nivel de bono élite.</p>
+                <div className="space-y-2">
+                  <h4 className="text-2xl font-black leading-tight">Desafío Mensual</h4>
+                  <p className="text-white/80 text-sm font-medium leading-relaxed">Alcanza el 100% de tu meta para desbloquear el nivel de bono élite.</p>
                 </div>
-                <div className="pt-2 md:pt-4">
-                  <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
+                <div className="pt-4">
+                  <div className="h-3 w-full bg-white/20 rounded-full overflow-hidden shadow-inner">
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(100, salesProgress)}%` }}
-                      transition={{ duration: 1.5, ease: "easeOut", delay: 0.8 }}
-                      className="h-full bg-white"
+                      transition={{ duration: 2, ease: [0.22, 1, 0.36, 1], delay: 1 }}
+                      className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
                     />
                   </div>
-                  <p className="text-xs text-white/60 mt-2 text-right font-medium">{salesProgress.toFixed(0)}% Completado</p>
+                  <div className="flex justify-between items-center mt-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Progreso Actual</span>
+                    <p className="text-sm text-white font-black">{salesProgress.toFixed(0)}% Completado</p>
+                  </div>
                 </div>
               </div>
-              <div className="absolute top-[-20%] right-[-20%] h-64 w-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-500"></div>
+              <div className="absolute top-[-20%] right-[-20%] h-80 w-80 bg-white/10 rounded-full blur-[80px] group-hover:bg-white/20 transition-all duration-700"></div>
+              <div className="absolute bottom-[-10%] left-[-10%] h-40 w-40 bg-black/10 rounded-full blur-[40px] transition-all duration-700"></div>
            </Card>
 
-           <div className="space-y-4">
-              <h4 className="text-lg font-bold px-2">Acciones Rápidas</h4>
+           <div className="space-y-6">
+              <h4 className="text-xl font-black px-2 uppercase tracking-widest text-muted-foreground/40">Acciones Rápidas</h4>
               <div className="grid grid-cols-2 gap-4">
-                <Button onClick={() => exportSalesToCSV(sales, `sales-${selectedSprint}`)} variant="outline" className="h-auto py-4 md:py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50 transition-all active:scale-95">
-                  <Download className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-                  <span className="font-semibold text-xs md:text-sm text-center">Exportar CSV</span>
+                <Button onClick={() => exportSalesToCSV(sales, `sales-${selectedSprint}`)} variant="outline" className="h-auto py-6 md:py-8 flex-col gap-3 rounded-[32px] border-border/40 shadow-soft hover:shadow-premium bg-card/50 backdrop-blur-md transition-all active:scale-95 group">
+                  <div className="p-3 rounded-2xl bg-primary/10 transition-transform group-hover:scale-110 group-hover:-rotate-3">
+                    <Download className="h-6 w-6 text-primary" />
+                  </div>
+                  <span className="font-black text-xs md:text-sm text-center uppercase tracking-widest">Exportar CSV</span>
                 </Button>
                 {user?.uid === ADMIN_UID && !adminProfileExists && (
-                  <Button onClick={createAdminProfile} variant="outline" className="h-auto py-4 md:py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50 transition-all active:scale-95">
-                    <UserPlus className="h-5 w-5 md:h-6 md:w-6 text-accent" />
-                    <span className="font-semibold text-xs md:text-sm text-center">Perfil Admin</span>
+                  <Button onClick={createAdminProfile} variant="outline" className="h-auto py-6 md:py-8 flex-col gap-3 rounded-[32px] border-border/40 shadow-soft hover:shadow-premium bg-card/50 backdrop-blur-md transition-all active:scale-95 group">
+                    <div className="p-3 rounded-2xl bg-accent/10 transition-transform group-hover:scale-110 group-hover:rotate-3">
+                      <UserPlus className="h-6 w-6 text-accent" />
+                    </div>
+                    <span className="font-black text-xs md:text-sm text-center uppercase tracking-widest">Perfil Admin</span>
                   </Button>
                 )}
               </div>
@@ -367,27 +385,29 @@ export default function DashboardPage() {
       </div>
 
       <AlertDialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
-        <AlertDialogContent className="rounded-[32px]">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
+        <AlertDialogContent className="rounded-[40px] border-none shadow-premium p-10">
+          <AlertDialogHeader className="space-y-4">
+            <div className="h-16 w-16 rounded-3xl bg-destructive/10 flex items-center justify-center mb-2">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+            </div>
+            <AlertDialogTitle className="text-3xl font-black tracking-tight">
               ¿Cerrar este mes definitivamente?
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-base font-medium text-muted-foreground/80 leading-relaxed">
               Esta acción marcará el mes como **Finalizado**. Se bloquearán todas las ediciones, borrados y nuevos registros de ventas para este periodo. Esta es una acción de seguridad para proteger tus reportes mensuales.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-2xl">Cancelar</AlertDialogCancel>
+          <AlertDialogFooter className="mt-8 gap-3">
+            <AlertDialogCancel className="rounded-2xl h-12 px-8 font-bold border-none bg-secondary/50">Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleFinishSprint}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-2xl"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-2xl h-12 px-8 font-black shadow-lg shadow-destructive/20"
             >
-              Sí, cerrar mes
+              Sí, cerrar mes ahora
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </motion.div>
   );
 }

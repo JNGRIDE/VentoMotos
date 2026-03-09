@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { LoaderCircle, ExternalLink, FileText, MapPin, Globe, Trash2, LayoutGrid, ShieldAlert, AlertTriangle, Filter } from 'lucide-react';
 import { useFirestore } from "@/firebase";
 import { useUser } from "@/firebase/auth/use-user";
@@ -111,12 +112,16 @@ export default function UtilitiesPage() {
 
   if (permissionError) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.32))] gap-4 max-w-md mx-auto text-center">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.32))] gap-4 max-w-md mx-auto text-center"
+      >
         <ShieldAlert className="h-16 w-16 text-destructive/20" />
         <h2 className="text-2xl font-bold">Acceso Denegado</h2>
         <p className="text-muted-foreground">{permissionError}</p>
-        <Button onClick={fetchData} variant="outline" className="mt-4">Reintentar</Button>
-      </div>
+        <Button onClick={fetchData} variant="outline" className="mt-4 rounded-2xl">Reintentar</Button>
+      </motion.div>
     );
   }
 
@@ -124,28 +129,47 @@ export default function UtilitiesPage() {
     <div className="flex flex-col gap-8 md:gap-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+          <motion.h1 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-3xl md:text-4xl font-bold tracking-tight"
+          >
             Centro de Utilidades
-          </h1>
-          <p className="text-muted-foreground text-base md:text-lg">
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-muted-foreground text-base md:text-lg"
+          >
             Recursos clave centralizados para el equipo Vento.
-          </p>
+          </motion.p>
         </div>
         {isManager && (
-          <div className="animate-in fade-in zoom-in duration-500">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+          >
             <AddUtilityDialog onUtilityAdded={fetchData} />
-          </div>
+          </motion.div>
         )}
       </div>
 
       {!isManager && (
-        <Alert className="bg-primary/5 border-primary/20 rounded-[24px]">
-          <AlertTriangle className="h-4 w-4 text-primary" />
-          <AlertTitle className="text-primary font-bold">Modo Consulta</AlertTitle>
-          <AlertDescription className="text-primary/80">
-            Como Vendedor, puedes usar todos los recursos pero no puedes editarlos.
-          </AlertDescription>
-        </Alert>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Alert className="bg-primary/5 border-primary/20 rounded-[24px]">
+            <AlertTriangle className="h-4 w-4 text-primary" />
+            <AlertTitle className="text-primary font-bold">Modo Consulta</AlertTitle>
+            <AlertDescription className="text-primary/80">
+              Como Vendedor, puedes usar todos los recursos pero no puedes editarlos.
+            </AlertDescription>
+          </Alert>
+        </motion.div>
       )}
 
       <div className="flex flex-col gap-6">
@@ -169,67 +193,89 @@ export default function UtilitiesPage() {
           </TabsList>
         </Tabs>
 
-        {filteredUtilities.length === 0 ? (
-          <Card className="border-dashed bg-muted/10 rounded-[40px] p-16 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500">
-            <div className="h-20 w-20 rounded-[32px] bg-secondary flex items-center justify-center mb-6 shadow-soft">
-              <LayoutGrid className="h-10 w-10 text-muted-foreground/30" />
-            </div>
-            <h3 className="text-2xl font-bold">Sin recursos en "{categories.find(c => c.id === activeTab)?.label}"</h3>
-            <p className="text-muted-foreground max-w-sm mt-3 text-lg">
-              {isManager 
-                ? "Como Manager, puedes empezar agregando portales, archivos o guías para esta categoría." 
-                : "Aún no se han agregado recursos en esta sección."}
-            </p>
-            {isManager && activeTab !== 'all' && (
-              <Button variant="outline" onClick={() => setActiveTab('all')} className="mt-6 rounded-2xl">
-                Ver todos los recursos
-              </Button>
-            )}
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {filteredUtilities.map((item) => (
-              <Card key={item.id} className="group overflow-hidden rounded-[32px] border-none shadow-soft hover:shadow-premium transition-all duration-500">
-                <CardHeader className="p-6 pb-2">
-                  <div className="flex justify-between items-start">
-                    <div className="p-3.5 rounded-2xl bg-primary/10 text-primary transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-inner">
-                      {getIcon(item.category)}
-                    </div>
-                    <div className="flex gap-1">
-                      <Badge variant="secondary" className="rounded-full text-[10px] font-bold uppercase tracking-wider bg-secondary/60 backdrop-blur-sm px-2 py-1">
-                        {item.category}
-                      </Badge>
-                      {isManager && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  <CardTitle className="text-xl font-bold mt-5 leading-tight line-clamp-1 group-hover:text-primary transition-colors">{item.title}</CardTitle>
-                  <CardDescription className="line-clamp-2 min-h-[40px] mt-2 text-muted-foreground/80 leading-relaxed">
-                    {item.description || "Sin descripción adicional."}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-6 pt-4">
-                  <Button 
-                    asChild 
-                    className="w-full rounded-2xl h-12 shadow-primary/10 group-hover:shadow-primary/30 transition-all duration-300 gap-2 font-bold"
-                  >
-                    <a href={item.url} target="_blank" rel="noopener noreferrer">
-                      Abrir Recurso <ExternalLink className="h-4 w-4" />
-                    </a>
+        <AnimatePresence mode="popLayout">
+          {filteredUtilities.length === 0 ? (
+            <motion.div
+              key="empty-state"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.4 }}
+            >
+              <Card className="border-dashed bg-muted/10 rounded-[40px] p-16 flex flex-col items-center justify-center text-center">
+                <div className="h-20 w-20 rounded-[32px] bg-secondary flex items-center justify-center mb-6 shadow-soft">
+                  <LayoutGrid className="h-10 w-10 text-muted-foreground/30" />
+                </div>
+                <h3 className="text-2xl font-bold">Sin recursos en "{categories.find(c => c.id === activeTab)?.label}"</h3>
+                <p className="text-muted-foreground max-w-sm mt-3 text-lg">
+                  {isManager 
+                    ? "Como Manager, puedes empezar agregando portales, archivos o guías para esta categoría." 
+                    : "Aún no se han agregado recursos en esta sección."}
+                </p>
+                {isManager && activeTab !== 'all' && (
+                  <Button variant="outline" onClick={() => setActiveTab('all')} className="mt-6 rounded-2xl">
+                    Ver todos los recursos
                   </Button>
-                </CardContent>
+                )}
               </Card>
-            ))}
-          </div>
-        )}
+            </motion.div>
+          ) : (
+            <motion.div 
+              layout
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            >
+              {filteredUtilities.map((item) => (
+                <motion.div
+                  key={item.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card className="group overflow-hidden rounded-[32px] border-none shadow-soft hover:shadow-premium transition-all duration-500 h-full flex flex-col">
+                    <CardHeader className="p-6 pb-2">
+                      <div className="flex justify-between items-start">
+                        <div className="p-3.5 rounded-2xl bg-primary/10 text-primary transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-inner">
+                          {getIcon(item.category)}
+                        </div>
+                        <div className="flex gap-1">
+                          <Badge variant="secondary" className="rounded-full text-[10px] font-bold uppercase tracking-wider bg-secondary/60 backdrop-blur-sm px-2 py-1">
+                            {item.category}
+                          </Badge>
+                          {isManager && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <CardTitle className="text-xl font-bold mt-5 leading-tight line-clamp-1 group-hover:text-primary transition-colors">{item.title}</CardTitle>
+                      <CardDescription className="line-clamp-2 min-h-[40px] mt-2 text-muted-foreground/80 leading-relaxed">
+                        {item.description || "Sin descripción adicional."}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6 pt-4 mt-auto">
+                      <Button 
+                        asChild 
+                        className="w-full rounded-2xl h-12 shadow-primary/10 group-hover:shadow-primary/30 transition-all duration-300 gap-2 font-bold active:scale-95"
+                      >
+                        <a href={item.url} target="_blank" rel="noopener noreferrer">
+                          Abrir Recurso <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

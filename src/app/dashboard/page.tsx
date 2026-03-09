@@ -2,6 +2,7 @@
 
 import React, { useMemo, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { 
   DollarSign, 
   CreditCard, 
@@ -77,15 +78,12 @@ export default function DashboardPage() {
   
   const isManager = currentUserProfile?.role === 'Manager';
   
-  // For a manager, branch sales exclude external sales. For a salesperson, this will be their own sales.
   const branchSales = useMemo(() => isManager ? sales.filter(s => !s.isExternal) : sales, [sales, isManager]);
 
   const totalSales = useMemo(() => {
-    // A salesperson's total includes their external sales, so we use the raw `sales` array.
     if (!isManager) {
       return sales.reduce((sum, sale) => sum + sale.amount, 0);
     }
-    // A manager's "Total Sales" KPI refers to the branch total, so we use `branchSales`.
     return branchSales.reduce((sum, sale) => sum + sale.amount, 0);
   }, [sales, branchSales, isManager]);
   
@@ -183,15 +181,29 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6 md:gap-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+          <motion.h1 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-3xl md:text-4xl font-bold tracking-tight"
+          >
             Hola, {currentUserProfile.name.split(' ')[0]}!
-          </h1>
-          <p className="text-muted-foreground text-base md:text-lg">
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-muted-foreground text-base md:text-lg"
+          >
             Explora la actividad y el rendimiento de tu sucursal.
-          </p>
+          </motion.p>
         </div>
         
-        <div className="flex items-center gap-2 bg-card/50 backdrop-blur-md p-1.5 rounded-3xl shadow-soft border border-border/20 self-start md:self-auto">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="flex items-center gap-2 bg-card/50 backdrop-blur-md p-1.5 rounded-3xl shadow-soft border border-border/20 self-start md:self-auto"
+        >
           <Select value={selectedSprint} onValueChange={setSelectedSprint}>
             <SelectTrigger className="w-[140px] md:w-[180px] border-none bg-transparent h-9 md:h-10 rounded-2xl focus:ring-0 shadow-none hover:bg-secondary/40">
               <SelectValue placeholder="Sprint" />
@@ -238,7 +250,7 @@ export default function DashboardPage() {
                <RecordSaleDialog onAddSale={recordSale} currentUserProfile={currentUserProfile} sprint={selectedSprint} />
             )}
           </div>
-        </div>
+        </motion.div>
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -248,6 +260,7 @@ export default function DashboardPage() {
             description={`${salesProgress.toFixed(1)}% de la meta ($${salesGoal.toLocaleString()})`}
             icon={DollarSign}
             iconColor="text-primary"
+            delay={0.1}
           />
           <KpiCard
             title="Número de Ventas"
@@ -255,6 +268,7 @@ export default function DashboardPage() {
             description={`${totalCredits} créditos colocados este mes`}
             icon={TrendingUp}
             iconColor="text-orange-500"
+            delay={0.2}
           />
           <KpiCard
             title="Comisión Generada"
@@ -264,6 +278,7 @@ export default function DashboardPage() {
             iconColor={commissionData.iconColor}
             valueClassName={commissionData.valueClassName}
             descriptionClassName={commissionData.descriptionClassName}
+            delay={0.3}
           />
           <KpiCard
             title="Bono Vento"
@@ -271,11 +286,17 @@ export default function DashboardPage() {
             description={`${ventoCredits} Créditos Vento logrados`}
             icon={CreditCard}
             iconColor="text-accent"
+            delay={0.4}
           />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
-        <div className="lg:col-span-2 space-y-6 md:space-y-10">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="lg:col-span-2 space-y-6 md:space-y-10"
+        >
           <SalesProgressChart data={teamChartData} />
           
           <div className="space-y-4">
@@ -295,9 +316,14 @@ export default function DashboardPage() {
               currentUserProfile={currentUserProfile}
             />
           </div>
-        </div>
+        </motion.div>
 
-        <div className="space-y-6 md:space-y-8">
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.6 }}
+          className="space-y-6 md:space-y-8"
+        >
            <Card className="border-none bg-gradient-to-br from-primary to-accent text-primary-foreground p-6 md:p-8 rounded-[32px] shadow-premium relative overflow-hidden group">
               <div className="relative z-10 space-y-4">
                 <div className="h-10 w-10 md:h-12 md:w-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
@@ -309,7 +335,12 @@ export default function DashboardPage() {
                 </div>
                 <div className="pt-2 md:pt-4">
                   <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
-                    <div className="h-full bg-white transition-all duration-1000" style={{ width: `${Math.min(100, salesProgress)}%` }}></div>
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(100, salesProgress)}%` }}
+                      transition={{ duration: 1.5, ease: "easeOut", delay: 0.8 }}
+                      className="h-full bg-white"
+                    />
                   </div>
                   <p className="text-xs text-white/60 mt-2 text-right font-medium">{salesProgress.toFixed(0)}% Completado</p>
                 </div>
@@ -320,19 +351,19 @@ export default function DashboardPage() {
            <div className="space-y-4">
               <h4 className="text-lg font-bold px-2">Acciones Rápidas</h4>
               <div className="grid grid-cols-2 gap-4">
-                <Button onClick={() => exportSalesToCSV(sales, `sales-${selectedSprint}`)} variant="outline" className="h-auto py-4 md:py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50">
+                <Button onClick={() => exportSalesToCSV(sales, `sales-${selectedSprint}`)} variant="outline" className="h-auto py-4 md:py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50 transition-all active:scale-95">
                   <Download className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                   <span className="font-semibold text-xs md:text-sm text-center">Exportar CSV</span>
                 </Button>
                 {user?.uid === ADMIN_UID && !adminProfileExists && (
-                  <Button onClick={createAdminProfile} variant="outline" className="h-auto py-4 md:py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50">
+                  <Button onClick={createAdminProfile} variant="outline" className="h-auto py-4 md:py-6 flex-col gap-2 rounded-3xl border-border/40 shadow-soft hover:bg-secondary/50 transition-all active:scale-95">
                     <UserPlus className="h-5 w-5 md:h-6 md:w-6 text-accent" />
                     <span className="font-semibold text-xs md:text-sm text-center">Perfil Admin</span>
                   </Button>
                 )}
               </div>
            </div>
-        </div>
+        </motion.div>
       </div>
 
       <AlertDialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>

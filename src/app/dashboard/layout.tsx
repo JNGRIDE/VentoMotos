@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
   LayoutDashboard,
@@ -74,14 +73,8 @@ export default function DashboardLayout({
   if (isLoading || !user) {
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center"
-        >
           <LoaderCircle className="h-10 w-10 animate-spin text-primary" />
           <p className="mt-4 text-muted-foreground font-medium">Cargando su espacio...</p>
-        </motion.div>
       </div>
     );
   }
@@ -91,10 +84,7 @@ export default function DashboardLayout({
       <div className="flex min-h-screen w-full bg-background overflow-hidden">
         {/* Sidebar Flotante Estilo Apple */}
         <aside className="fixed inset-y-0 left-0 z-50 hidden w-24 flex-col items-center py-8 sm:flex print:hidden">
-          <motion.nav 
-            initial={{ x: -100, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ type: "spring", damping: 20, stiffness: 100 }}
+          <nav
             className="flex flex-col items-center h-full gap-8 px-4 py-6 glass rounded-[40px] shadow-premium transition-all duration-500"
           >
             <Link
@@ -118,13 +108,6 @@ export default function DashboardLayout({
                             : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                         }`}
                       >
-                        {isActive && (
-                          <motion.div
-                            layoutId="sidebar-active"
-                            className="absolute inset-0 bg-primary rounded-2xl shadow-lg -z-10"
-                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                          />
-                        )}
                         <item.icon className="h-5 w-5" />
                         <span className="sr-only">{item.label}</span>
                       </Link>
@@ -141,7 +124,7 @@ export default function DashboardLayout({
                <ModeToggle />
                <UserNav user={user} />
             </div>
-          </motion.nav>
+          </nav>
         </aside>
 
         <div className="flex flex-1 flex-col sm:pl-24">
@@ -209,18 +192,9 @@ export default function DashboardLayout({
           </header>
 
           <main className="flex-1 p-6 lg:p-10 overflow-y-auto no-scrollbar relative">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                className="h-full"
-              >
+             <div className="h-full w-full animate-in fade-in duration-500">
                 {children}
-              </motion.div>
-            </AnimatePresence>
+             </div>
           </main>
         </div>
       </div>

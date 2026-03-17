@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { ResetSprintDialog } from '@/components/settings/reset-sprint-dialog';
 
 const totalGoalSchema = z.object({
   totalSalesGoal: z.coerce.number().min(0, "Total sales goal must be positive"),
@@ -113,7 +112,7 @@ export default function SprintSettingsPage() {
       
       toast({
         title: "Team Goals Updated!",
-        description: `New goals have been assigned to ${numSalespeople} salespeople for the current sprint.`,
+        description: `New goals have been assigned to ${numSalespeople} salespeople for the current sprint.`
       });
       fetchData();
     } catch (error: unknown) {
@@ -224,7 +223,6 @@ export default function SprintSettingsPage() {
             </p>
         </CardContent>
         <CardFooter>
-            <ResetSprintDialog sprint={currentSprint} onSprintReset={fetchData} />
         </CardFooter>
       </Card>
     </div>

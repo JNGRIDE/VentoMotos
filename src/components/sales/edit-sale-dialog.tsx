@@ -267,17 +267,37 @@ export function EditSaleDialog({ sale, onUpdateSale, open, onOpenChange, current
       </Dialog>
 
       <AlertDialog open={showZeroStockAlert} onOpenChange={setShowZeroStockAlert}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2"><AlertCircle className="text-destructive"/> Out of Stock</AlertDialogTitle>
-            <AlertDialogDescription>
-              There are no units of the "{selectedMotorcycle?.model}" model available. How do you want to proceed?
+            <AlertDialogTitle className="flex items-center gap-2 text-xl">
+              <AlertCircle className="text-destructive h-6 w-6"/> 
+              Modelo sin Existencias
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base py-2">
+              No hay unidades disponibles del modelo <span className="font-bold text-foreground">"{selectedMotorcycle?.model}"</span>. 
+              ¿Deseas cambiar el tipo de pedido?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => form.setValue("motorcycleId", sale.motorcycleId)}>Cancel Change</AlertDialogCancel>
-            <Button variant="secondary" onClick={() => handleSpecialOrderAndSubmit("Recoger en otra sucursal")}>Pickup at another branch</Button>
-            <Button onClick={() => handleSpecialOrderAndSubmit("Sobre pedido (CEDIS)")}>Special Order (CEDIS)</Button>
+          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:space-x-0">
+            <AlertDialogCancel 
+              onClick={() => form.setValue("motorcycleId", sale.motorcycleId)}
+              className="mt-0 sm:mr-auto"
+            >
+              Cancelar Cambio
+            </AlertDialogCancel>
+            <Button 
+              variant="secondary" 
+              onClick={() => handleSpecialOrderAndSubmit("Recoger en otra sucursal")}
+              className="w-full sm:w-auto"
+            >
+              Recoger en otra sucursal
+            </Button>
+            <Button 
+              onClick={() => handleSpecialOrderAndSubmit("Sobre pedido (CEDIS)")}
+              className="w-full sm:w-auto"
+            >
+              Sobre pedido (CEDIS)
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

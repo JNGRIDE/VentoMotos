@@ -377,34 +377,40 @@ export function RecordSaleDialog({
       </Dialog>
 
       <AlertDialog open={showZeroStockAlert} onOpenChange={setShowZeroStockAlert}>
-        <AlertDialogContent className="max-w-xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-xl">
-              <AlertCircle className="text-destructive h-6 w-6"/> 
-              Modelo sin Existencias
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-base py-2">
+        <AlertDialogContent className="sm:max-w-2xl rounded-[32px] border-none shadow-2xl p-8">
+          <AlertDialogHeader className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-destructive/10 p-2 rounded-full">
+                <AlertCircle className="text-destructive h-6 w-6"/> 
+              </div>
+              <AlertDialogTitle className="text-2xl font-bold tracking-tight">
+                Modelo sin Existencias
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-lg text-muted-foreground leading-relaxed">
               Actualmente no hay unidades disponibles del modelo <span className="font-bold text-foreground">"{selectedMotorcycle?.model}"</span> en esta sucursal. 
+              <br className="hidden sm:block" />
               ¿Cómo deseas proceder con esta venta?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:space-x-0">
+          <AlertDialogFooter className="flex flex-col sm:flex-row items-center gap-3 mt-8">
             <AlertDialogCancel 
               onClick={() => form.setValue("motorcycleId", "")}
-              className="mt-0 sm:mr-auto"
+              className="w-full sm:w-auto rounded-2xl h-12 px-6 font-semibold border-none bg-secondary/50 hover:bg-secondary order-3 sm:order-1"
             >
               Cancelar Registro
             </AlertDialogCancel>
+            <div className="hidden sm:block flex-1 order-2" />
             <Button 
               variant="secondary" 
               onClick={() => handleSpecialOrderAndSubmit("Recoger en otra sucursal")}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto rounded-2xl h-12 px-6 font-semibold bg-secondary hover:bg-secondary/80 order-2 sm:order-3"
             >
               Recoger en otra sucursal
             </Button>
             <Button 
               onClick={() => handleSpecialOrderAndSubmit("Sobre pedido (CEDIS)")}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto rounded-2xl h-12 px-6 font-bold shadow-lg shadow-primary/20 order-1 sm:order-4"
             >
               Sobre pedido (CEDIS)
             </Button>

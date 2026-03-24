@@ -22,6 +22,7 @@ interface KanbanColumnProps {
   onEdit: (prospect: Prospect) => void;
   onDelete: (prospect: Prospect) => void;
   isHiddenOnMobile?: boolean;
+  isSingleView?: boolean;
 }
 
 const EMPTY_PROSPECTS: Prospect[] = [];
@@ -62,7 +63,8 @@ const KanbanColumn = memo(function KanbanColumn({
   onMoveStage,
   onEdit,
   onDelete,
-  isHiddenOnMobile
+  isHiddenOnMobile,
+  isSingleView
 }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -86,7 +88,7 @@ const KanbanColumn = memo(function KanbanColumn({
 
   return (
     <div
-      className={`flex flex-col w-[85vw] md:w-72 shrink-0 transition-all rounded-3xl snap-center ${isDragOver ? 'bg-primary/10 ring-2 ring-primary/20 scale-[1.02]' : ''}`}
+      className={`flex flex-col shrink-0 transition-all rounded-3xl snap-center ${isSingleView ? 'w-full md:w-72' : 'w-[85vw] md:w-72'} ${isDragOver ? 'bg-primary/10 ring-2 ring-primary/20 scale-[1.02]' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -229,6 +231,7 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
         <div className="flex gap-4 md:gap-6 pb-8 pt-2 h-full snap-x snap-mandatory overflow-x-auto no-scrollbar md:no-scrollbar-none">
           {PROSPECT_STAGES.map((stage) => {
             const isHidden = activeTab !== "all" && activeTab !== stage;
+            const isSingleView = activeTab !== "all";
             return (
               <KanbanColumn
                 key={stage}
@@ -243,6 +246,7 @@ export function KanbanBoard({ prospects, userProfiles, currentUserProfile, onRef
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 isHiddenOnMobile={isHidden}
+                isSingleView={isSingleView}
               />
             );
           })}

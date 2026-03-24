@@ -120,7 +120,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-10 pb-20">
+    <div className="flex flex-col gap-10 pb-20 print:block print:gap-4 print:pb-0">
       {/* Header Estilo Apple */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -185,20 +185,20 @@ export default function ReportsPage() {
             }
           }
         }}
-        className="space-y-10"
+        className="space-y-10 print:space-y-6 print:block"
       >
-        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="print:block print:break-inside-avoid">
           <ReportSummary sales={salesForReport} userProfiles={userProfiles} isManager={isManager} />
         </motion.div>
 
         <motion.div 
           variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-          className="grid grid-cols-1 lg:grid-cols-1 gap-10"
+          className="grid grid-cols-1 lg:grid-cols-1 gap-10 print:block print:mt-6 print:break-inside-avoid"
         >
           {isManager && <SalesBySalespersonChart sales={salesForReport} userProfiles={userProfiles} />}
         </motion.div>
         
-        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="print:block print:mt-6">
           <div className="flex items-center justify-between mb-6 px-2">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-2xl bg-secondary flex items-center justify-center">

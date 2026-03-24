@@ -81,7 +81,7 @@ export default function DashboardLayout({
 
   return (
     <TooltipProvider>
-      <div className="flex min-h-screen w-full bg-background overflow-hidden">
+      <div className="flex min-h-screen w-full bg-background overflow-hidden print:block print:min-h-0 print:overflow-visible">
         {/* Sidebar Flotante Estilo Apple */}
         <aside className="fixed inset-y-0 left-0 z-50 hidden w-24 flex-col items-center py-8 sm:flex print:hidden">
           <nav
@@ -127,7 +127,7 @@ export default function DashboardLayout({
           </nav>
         </aside>
 
-        <div className="flex flex-1 flex-col sm:pl-24">
+        <div className="flex flex-1 flex-col sm:pl-24 print:block print:pl-0">
           <header className="sticky top-0 z-30 flex h-20 items-center gap-4 px-8 bg-background/40 backdrop-blur-md print:hidden">
             <SheetComp>
               <SheetTriggerComp asChild>
@@ -191,8 +191,8 @@ export default function DashboardLayout({
             </div>
           </header>
 
-          <main className="flex-1 p-6 lg:p-10 overflow-y-auto no-scrollbar relative">
-             <div className="h-full w-full animate-in fade-in duration-500">
+          <main className="flex-1 p-6 lg:p-10 overflow-y-auto no-scrollbar relative print:block print:p-0 print:overflow-visible">
+             <div className="h-full w-full animate-in fade-in duration-500 print:block">
                 {children}
              </div>
           </main>

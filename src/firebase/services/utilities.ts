@@ -45,7 +45,12 @@ export async function uploadUtilityFile(storage: FirebaseStorage, file: File, ca
   const timestamp = new Date().getTime();
   const storageRef = ref(storage, `utilities/${category}/${timestamp}_${file.name}`);
   
-  const snapshot = await uploadBytes(storageRef, file);
+  // Convert File to ArrayBuffer to prevent uploadBytes from hanging
+  const buffer = await file.arrayBuffer();
+  const snapshot = await uploadBytes(storageRef, buffer, {
+    contentType: file.type,
+  });
+
   const downloadURL = await getDownloadURL(snapshot.ref);
   
   return downloadURL;

@@ -82,10 +82,10 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 10 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] }
   },
 };
 
@@ -247,7 +247,7 @@ export default function SalesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-theme(spacing.32))]">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col items-center gap-4"
@@ -276,7 +276,7 @@ export default function SalesPage() {
   return (
     <div className="flex flex-col gap-10 pb-20">
       {/* Header Estilo Apple */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col md:flex-row md:items-end justify-between gap-6"
@@ -327,7 +327,7 @@ export default function SalesPage() {
       </motion.div>
 
       {/* Transaction List */}
-      <motion.div 
+      <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -392,8 +392,8 @@ export default function SalesPage() {
                         <TableCell className="text-center">
                           <Badge className={cn(
                             "rounded-lg px-2.5 py-1 font-black text-[9px] uppercase tracking-tighter border-none shadow-none",
-                            sale.paymentMethod === 'Financing' 
-                              ? 'bg-blue-500/10 text-blue-600' 
+                            sale.paymentMethod === 'Financing'
+                              ? 'bg-blue-500/10 text-blue-600'
                               : 'bg-green-500/10 text-green-600'
                           )}>
                             {sale.paymentMethod === 'Financing' ? 'Crédito' : 'Contado'}
@@ -461,8 +461,8 @@ export default function SalesPage() {
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-8 gap-3">
             <AlertDialogCancel disabled={isDeleting} className="rounded-2xl h-12 px-8 font-bold border-none bg-secondary/50">Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteSale} 
+            <AlertDialogAction
+              onClick={handleDeleteSale}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-2xl h-12 px-8 font-black shadow-lg shadow-destructive/20"
             >

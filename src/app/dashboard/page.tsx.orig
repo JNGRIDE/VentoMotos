@@ -3,16 +3,16 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  DollarSign, 
-  CreditCard, 
-  Award, 
-  TrendingUp, 
-  UserPlus, 
-  ShieldAlert, 
-  Download, 
-  CalendarOff, 
-  CalendarPlus, 
+import {
+  DollarSign,
+  CreditCard,
+  Award,
+  TrendingUp,
+  UserPlus,
+  ShieldAlert,
+  Download,
+  CalendarOff,
+  CalendarPlus,
   ChevronRight,
   AlertTriangle
 } from 'lucide-react';
@@ -56,17 +56,17 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const }
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
   }
 };
 
 export default function DashboardPage() {
   const { user } = useUser();
   const { toast } = useToast();
-  
+
   const {
     currentUserProfile,
     sales,
@@ -95,9 +95,9 @@ export default function DashboardPage() {
       });
     }
   }, [error, toast]);
-  
+
   const isManager = currentUserProfile?.role === 'Manager';
-  
+
   const branchSales = useMemo(() => isManager ? sales.filter(s => !s.isExternal) : sales, [sales, isManager]);
 
   const totalSales = useMemo(() => {
@@ -106,7 +106,7 @@ export default function DashboardPage() {
     }
     return branchSales.reduce((sum, sale) => sum + sale.amount, 0);
   }, [sales, branchSales, isManager]);
-  
+
   const totalCredits = useMemo(() => branchSales.filter(s => s.paymentMethod === 'Financing').length, [branchSales]);
   const ventoCredits = useMemo(() => branchSales.filter(s => s.creditProvider === 'Vento').length, [branchSales]);
 
@@ -116,9 +116,9 @@ export default function DashboardPage() {
     }
     return currentUserProfile?.salesGoal || 0;
   }, [userProfiles, currentUserProfile]);
-  
+
   const salesProgress = salesGoal > 0 ? (totalSales / salesGoal) * 100 : 0;
-  
+
   const commissionData = useMemo(() => {
     const commissionRate = isManager ? COMMISSION_RATES.MANAGER : COMMISSION_RATES.SALESPERSON;
     const earned = totalSales * commissionRate;
@@ -158,7 +158,7 @@ export default function DashboardPage() {
       }
     });
   }, [sales, userProfiles, currentUserProfile]);
-  
+
   const adminProfileExists = useMemo(() => userProfiles.some(sp => sp.uid === ADMIN_UID), [userProfiles]);
 
   const currentSprintStatus = useMemo(() => {
@@ -198,13 +198,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial="hidden"
       animate="visible"
       variants={containerVariants}
       className="flex flex-col gap-8 md:gap-12"
     >
-      <motion.div 
+      <motion.div
         variants={itemVariants}
         className="flex flex-col md:flex-row md:items-end justify-between gap-6"
       >
@@ -216,7 +216,7 @@ export default function DashboardPage() {
             Explora la actividad y el rendimiento de tu sucursal.
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2 bg-card/50 backdrop-blur-md p-2 rounded-[28px] shadow-soft border border-border/20 self-start md:self-auto">
           <Select value={selectedSprint} onValueChange={setSelectedSprint}>
             <SelectTrigger className="w-[160px] md:w-[200px] border-none bg-transparent h-10 rounded-2xl focus:ring-0 shadow-none hover:bg-secondary/40 font-bold">
@@ -258,7 +258,7 @@ export default function DashboardPage() {
                 )}
             </div>
           )}
-          
+
           <div className="border-l border-border/40 pl-1">
             {currentSprintStatus === 'active' && (
                <RecordSaleDialog onAddSale={recordSale} currentUserProfile={currentUserProfile} sprint={selectedSprint} />
@@ -266,7 +266,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </motion.div>
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <KpiCard
             title="Ventas Totales"
@@ -305,12 +305,12 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
-        <motion.div 
+        <motion.div
           variants={itemVariants}
           className="lg:col-span-2 space-y-10"
         >
           <SalesProgressChart data={teamChartData} />
-          
+
           <div className="space-y-6">
             <div className="flex items-center justify-between px-2">
               <h3 className="text-2xl md:text-3xl font-black tracking-tight">Actividad Reciente</h3>
@@ -330,7 +330,7 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           variants={itemVariants}
           className="space-y-8"
         >
@@ -345,7 +345,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="pt-4">
                   <div className="h-3 w-full bg-white/20 rounded-full overflow-hidden shadow-inner">
-                    <motion.div 
+                    <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(100, salesProgress)}%` }}
                       transition={{ duration: 2, ease: [0.22, 1, 0.36, 1], delay: 1 }}
@@ -399,7 +399,7 @@ export default function DashboardPage() {
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-8 gap-3">
             <AlertDialogCancel className="rounded-2xl h-12 px-8 font-bold border-none bg-secondary/50">Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleFinishSprint}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-2xl h-12 px-8 font-black shadow-lg shadow-destructive/20"
             >

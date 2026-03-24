@@ -26,15 +26,17 @@ export async function addUtility(db: Firestore, utility: NewUtility): Promise<st
   const utilitiesCol = collection(db, "utilities");
   const docRef = doc(utilitiesCol);
   
-  setDoc(docRef, utility)
-    .catch(async (serverError) => {
-      const permissionError = new FirestorePermissionError({
-        path: docRef.path,
-        operation: 'create',
-        requestResourceData: utility,
-      } satisfies SecurityRuleContext);
-      errorEmitter.emit('permission-error', permissionError);
-    });
+  try {
+    await setDoc(docRef, utility);
+  } catch (serverError) {
+    const permissionError = new FirestorePermissionError({
+      path: docRef.path,
+      operation: 'create',
+      requestResourceData: utility,
+    } satisfies SecurityRuleContext);
+    errorEmitter.emit('permission-error', permissionError);
+    throw serverError; // Re-throw to allow the calling component to handle the error properly
+  }
 
   return docRef.id;
 }
@@ -51,25 +53,29 @@ export async function uploadUtilityFile(storage: FirebaseStorage, file: File, ca
 
 export async function updateUtility(db: Firestore, id: string, updates: Partial<Utility>): Promise<void> {
   const docRef = doc(db, "utilities", id);
-  updateDoc(docRef, updates)
-    .catch(async (serverError) => {
-      const permissionError = new FirestorePermissionError({
-        path: docRef.path,
-        operation: 'update',
-        requestResourceData: updates,
-      } satisfies SecurityRuleContext);
-      errorEmitter.emit('permission-error', permissionError);
-    });
+  try {
+    await updateDoc(docRef, updates);
+  } catch (serverError) {
+    const permissionError = new FirestorePermissionError({
+      path: docRef.path,
+      operation: 'update',
+      requestResourceData: updates,
+    } satisfies SecurityRuleContext);
+    errorEmitter.emit('permission-error', permissionError);
+    throw serverError; // Re-throw so callers can handle the failure
+  }
 }
 
 export async function removeUtility(db: Firestore, id: string): Promise<void> {
   const docRef = doc(db, "utilities", id);
-  deleteDoc(docRef)
-    .catch(async (serverError) => {
-      const permissionError = new FirestorePermissionError({
-        path: docRef.path,
-        operation: 'delete',
-      } satisfies SecurityRuleContext);
-      errorEmitter.emit('permission-error', permissionError);
-    });
+  try {
+    await deleteDoc(docRef);
+  } catch (serverError) {
+    const permissionError = new FirestorePermissionError({
+      path: docRef.path,
+      operation: 'delete',
+    } satisfies SecurityRuleContext);
+    errorEmitter.emit('permission-error', permissionError);
+    throw serverError; // Re-throw so callers can handle the failure
+  }
 }

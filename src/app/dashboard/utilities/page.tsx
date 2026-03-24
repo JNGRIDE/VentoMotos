@@ -14,6 +14,17 @@ import { Badge } from "@/components/ui/badge";
 import { AddUtilityDialog } from '@/components/utilities/add-utility-dialog';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -278,14 +289,34 @@ export default function UtilitiesPage() {
                               {item.category}
                             </Badge>
                             {isManager && (
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-9 w-9 rounded-full text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100 active:scale-90"
-                                onClick={() => handleDelete(item.id)}
-                              >
-                                <Trash2 className="h-5 w-5" />
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 rounded-full text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100 active:scale-90"
+                                  >
+                                    <Trash2 className="h-5 w-5" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="rounded-3xl max-w-md">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar recurso?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Estás a punto de eliminar <strong>{item.title}</strong> del centro de utilidades. Esta acción no se puede deshacer y el recurso ya no estará disponible para el equipo.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel className="rounded-xl border-border/40">Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-sm"
+                                      onClick={() => handleDelete(item.id)}
+                                    >
+                                      Eliminar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             )}
                           </div>
                         </div>

@@ -31,7 +31,7 @@ const cardVariants = {
     opacity: 1, 
     scale: 1, 
     y: 0,
-    transition: { type: "spring", stiffness: 260, damping: 20 }
+    transition: { type: "spring" as const, stiffness: 260, damping: 20 }
   },
   exit: { 
     opacity: 0, 

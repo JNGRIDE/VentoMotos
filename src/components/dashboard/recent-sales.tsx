@@ -77,7 +77,7 @@ export function RecentSales({ sales, userProfiles, onDeleteSale, onUpdateSale, c
   };
   
   // This function now bridges the dialog and the transactional update hook.
-  const handleUpdateSale = async (updatedData: Partial<NewSale>) => {
+  const handleUpdateSale = async (saleId: string, updatedData: Partial<NewSale>) => {
       if (editingSale && onUpdateSale) {
           await onUpdateSale(editingSale.id, editingSale, updatedData);
       }

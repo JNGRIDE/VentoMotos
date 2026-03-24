@@ -48,11 +48,11 @@ export function SalesDetailTable({ sales, userProfiles }: SalesDetailTableProps)
   };
 
   return (
-    <Card className="border-none shadow-soft rounded-[32px] overflow-hidden group hover:shadow-premium transition-all duration-500 print:border-0 print:shadow-none">
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader className="bg-secondary/30">
-            <TableRow className="border-none hover:bg-transparent">
+    <Card className="border-none shadow-soft rounded-[32px] overflow-hidden group hover:shadow-premium transition-all duration-500 print:border-0 print:shadow-none print:rounded-none">
+      <CardContent className="p-0 print:p-0">
+        <Table className="print:text-xs">
+          <TableHeader className="bg-secondary/30 print:bg-transparent">
+            <TableRow className="border-none hover:bg-transparent print:border-b print:border-border">
               <TableHead className="w-[100px] h-14 pl-8 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60">Fecha</TableHead>
               <TableHead className="h-14 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60">Ejecutivo</TableHead>
               <TableHead className="h-14 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60">Cliente</TableHead>
@@ -68,8 +68,8 @@ export function SalesDetailTable({ sales, userProfiles }: SalesDetailTableProps)
               const year = getYear(sale.date);
               
               return (
-              <TableRow key={sale.id} className="h-20 border-border/40 hover:bg-secondary/20 transition-colors group/row">
-                <TableCell className="pl-8">
+              <TableRow key={sale.id} className="h-20 border-border/40 hover:bg-secondary/20 transition-colors group/row print:h-auto print:py-2">
+                <TableCell className="pl-8 print:pl-2">
                   <div className="flex flex-col">
                     <span className="font-bold text-foreground/90">{formatDate(sale.date)}</span>
                     {year && <span className="text-[10px] text-muted-foreground uppercase">{year}</span>}
@@ -103,7 +103,7 @@ export function SalesDetailTable({ sales, userProfiles }: SalesDetailTableProps)
                     {sale.paymentMethod === 'Financing' ? 'Crédito' : 'Contado'}
                   </Badge>
                 </TableCell>
-                <TableCell className="pr-8 text-right font-black text-base text-foreground/90">
+                <TableCell className="pr-8 print:pr-2 text-right font-black text-base text-foreground/90 print:text-sm">
                   ${sale.amount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
                 </TableCell>
               </TableRow>
